@@ -8,12 +8,6 @@ URide provides an integrated solution that simplifies these processes through it
 
 ---
 
-## Key Features
-
-- 
-
----
-
 ## Objective
 
 URide aims to promote **responsible vehicle ownership** by encouraging timely maintenance and providing easy access to essential vehicle service information through a modern, user-friendly interface.
