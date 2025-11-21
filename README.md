@@ -39,8 +39,8 @@ All visual assets and design elements are used with proper permission and attrib
 
 ## Technologies Used
 
-- **Frontend + Backend:** Flutter + Firebase  
-- **Database:** Firebase 
+- **Frontend + Backend:** Flutter + Supabase  
+- **Database:** Supabase
 - **Version Control:** Git & GitHub  
 
 ---
