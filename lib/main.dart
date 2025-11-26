@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'screen/home.dart';
-import 'screen/sign_in.dart';
-// import 'screen/lokasi_parkir.dart';
+import 'package:uride/routes/app_routes.dart';
 
 // Global Supabase instance
 final supabase = Supabase.instance.client;
@@ -31,12 +29,9 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.amber),
         useMaterial3: true,
       ),
-      // home: const SignInPage(),
-      home: const HomeScreen(),
-      routes: {
-        '/home': (context) => const HomeScreen(),
-        '/signin': (context) => const SignInPage(),
-      },
+      initialRoute: AppRoutes.home,
+      routes: AppRoutes.routes,
+      onGenerateRoute: AppRoutes.generateRoute,
     );
   }
 }

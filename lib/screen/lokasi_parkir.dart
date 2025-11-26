@@ -6,7 +6,7 @@ class LokasiParkir extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final width = MediaQuery.of(context).size.width;
-    double scale(double value) => value * (width / 390);
+    double scale(num value) => value * (width / 390);
 
     return Scaffold(
       backgroundColor: const Color(0xFFF7F7F7),
