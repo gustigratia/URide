@@ -1,8 +1,20 @@
 import 'package:flutter/material.dart';
-// import 'package:uride/screen/lokasi_parkir.dart';
-import 'package:uride/screen/sign_in.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'screen/home.dart';
+import 'screen/sign_in.dart';
+// import 'screen/lokasi_parkir.dart';
 
-void main() {
+// Global Supabase instance
+final supabase = Supabase.instance.client;
+
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  await Supabase.initialize(
+    url: 'https://mxwxxtaaxksddeijpgbb.supabase.co',
+    anonKey: 'sb_publishable_xDF-CQX3wPWcVbm2tpzXdA_0JHyBW4j',
+  );
+
   runApp(const MyApp());
 }
 
@@ -13,15 +25,18 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'Lokasi Parkir',
+      title: 'URide',
       theme: ThemeData(
-        fontFamily: "Euclid", 
+        fontFamily: "Euclid",
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.amber),
         useMaterial3: true,
       ),
-      home: const SignInPage(),
-      // home: const LokasiParkir(),
-
+      // home: const SignInPage(),
+      home: const HomeScreen(),
+      routes: {
+        '/home': (context) => const HomeScreen(),
+        '/signin': (context) => const SignInPage(),
+      },
     );
   }
 }
