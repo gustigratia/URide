@@ -1,8 +1,60 @@
 import 'package:flutter/material.dart';
 import 'package:uride/widgets/bottom_nav.dart';
+import 'package:uride/screen/search.dart';
+import 'package:uride/routes/app_routes.dart';
+
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
+
+  static const workshops = [
+    {
+      "name": "Bengkel Sinar Makmur",
+      "distance": "1 Km",
+      "rating": "4.7",
+      "image": "assets/images/workshop.png",
+      "status": "Buka",
+    },
+    {
+      "name": "Bengkel Jaya Motor",
+      "distance": "2.3 Km",
+      "rating": "4.5",
+      "image": "assets/images/workshop.png",
+      "status": "Tutup",
+    },
+    {
+      "name": "Bengkel FastFix",
+      "distance": "3 Km",
+      "rating": "4.8",
+      "image": "assets/images/workshop.png",
+      "status": "Buka",
+    },
+  ];
+
+  static const spbu = [
+    {
+      "name": "SPBU Pertamina 54.612.19",
+      "distance": "0.8 Km",
+      "rating": "4.6",
+      "image": "assets/images/spbu.png",
+      "status": "Buka",
+    },
+    {
+      "name": "SPBU Pertamina 54.601.83",
+      "distance": "1.4 Km",
+      "rating": "4.4",
+      "image": "assets/images/spbu.png",
+      "status": "Buka",
+    },
+    {
+      "name": "SPBU Shell Raya",
+      "distance": "2.1 Km",
+      "rating": "4.7",
+      "image": "assets/images/spbu.png",
+      "status": "Tutup",
+    },
+  ];
+
 
   @override
   Widget build(BuildContext context) {
@@ -30,13 +82,19 @@ class HomeScreen extends StatelessWidget {
                   _buildTrafficCard(),
 
                   const SizedBox(height: 20),
-                  _buildWeatherRow(),
+                  _buildWeatherRow(context),
 
                   const SizedBox(height: 20),
                   _buildNearestWorkshopTitle(),
 
                   const SizedBox(height: 12),
-                  _buildWorkshopCard(),
+                  buildWorkshopCarousel(),
+
+                  const SizedBox(height: 20),
+                  _buildNearestSpbuTitle(),
+
+                  const SizedBox(height: 12),
+                  buildSpbuCarousel(),
 
                   const SizedBox(height: 80),
                 ],
@@ -97,33 +155,38 @@ class HomeScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 10),
-          _buildSearchBar(),
+          _buildSearchBar(context),
         ],
       ),
     );
   }
 
-  Widget _buildSearchBar() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      height: 50,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE0E0E0)),
-      ),
-      child: Row(
-        children: const [
-          Icon(Icons.search, color: Colors.grey),
-          SizedBox(width: 10),
-          Expanded(
-            child: Text("Search...", style: TextStyle(color: Colors.grey)),
-          ),
-          // Icon(Icons.filter_list, color: Colors.grey),
-        ],
+  Widget _buildSearchBar(BuildContext context) {
+    return InkWell(
+      onTap: () {
+        Navigator.pushNamed(context, '/search');
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        height: 50,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: const Color(0xFFE0E0E0)),
+        ),
+        child: Row(
+          children: const [
+            Icon(Icons.search, color: Colors.grey),
+            SizedBox(width: 10),
+            Expanded(
+              child: Text("Search...", style: TextStyle(color: Colors.grey)),
+            ),
+          ],
+        ),
       ),
     );
   }
+
 
   Widget _buildTrafficCard() {
     return Container(
@@ -222,10 +285,7 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  // ===============================
-  // WEATHER + BUTTON ROW
-  // ===============================
-  Widget _buildWeatherRow() {
+  Widget _buildWeatherRow(BuildContext context) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -237,7 +297,7 @@ class HomeScreen extends StatelessWidget {
           icon: Image.asset('assets/icons/weather.png'),
           isActive: true,
         ),
-        _menuCards(),
+        _menuCards(context),
       ],
     );
   }
@@ -328,7 +388,7 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _menuCards() {
+  Widget _menuCards(BuildContext context) {
     return Container(
       width: 200,
       height: 120,
@@ -349,48 +409,55 @@ class HomeScreen extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           _menuCard("Log Perjalanan", "assets/icons/log.png"),
-          _menuCard("Lokasi Parkir", "assets/icons/parkir.png"),
+          GestureDetector(
+            onTap: () {
+              Navigator.pushNamed(context, '/parking');
+            },
+            child: _menuCard("Lokasi Parkir", "assets/icons/parkir.png"),
+          ),
         ],
       ),
     );
   }
 
-  Widget _menuCard(String title, String iconPath) {
-    return Column(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Color(0xFFE0E0E0)),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black12.withOpacity(0.08),
-                blurRadius: 6,
-                offset: Offset(0, 2),
-              ),
-            ],
+
+
+  Widget _menuCard(String title, String iconPath, {VoidCallback? onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Color(0xFFE0E0E0)),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black12.withOpacity(0.08),
+                  blurRadius: 6,
+                  offset: Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Image.asset(iconPath, width: 26, height: 26),
           ),
-          child: Image.asset(iconPath, width: 26, height: 26),
-        ),
-        const SizedBox(height: 6),
-        Text(
-          title,
-          textAlign: TextAlign.center,
-          softWrap: false,   // ⬅️ tidak boleh turun baris
-          overflow: TextOverflow.fade,
-          style: const TextStyle(fontSize: 11),
-        ),
-      ],
+          const SizedBox(height: 6),
+          Text(
+            title,
+            textAlign: TextAlign.center,
+            softWrap: false,
+            overflow: TextOverflow.fade,
+            style: const TextStyle(fontSize: 11),
+          ),
+        ],
+      ),
     );
   }
 
 
 
-  // ===============================
-  // WORKSHOP TITLE
-  // ===============================
   Widget _buildNearestWorkshopTitle() {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -408,81 +475,266 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  // ===============================
-  // WORKSHOP CARD
-  // ===============================
-  Widget _buildWorkshopCard() {
-    return Column(
-      children: [
-        Container(
-          height: 180,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            image: const DecorationImage(
-              image: AssetImage("assets/images/workshop.png"),
-              fit: BoxFit.cover,
-            ),
+  Widget _buildNearestSpbuTitle() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: const [
+        Text(
+          "SPBU terdekat",
+          style: TextStyle(
+            fontSize: 17,
+            color: Color(0xff3d3d3d),
+            fontWeight: FontWeight.bold,
           ),
         ),
+        Text("Lihat Semua", style: TextStyle(color: Colors.orange)),
+      ],
+    );
+  }
 
-        const SizedBox(height: 10),
 
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
+  Widget _buildWorkshopCard({
+    required String name,
+    required String distance,
+    required String rating,
+    required String image,
+    required String status,
+  }) {
+    return SizedBox(
+      height: 230,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          // Gambar
+          Container(
+            height: 200,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(18),
+              image: DecorationImage(
+                image: AssetImage(image),
+                fit: BoxFit.cover,
+              ),
+            ),
           ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              // Info
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: const [
-                  Text(
-                    "Bengkel Sinar Makmur",
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xff3d3d3d),
-                      fontSize: 15,
-                    ),
-                  ),
-                  SizedBox(height: 5),
-                  Row(
-                    children: [
-                      Icon(Icons.location_on, size: 16, color: Colors.grey),
-                      SizedBox(width: 3),
-                      Text("1 Km"),
-                      SizedBox(width: 10),
-                      Icon(Icons.star, size: 16, color: Colors.amber),
-                      SizedBox(width: 3),
-                      Text("4.7"),
-                    ],
+
+          // Card info
+          Positioned(
+            left: 16,
+            right: 16,
+            bottom: 0,
+            child: Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(18),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black12.withOpacity(0.2),
+                    blurRadius: 10,
+                    offset: const Offset(0, 6),
                   ),
                 ],
               ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  // Info kiri
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        name,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xff3d3d3d),
+                          fontSize: 16,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Row(
+                        children: [
+                          const Icon(Icons.location_on, size: 16, color: Colors.grey),
+                          SizedBox(width: 4),
+                          Text(distance, style: const TextStyle(fontSize: 13)),
+                          SizedBox(width: 12),
+                          const Icon(Icons.star, size: 16, color: Colors.amber),
+                          SizedBox(width: 4),
+                          Text(rating, style: const TextStyle(fontSize: 13)),
+                        ],
+                      ),
+                    ],
+                  ),
 
-              // Button
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 22,
-                  vertical: 10,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.green,
-                  borderRadius: BorderRadius.circular(30),
-                ),
-                child: const Text(
-                  "Buka",
-                  style: TextStyle(color: Colors.white),
-                ),
+                  // Status
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 22,
+                      vertical: 10,
+                    ),
+                    decoration: BoxDecoration(
+                      color: status == "Buka" ? Colors.green : Colors.red,
+                      borderRadius: BorderRadius.circular(30),
+
+                    ),
+                    child: Text(
+                      status,
+                      style: const TextStyle(color: Colors.white),
+                    ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget buildWorkshopCarousel() {
+    return SizedBox(
+      height: 230,
+      child: PageView.builder(
+        clipBehavior: Clip.none,
+        controller: PageController(
+          viewportFraction: 0.85,
         ),
-      ],
+        itemCount: workshops.length,
+        itemBuilder: (context, index) {
+          final item = workshops[index];
+          return Padding(
+            padding: const EdgeInsets.only(right: 12),
+            child: _buildWorkshopCard(
+              name: item["name"]!,
+              distance: item["distance"]!,
+              rating: item["rating"]!,
+              image: item["image"]!,
+              status: item["status"]!,
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildSpbuCard({
+    required String name,
+    required String distance,
+    required String rating,
+    required String image,
+    required String status,
+  }) {
+    return SizedBox(
+      height: 230,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          // Gambar
+          Container(
+            height: 200,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(18),
+              image: DecorationImage(
+                image: AssetImage(image),
+                fit: BoxFit.cover,
+              ),
+            ),
+          ),
+
+          // Card info
+          Positioned(
+            left: 16,
+            right: 16,
+            bottom: -12,
+            child: Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(18),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black12.withOpacity(0.2),
+                    blurRadius: 18,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  // Info kiri
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        name,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xff3d3d3d),
+                          fontSize: 14,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Row(
+                        children: [
+                          const Icon(Icons.location_on, size: 16, color: Colors.grey),
+                          SizedBox(width: 4),
+                          Text(distance, style: const TextStyle(fontSize: 13)),
+                          SizedBox(width: 12),
+                          const Icon(Icons.star, size: 16, color: Colors.amber),
+                          SizedBox(width: 4),
+                          Text(rating, style: const TextStyle(fontSize: 13)),
+                        ],
+                      ),
+                    ],
+                  ),
+
+                  // Status
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 22,
+                      vertical: 10,
+                    ),
+                    decoration: BoxDecoration(
+                      color: status == "Buka" ? Colors.green : Colors.red,
+                      borderRadius: BorderRadius.circular(30),
+                    ),
+                    child: Text(
+                      status,
+                      style: const TextStyle(color: Colors.white),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget buildSpbuCarousel() {
+    return SizedBox(
+      height: 230,
+      child: PageView.builder(
+        clipBehavior: Clip.none,
+        controller: PageController(
+          viewportFraction: 0.85,
+        ),
+        itemCount: spbu.length,
+        itemBuilder: (context, index) {
+          final item = spbu[index];
+          return Padding(
+            padding: const EdgeInsets.only(right: 12),
+            child: _buildSpbuCard(
+              name: item["name"]!,
+              distance: item["distance"]!,
+              rating: item["rating"]!,
+              image: item["image"]!,
+              status: item["status"]!,
+            ),
+          );
+        },
+      ),
     );
   }
 }
