@@ -9,59 +9,62 @@ class HomeScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: const Color(0xFFF7F7F7),
       bottomNavigationBar: CustomBottomNav(
-        currentIndex: 3,
+        currentIndex: 0,
         onTap: (index) {
           print("Tapped: $index");
         },
       ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
+      body: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // const SizedBox(height: 10),
+            _buildHeader(context),
+            // const SizedBox(height: 20),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: 20),
+                    _buildTrafficCard(),
 
-              const SizedBox(height: 10),
-              _buildHeader(),
+                    const SizedBox(height: 20),
+                    _buildWeatherRow(),
 
-              const SizedBox(height: 20),
-              _buildSearchBar(),
+                    const SizedBox(height: 20),
+                    _buildNearestWorkshopTitle(),
 
-              const SizedBox(height: 20),
-              _buildTrafficCard(),
+                    const SizedBox(height: 12),
+                    _buildWorkshopCard(),
 
-              const SizedBox(height: 20),
-              _buildWeatherRow(),
+                    const SizedBox(height: 80),
+                  ],
+                )
 
-              const SizedBox(height: 20),
-              _buildNearestWorkshopTitle(),
 
-              const SizedBox(height: 12),
-              _buildWorkshopCard(),
-
-              const SizedBox(height: 80),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  // ===============================
-  // HEADER
-  // ===============================
-  Widget _buildHeader() {
+  Widget _buildHeader(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 20),
+      padding: EdgeInsets.only(
+        top: MediaQuery.of(context).padding.top,
+        left: 20,
+        right: 20,
+        bottom: 20,
+      ),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
           colors: [Color(0xFFFFD93D), Color(0xFFFF8400)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: const BorderRadius.vertical(
-          bottom: Radius.circular(25),
-        ),
+        borderRadius: const BorderRadius.vertical(bottom: Radius.circular(25)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -84,27 +87,26 @@ class HomeScreen extends StatelessWidget {
                   SizedBox(width: 15),
                   Icon(Icons.settings, color: Colors.white),
                 ],
-              )
+              ),
             ],
           ),
 
           const SizedBox(height: 10),
           const Text(
-            "Selamat Pagi Razan!",
+            "Selamat Pagi Gusti!",
             style: TextStyle(
               fontSize: 18,
               color: Colors.white,
               fontWeight: FontWeight.w600,
             ),
           ),
+          const SizedBox(height: 10),
+          _buildSearchBar(),
         ],
       ),
     );
   }
 
-  // ===============================
-  // SEARCH BAR
-  // ===============================
   Widget _buildSearchBar() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -118,10 +120,7 @@ class HomeScreen extends StatelessWidget {
           Icon(Icons.search, color: Colors.grey),
           SizedBox(width: 10),
           Expanded(
-            child: Text(
-              "Search...",
-              style: TextStyle(color: Colors.grey),
-            ),
+            child: Text("Search...", style: TextStyle(color: Colors.grey)),
           ),
           Icon(Icons.filter_list, color: Colors.grey),
         ],
@@ -129,9 +128,6 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  // ===============================
-  // TRAFFIC CARD
-  // ===============================
   Widget _buildTrafficCard() {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -187,10 +183,10 @@ class HomeScreen extends StatelessWidget {
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
                   ),
-                )
+                ),
               ],
             ),
-          )
+          ),
         ],
       ),
     );
@@ -210,7 +206,12 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _weatherCard(int? percent, String title, IconData icon, bool isActive) {
+  Widget _weatherCard(
+    int? percent,
+    String title,
+    IconData icon,
+    bool isActive,
+  ) {
     return Container(
       width: 100,
       padding: const EdgeInsets.all(14),
@@ -220,12 +221,7 @@ class HomeScreen extends StatelessWidget {
         border: Border.all(
           color: isActive ? const Color(0xFFFFC93C) : const Color(0xFFE0E0E0),
         ),
-        boxShadow: const [
-          BoxShadow(
-            color: Colors.black12,
-            blurRadius: 6,
-          )
-        ],
+        boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 6)],
       ),
       child: Column(
         children: [
@@ -257,10 +253,7 @@ class HomeScreen extends StatelessWidget {
           "Bengkel terdekat",
           style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
         ),
-        Text(
-          "Lihat Semua",
-          style: TextStyle(color: Colors.orange),
-        ),
+        Text("Lihat Semua", style: TextStyle(color: Colors.orange)),
       ],
     );
   }
@@ -271,16 +264,16 @@ class HomeScreen extends StatelessWidget {
   Widget _buildWorkshopCard() {
     return Column(
       children: [
-      Container(
-        height: 180,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
-          image: const DecorationImage(
-            image: AssetImage("assets/images/workshop.png"),
-            fit: BoxFit.cover,
+        Container(
+          height: 180,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            image: const DecorationImage(
+              image: AssetImage("assets/images/workshop.png"),
+              fit: BoxFit.cover,
+            ),
           ),
         ),
-      ),
 
         const SizedBox(height: 10),
 
@@ -300,10 +293,7 @@ class HomeScreen extends StatelessWidget {
                 children: const [
                   Text(
                     "Bengkel Sinar Makmur",
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 15,
-                    ),
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
                   ),
                   SizedBox(height: 5),
                   Row(
@@ -334,12 +324,11 @@ class HomeScreen extends StatelessWidget {
                   "Buka",
                   style: TextStyle(color: Colors.white),
                 ),
-              )
+              ),
             ],
           ),
-        )
+        ),
       ],
     );
   }
-
 }
