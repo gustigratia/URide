@@ -23,26 +23,24 @@ class HomeScreen extends StatelessWidget {
             // const SizedBox(height: 20),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const SizedBox(height: 20),
-                    _buildTrafficCard(),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 20),
+                  _buildTrafficCard(),
 
-                    const SizedBox(height: 20),
-                    _buildWeatherRow(),
+                  const SizedBox(height: 20),
+                  _buildWeatherRow(),
 
-                    const SizedBox(height: 20),
-                    _buildNearestWorkshopTitle(),
+                  const SizedBox(height: 20),
+                  _buildNearestWorkshopTitle(),
 
-                    const SizedBox(height: 12),
-                    _buildWorkshopCard(),
+                  const SizedBox(height: 12),
+                  _buildWorkshopCard(),
 
-                    const SizedBox(height: 80),
-                  ],
-                )
-
-
+                  const SizedBox(height: 80),
+                ],
+              ),
             ),
           ],
         ),
@@ -72,12 +70,12 @@ class HomeScreen extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                "URide",
-                style: TextStyle(
-                  fontSize: 32,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
+              SizedBox(
+                width: 100,
+                height: 40,
+                child: Image.asset(
+                  "assets/icons/header-icon.png",
+                  fit: BoxFit.contain,
                 ),
               ),
 
@@ -90,8 +88,6 @@ class HomeScreen extends StatelessWidget {
               ),
             ],
           ),
-
-          const SizedBox(height: 10),
           const Text(
             "Selamat Pagi Gusti!",
             style: TextStyle(
@@ -110,9 +106,10 @@ class HomeScreen extends StatelessWidget {
   Widget _buildSearchBar() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16),
+      height: 50,
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: const Color(0xFFE0E0E0)),
       ),
       child: Row(
@@ -122,7 +119,7 @@ class HomeScreen extends StatelessWidget {
           Expanded(
             child: Text("Search...", style: TextStyle(color: Colors.grey)),
           ),
-          Icon(Icons.filter_list, color: Colors.grey),
+          // Icon(Icons.filter_list, color: Colors.grey),
         ],
       ),
     );
@@ -154,37 +151,70 @@ class HomeScreen extends StatelessWidget {
 
           // Traffic info
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: const [
-                Text(
-                  "Kondisi lalu lintas",
-                  style: TextStyle(color: Colors.grey),
-                ),
-                SizedBox(height: 4),
-                Text(
-                  "Macet",
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 20,
-                    color: Colors.red,
-                  ),
-                ),
-                SizedBox(height: 10),
-                Text(
-                  "12.9 Kilometer\nPerjalanan anda hari ini",
-                  style: TextStyle(fontSize: 13),
-                ),
-                SizedBox(height: 8),
-                Text(
-                  "Lihat selengkapnya",
-                  style: TextStyle(
-                    color: Colors.orange,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final String status = "Padat"; // <-- nanti bisa dynamic
+                final Color lineColor = _getTrafficColor(status);
+                final double lineWidth = _getTrafficLineWidth(
+                  status,
+                  constraints.maxWidth,
+                );
+
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      "Kondisi lalu lintas",
+                      style: TextStyle(color: Colors.grey),
+                    ),
+                    const SizedBox(height: 4),
+
+                    Text(
+                      status,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xff3d3d3d),
+                        fontSize: 20,
+                      ),
+                    ),
+
+                    // Garis dinamis
+                    Container(
+                      margin: const EdgeInsets.symmetric(vertical: 8),
+                      height: 3,
+                      width: lineWidth,
+                      color: lineColor,
+                    ),
+
+                    const Text(
+                      "12.9 Kilometer",
+                      style: TextStyle(
+                        fontSize: 20,
+                        color: Color(0xff3d3d3d),
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+
+                    const SizedBox(height: 5),
+                    const Text(
+                      "Perjalanan anda hari ini",
+                      style: TextStyle(fontSize: 12),
+                    ),
+                    const SizedBox(height: 8),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: const Text(
+                        "Lihat selengkapnya",
+                        style: TextStyle(
+                          color: Colors.orange,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              },
             ),
           ),
         ],
@@ -199,48 +229,164 @@ class HomeScreen extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        _weatherCard(79, "Berpotensi hujan", Icons.cloudy_snowing, true),
-        _weatherCard(null, "Log Perjalanan", Icons.route, false),
-        _weatherCard(null, "Lokasi Parkir", Icons.location_on, false),
+        _weatherCard(
+          percent: 79,
+          title: "Berpotensi\nhujan",
+          subtitle: "Berawan",
+          // icon: Icons.cloud,
+          icon: Image.asset('assets/icons/weather.png'),
+          isActive: true,
+        ),
+        _menuCards(),
       ],
     );
   }
 
-  Widget _weatherCard(
-    int? percent,
-    String title,
-    IconData icon,
-    bool isActive,
-  ) {
+  Widget _weatherCard({
+    required int percent,
+    required String title,
+    required String subtitle,
+    required Widget icon,
+    required bool isActive,
+  }) {
     return Container(
-      width: 100,
-      padding: const EdgeInsets.all(14),
+      width: 200,
+      height: 120,
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: isActive ? Colors.white : Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: isActive ? const Color(0xFFFFC93C) : const Color(0xFFE0E0E0),
-        ),
-        boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 6)],
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black12.withOpacity(0.08),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: Colors.orange, size: 28),
-          const SizedBox(height: 10),
-          if (percent != null)
-            Text(
-              "$percent%",
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-          Text(
-            title,
-            textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 12),
+          // Kiri: persentase dan judul
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      "$percent%",
+                      style: const TextStyle(
+                        fontSize: 35,
+                        color: Color(0xff292D32),
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(title, style: const TextStyle(fontSize: 12)),
+                  ],
+                ),
+              ),
+
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(14),
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFFFFC93C), Color(0xFFFFD65C)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                    ),
+                    child: SizedBox(width: 36, height: 36, child: icon),
+                  ),
+                  const SizedBox(height: 8),
+                  SizedBox(
+                    width: 90,
+                    child: Text(
+                      subtitle,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        color: Color(0xff3d3d3d),
+                        fontWeight: FontWeight.w600,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
         ],
       ),
     );
   }
+
+  Widget _menuCards() {
+    return Container(
+      width: 200,
+      height: 120,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Color(0xFFE0E0E0)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black12.withOpacity(0.08),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          _menuCard("Log Perjalanan", "assets/icons/log.png"),
+          _menuCard("Lokasi Parkir", "assets/icons/parkir.png"),
+        ],
+      ),
+    );
+  }
+
+  Widget _menuCard(String title, String iconPath) {
+    return Column(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Color(0xFFE0E0E0)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black12.withOpacity(0.08),
+                blurRadius: 6,
+                offset: Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Image.asset(iconPath, width: 26, height: 26),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          title,
+          textAlign: TextAlign.center,
+          softWrap: false,   // ⬅️ tidak boleh turun baris
+          overflow: TextOverflow.fade,
+          style: const TextStyle(fontSize: 11),
+        ),
+      ],
+    );
+  }
+
+
 
   // ===============================
   // WORKSHOP TITLE
@@ -251,7 +397,11 @@ class HomeScreen extends StatelessWidget {
       children: const [
         Text(
           "Bengkel terdekat",
-          style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
+          style: TextStyle(
+            fontSize: 17,
+            color: Color(0xff3d3d3d),
+            fontWeight: FontWeight.bold,
+          ),
         ),
         Text("Lihat Semua", style: TextStyle(color: Colors.orange)),
       ],
@@ -293,7 +443,11 @@ class HomeScreen extends StatelessWidget {
                 children: const [
                   Text(
                     "Bengkel Sinar Makmur",
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xff3d3d3d),
+                      fontSize: 15,
+                    ),
                   ),
                   SizedBox(height: 5),
                   Row(
@@ -330,5 +484,35 @@ class HomeScreen extends StatelessWidget {
         ),
       ],
     );
+  }
+}
+
+Color _getTrafficColor(String status) {
+  switch (status.toLowerCase()) {
+    case "macet":
+      return Colors.red;
+    case "padat":
+      return Colors.orange;
+    case "normal":
+      return Colors.yellow.shade700;
+    case "lancar":
+      return Colors.blue;
+    default:
+      return Colors.grey;
+  }
+}
+
+double _getTrafficLineWidth(String status, double maxWidth) {
+  switch (status.toLowerCase()) {
+    case "macet":
+      return maxWidth;
+    case "padat":
+      return maxWidth * 0.75;
+    case "normal":
+      return maxWidth * 0.50;
+    case "lancar":
+      return maxWidth * 0.30;
+    default:
+      return maxWidth * 0.40;
   }
 }

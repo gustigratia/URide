@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'screen/home.dart';
+import 'screen/sign_in.dart';
+// import 'screen/lokasi_parkir.dart';
+
+// Global Supabase instance
+final supabase = Supabase.instance.client;
 
 Future<void> main() async {
-  WidgetsFlutterBinding.ensureInitialized(); // Required before async code
+  WidgetsFlutterBinding.ensureInitialized();
 
   await Supabase.initialize(
     url: 'https://mxwxxtaaxksddeijpgbb.supabase.co',
@@ -13,9 +18,6 @@ Future<void> main() async {
   runApp(const MyApp());
 }
 
-// Global Supabase instance
-final supabase = Supabase.instance.client;
-
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
@@ -23,11 +25,17 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      initialRoute: '/',
+      title: 'URide',
+      theme: ThemeData(
+        fontFamily: "Euclid",
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.amber),
+        useMaterial3: true,
+      ),
+      // home: const SignInPage(),
+      home: const HomeScreen(),
       routes: {
-        '/': (context) => const HomeScreen(),
-        // '/search': (context) => const SearchScreen(),
-        // '/profile': (context) => const ProfileScreen(),
+        '/home': (context) => const HomeScreen(),
+        '/signin': (context) => const SignInPage(),
       },
     );
   }
