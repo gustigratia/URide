@@ -15,21 +15,20 @@ class _EditKendaraanPageState extends State<EditKendaraanPage> {
   final kilometerC = TextEditingController();
 
   String? vehicleId;
+  int? vehicleIndex;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-
-    // Ambil vehicleId dari argument
     final args = ModalRoute.of(context)!.settings.arguments as Map?;
     vehicleId = args?['id'];
+    vehicleIndex = args?['index'];
 
     if (vehicleId != null) {
       fetchVehicleData();
     }
   }
 
-  // Ambil data kendaraan dari Supabase
   Future<void> fetchVehicleData() async {
     final supabase = Supabase.instance.client;
 
@@ -48,23 +47,22 @@ class _EditKendaraanPageState extends State<EditKendaraanPage> {
     }
   }
 
-  // Update ke Supabase
   Future<void> updateVehicle() async {
     final supabase = Supabase.instance.client;
 
-    final userId = "ac2240e5-5bf9-4314-8892-0f925639bde8"; // sementara hardcode
+    await supabase.from('vehicles').update({
+      'vehiclename': namaC.text.trim(),
+      'vehiclenumber': platC.text.trim(),
+      'kilometer': int.tryParse(kilometerC.text.trim()) ?? 0,
+      'userid': "ac2240e5-5bf9-4314-8892-0f925639bde8",
+    }).eq('id', vehicleId!);
 
-    await supabase
-        .from('vehicles')
-        .update({
-          'vehiclename': namaC.text.trim(),
-          'vehiclenumber': platC.text.trim(),
-          'kilometer': int.tryParse(kilometerC.text.trim()) ?? 0,
-          'userid': userId,
-        })
-        .eq('id', vehicleId!);
-
-    if (mounted) Navigator.pop(context, true);
+    if (mounted) {
+      Navigator.pop(context, {
+        "updated": true,
+        "index": vehicleIndex,
+      });
+    }
   }
 
   @override
@@ -77,9 +75,7 @@ class _EditKendaraanPageState extends State<EditKendaraanPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-
               const SizedBox(height: 10),
-
               Row(
                 children: [
                   GestureDetector(
@@ -100,7 +96,6 @@ class _EditKendaraanPageState extends State<EditKendaraanPage> {
                   const SizedBox(width: 28),
                 ],
               ),
-
               const SizedBox(height: 25),
 
               Container(
@@ -120,58 +115,19 @@ class _EditKendaraanPageState extends State<EditKendaraanPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-
-                    Text("Nama Kendaraan",
-                      style: GoogleFonts.poppins(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                      )),
-                    const SizedBox(height: 8),
+                    _label("Nama Kendaraan"),
                     _inputField("Masukkan nama kendaraan", namaC),
-
                     const SizedBox(height: 22),
 
-                    Text("Nomor plat",
-                      style: GoogleFonts.poppins(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                      )),
-                    const SizedBox(height: 8),
+                    _label("Nomor plat"),
                     _inputField("Masukkan nomor plat kendaraan", platC),
-
                     const SizedBox(height: 22),
 
-                    Text("Kilometer",
-                      style: GoogleFonts.poppins(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                      )),
-                    const SizedBox(height: 8),
+                    _label("Kilometer"),
                     _inputField("Masukkan kilometer kendaraan", kilometerC),
-
                     const SizedBox(height: 26),
 
-                    Text(
-                      "Waktu berkendara",
-                      style: GoogleFonts.poppins(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-
-                    const SizedBox(height: 6),
-
-                    Text(
-                      "Catatan : waktu berkendara akan mulai dihitung saat Anda memasukkan informasi kendaraan.",
-                      style: GoogleFonts.poppins(
-                        fontSize: 12,
-                        color: Colors.grey.shade600,
-                        height: 1.4,
-                      ),
-                    ),
-
-                    const SizedBox(height: 30),
-
+                    
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
@@ -197,7 +153,6 @@ class _EditKendaraanPageState extends State<EditKendaraanPage> {
                   ],
                 ),
               ),
-
               const SizedBox(height: 40),
             ],
           ),
@@ -206,9 +161,19 @@ class _EditKendaraanPageState extends State<EditKendaraanPage> {
     );
   }
 
-  // INPUT FIELD REUSABLE — tetap sama, hanya tambahkan controller
+  Widget _label(String text) {
+    return Text(
+      text,
+      style: GoogleFonts.poppins(
+        fontSize: 15,
+        fontWeight: FontWeight.w600,
+      ),
+    );
+  }
+
   Widget _inputField(String hint, TextEditingController controller) {
     return Container(
+      margin: const EdgeInsets.only(top: 8),
       padding: const EdgeInsets.symmetric(horizontal: 18),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),

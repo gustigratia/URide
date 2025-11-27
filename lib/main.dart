@@ -1,13 +1,23 @@
 import 'package:flutter/material.dart';
+import 'package:uride/screen/edit_kendaraan_page.dart';
+import 'package:uride/screen/profle_page.dart';
+import 'package:uride/screen/schedule.page.dart';
+import 'package:uride/screen/vehicle_detail_page.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
-void main() {
+void main() async {
+  await Supabase.initialize(
+    url: 'https://mxwxxtaaxksddeijpgbb.supabase.co',
+    anonKey: 'sb_publishable_xDF-CQX3wPWcVbm2tpzXdA_0JHyBW4j',
+  );
+
   runApp(const MyApp());
 }
+
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -30,7 +40,13 @@ class MyApp extends StatelessWidget {
         // tested with just a hot reload.
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
       ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
+      home: const ProfilePage(),
+      routes: {
+        '/detail-kendaraan': (context) => const VehicleDetailPage(),
+        '/edit-kendaraan': (context) => const EditKendaraanPage(),
+        '/atur-jadwal': (context) => const SchedulePage(),
+        '/profile': (context) => const ProfilePage(),
+      },
     );
   }
 }

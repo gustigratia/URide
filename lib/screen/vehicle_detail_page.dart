@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class VehicleDetailPage extends StatefulWidget {
@@ -10,7 +9,7 @@ class VehicleDetailPage extends StatefulWidget {
 }
 
 class _VehicleDetailPageState extends State<VehicleDetailPage> {
-  String selectedType = "motor"; // motor | mobil
+  String selectedType = "motor";
   int selectedIndex = 0;
 
   List<dynamic> vehiclesMotor = [];
@@ -29,13 +28,15 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
         .from('vehicles')
         .select()
         .eq("vehicletype", "motor")
-        .eq("userid", "ac2240e5-5bf9-4314-8892-0f925639bde8");
+        .eq("userid", "ac2240e5-5bf9-4314-8892-0f925639bde8")
+        .order("id", ascending: true);
 
     final mobilData = await supabase
         .from('vehicles')
         .select()
         .eq("vehicletype", "mobil")
-        .eq("userid", "ac2240e5-5bf9-4314-8892-0f925639bde8");
+        .eq("userid", "ac2240e5-5bf9-4314-8892-0f925639bde8")
+        .order("id", ascending: true);
 
     setState(() {
       vehiclesMotor = motorData;
@@ -51,19 +52,19 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
 
   @override
   Widget build(BuildContext context) {
-    final width = MediaQuery.of(context).size.width;
     final v = currentVehicle;
+    final width = MediaQuery.of(context).size.width;
 
     return Scaffold(
       backgroundColor: Colors.white,
-
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
         centerTitle: true,
-        title: Text(
+        title: const Text(
           "Detail Kendaraan",
-          style: GoogleFonts.poppins(
+          style: TextStyle(
+            fontFamily: 'Euclid',
             fontSize: 18,
             fontWeight: FontWeight.w600,
             color: Colors.black,
@@ -76,217 +77,259 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
       ),
 
       body: SafeArea(
-        top: false,
-        child: GestureDetector(
-          onHorizontalDragEnd: (details) {
-            if (details.primaryVelocity! < 0) {
-              setState(() => selectedIndex++);
-            } else if (details.primaryVelocity! > 0) {
-              setState(() => selectedIndex--);
-            }
-          },
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                const SizedBox(height: 10),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Column(
+            children: [
+              const SizedBox(height: 10),
 
-                // TOP TAB
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    _vehicleTab(
-                      title: "Motor",
-                      icon: selectedType == "motor"
-                          ? "motor(active).png"
-                          : "motor(inactive).png",
-                      active: selectedType == "motor",
-                      onTap: () {
-                        setState(() {
-                          selectedType = "motor";
-                          selectedIndex = 0;
-                        });
-                      },
-                    ),
+              // TAB MOTOR & MOBIL
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  _vehicleTab(
+                    title: "Motor",
+                    icon: selectedType == "motor"
+                        ? "motor(active).png"
+                        : "motor(inactive).png",
+                    active: selectedType == "motor",
+                    onTap: () {
+                      setState(() {
+                        selectedType = "motor";
+                        selectedIndex = 0;
+                      });
+                    },
+                  ),
+                  const SizedBox(width: 10),
+                  _vehicleTab(
+                    title: "Mobil",
+                    icon: selectedType == "mobil"
+                        ? "mobil(active).png"
+                        : "mobil(inactive).jpg",
+                    active: selectedType == "mobil",
+                    onTap: () {
+                      setState(() {
+                        selectedType = "mobil";
+                        selectedIndex = 0;
+                      });
+                    },
+                  ),
+                ],
+              ),
 
-                    const SizedBox(width: 10),
-                    _vehicleTab(
-                      title: "Mobil",
-                      icon: selectedType == "mobil"
-                          ? "mobil(active).png"
-                          : "mobil(inactive).jpg",
-                      active: selectedType == "mobil",
-                      onTap: () {
-                        setState(() {
-                          selectedType = "mobil";
-                          selectedIndex = 0;
-                        });
-                      },
+              const SizedBox(height: 20),
+
+              // NAMA & ARROW
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  _navArrow(() => setState(() => selectedIndex--), Icons.chevron_left),
+                  Expanded(
+                    child: Text(
+                      v?['vehiclename'] ?? "-",
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        fontFamily: 'Euclid',
+                        fontSize: 20,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
-                  ],
+                  ),
+                  _navArrow(() => setState(() => selectedIndex++), Icons.chevron_right),
+                ],
+              ),
+
+              const SizedBox(height: 5),
+
+              // GAMBAR KENDARAAN
+              Image.asset(
+                "nmax.jpg",
+                width: width * 0.75,
+                fit: BoxFit.contain,
+              ),
+
+              const SizedBox(height: 5),
+
+              // NOMOR PLAT
+              Text(
+                v?['vehiclenumber'] ?? "-",
+                style: const TextStyle(
+                  fontFamily: 'Euclid',
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
                 ),
+              ),
 
-                const SizedBox(height: 20),
+              const SizedBox(height: 10),
 
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    // Tombol kiri
-                    GestureDetector(
-                      onTap: () {
-                        setState(() {
-                          selectedIndex--;
-                        });
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.all(6),
+              // TOTAL KILOMETER
+              if (v != null)
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  margin: const EdgeInsets.only(bottom: 15),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.12),
+                        blurRadius: 20,
+                        offset: const Offset(0, 6),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
                         decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.grey.shade200,
+                          color: const Color(0xFFFFD233).withOpacity(0.25),
+                          borderRadius: BorderRadius.circular(12),
                         ),
-                        child: const Icon(Icons.chevron_left, size: 22),
+                        child: Image.asset("routing.jpg", width: 22, height: 22),
                       ),
-                    ),
-
-                    const SizedBox(width: 12),
-
-                    // Nama Kendaraan
-                    Expanded(
-                      child: Text(
-                        v?['vehiclename'] ?? "-",
-                        textAlign: TextAlign.center,
-                        style: GoogleFonts.poppins(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w600,
-                        ),
+                      const SizedBox(width: 20),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            "${v['kilometer']} Kilometer",
+                            style: const TextStyle(
+                              fontFamily: 'Euclid',
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const Text(
+                            "Total perjalanan",
+                            style: TextStyle(
+                              fontFamily: 'Euclid',
+                              fontSize: 13,
+                              color: Colors.grey,
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
-
-                    const SizedBox(width: 12),
-
-                    // Tombol kanan
-                    GestureDetector(
-                      onTap: () {
-                        setState(() {
-                          selectedIndex++;
-                        });
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.all(6),
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.grey.shade200,
-                        ),
-                        child: const Icon(Icons.chevron_right, size: 22),
-                      ),
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 5),
-
-                Image.asset(
-                  "nmax.jpg",
-                  width: width * 0.75,
-                  fit: BoxFit.contain,
-                ),
-
-                const SizedBox(height: 5),
-
-                Text(
-                  v?['vehiclenumber'] ?? "-",
-                  style: GoogleFonts.poppins(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
+                    ],
                   ),
                 ),
 
-                const SizedBox(height: 20),
-                _fullButton(
-                  icon: "edit.jpg",
-                  title: "Edit Informasi Kendaraan",
-                  onTap: () async {
-                    final result = await Navigator.pushNamed(
-                      context,
-                      '/edit-kendaraan',
-                      arguments: {"id": v?['id'].toString()},
-                    );
+              // BUTTON EDIT
+              _fullButton(
+                icon: "edit.jpg",
+                title: "Edit Informasi Kendaraan",
+                onTap: () async {
+                  final result = await Navigator.pushNamed(
+                    context,
+                    '/edit-kendaraan',
+                    arguments: {
+                      "id": v?['id'].toString(),
+                      "index": selectedIndex,
+                    },
+                  );
 
-                    if (result == true) {
-                      fetchVehicles(); // 🔥 refresh data
-                      setState(() {}); // update UI
-                    }
-                  },
-                ),
+                  if (result is Map && result["updated"] == true) {
+                    await fetchVehicles();
+                    setState(() {
+                      selectedIndex = result["index"] ?? 0;
+                    });
+                  }
+                },
+              ),
 
-                const SizedBox(height: 10),
+              const SizedBox(height: 10),
 
-                _fullButton(icon: "edit.jpg", title: "Tambah Kendaraan"),
+              // BUTTON TAMBAH KENDARAAN
+              _fullButton(
+                icon: "edit.jpg",
+                title: "Tambah Kendaraan",
+                onTap: () {
+                  Navigator.pushNamed(context, '/tambah-kendaraan');
+                },
+              ),
 
-                const SizedBox(height: 20),
+              const SizedBox(height: 20),
 
-                Row(
-                  children: [
-                    Expanded(
-                      child: _statusBox(
-                        icon: "oli.jpg",
-                        title: "${v?['kilometer'] ?? 0} Km",
-                        subtitle: "Ganti Oli",
-                        barColor: const Color(0xFFFFD233),
-                        value: ((v?['distance_oil'] ?? 0) / 5000)
-                            .clamp(0.0, 1.0)
-                            .toDouble(),
-                      ),
-                    ),
-                    const SizedBox(width: 15),
-                    Expanded(
-                      child: _statusBox(
-                        icon: "wrench.jpg",
-                        title: "${v?['lastservicedate'] ?? 0} Hari Lagi",
-                        subtitle: "Servis Rutin",
-                        barColor: const Color(0xFFE53935),
-                        value: ((v?['service_percent'] ?? 0) / 100)
-                            .clamp(0.0, 1.0)
-                            .toDouble(),
-                      ),
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 25),
-
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    "Rincian",
-                    style: GoogleFonts.poppins(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
+              // STATUS OLI & SERVIS
+              Row(
+                children: [
+                  Expanded(
+                    child: _statusBox(
+                      icon: "oli.jpg",
+                      title: "${(v?['kilometer'] ?? 0) % 5000} Km",
+                      subtitle: "Ganti Oli",
+                      value: ((v?['kilometer'] ?? 0) % 5000) / 5000,
                     ),
                   ),
-                ),
+                  const SizedBox(width: 15),
+                  Expanded(
+                    child: _statusBox(
+                      icon: "wrench.jpg",
+                      title: _nextServiceDate(v),
+                      subtitle: "Servis Rutin",
+                      value: _serviceProgress(v),
+                    ),
+                  ),
+                ],
+              ),
 
-                const SizedBox(height: 10),
-
-                _infoCard(v),
-
-                const SizedBox(height: 20),
-
-                _oilCard(context, v),
-
-                const SizedBox(height: 40),
-              ],
-            ),
+              const SizedBox(height: 50),
+            ],
           ),
         ),
       ),
     );
   }
 
-  // ===========================================================================
-  // COMPONENTS
-  // ===========================================================================
+  // FORMAT TANGGAL SERVIS
+  String _nextServiceDate(dynamic v) {
+    if (v == null || v['lastservicedate'] == null) return "-";
+
+    final raw = DateTime.tryParse(v['lastservicedate'].toString());
+    if (raw == null) return "-";
+
+    final next = raw.add(const Duration(days: 90));
+    return "${next.day} ${_monthName(next.month)} ${next.year}";
+  }
+
+  double _serviceProgress(dynamic v) {
+    if (v == null || v['lastservicedate'] == null) return 0;
+
+    final raw = DateTime.tryParse(v['lastservicedate'].toString());
+    if (raw == null) return 0;
+
+    final elapsed = DateTime.now().difference(raw).inDays;
+    return (elapsed / 90).clamp(0.0, 1.0);
+  }
+
+  // WARNA PROGRESS DINAMIS
+  Color _serviceColor(double progress) {
+    if (progress < 0.33) return Colors.green;
+    if (progress < 0.66) return Colors.orange;
+    return Colors.red;
+  }
+
+  String _monthName(int m) {
+    const arr = [
+      "", "Jan", "Feb", "Mar", "Apr", "Mei", "Jun",
+      "Jul", "Agu", "Sep", "Okt", "Nov", "Des"
+    ];
+    return arr[m];
+  }
+
+  Widget _navArrow(VoidCallback onTap, IconData icon) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(6),
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: Colors.grey.shade200,
+        ),
+        child: Icon(icon, size: 22),
+      ),
+    );
+  }
 
   Widget _vehicleTab({
     required String title,
@@ -308,7 +351,8 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
             const SizedBox(width: 8),
             Text(
               title,
-              style: GoogleFonts.poppins(
+              style: TextStyle(
+                fontFamily: 'Euclid',
                 fontSize: 16,
                 color: active ? Colors.white : Colors.grey.shade600,
                 fontWeight: FontWeight.w600,
@@ -323,7 +367,7 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
   Widget _fullButton({
     required String icon,
     required String title,
-    VoidCallback? onTap,
+    required VoidCallback onTap,
   }) {
     return GestureDetector(
       onTap: onTap,
@@ -340,7 +384,8 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
             Expanded(
               child: Text(
                 title,
-                style: GoogleFonts.poppins(
+                style: const TextStyle(
+                  fontFamily: 'Euclid',
                   fontSize: 15,
                   fontWeight: FontWeight.w500,
                 ),
@@ -352,13 +397,15 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
     );
   }
 
+  // STATUS BOX (PROGRESS DINAMIS)
   Widget _statusBox({
     required String icon,
     required String title,
     required String subtitle,
-    required Color barColor,
     required double value,
   }) {
+    Color barColor = _serviceColor(value);
+
     return Container(
       padding: const EdgeInsets.all(15),
       decoration: BoxDecoration(
@@ -366,230 +413,54 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
         borderRadius: BorderRadius.circular(18),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.08),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+            color: Colors.black.withOpacity(0.15),
+            blurRadius: 22,
+            offset: const Offset(0, 6),
           ),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Image.asset(icon, width: 30),
-          const SizedBox(height: 10),
-          Text(
-            title,
-            style: GoogleFonts.poppins(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
+          Row(
+            children: [
+              Image.asset(icon, width: 32, height: 32),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontFamily: 'Euclid',
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Text(
+                      subtitle,
+                      style: const TextStyle(
+                        fontFamily: 'Euclid',
+                        fontSize: 12,
+                        color: Colors.grey,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-          Text(
-            subtitle,
-            style: GoogleFonts.poppins(fontSize: 14, color: Colors.grey),
-          ),
-          const SizedBox(height: 10),
+
+          const SizedBox(height: 12),
+
           ClipRRect(
             borderRadius: BorderRadius.circular(10),
             child: LinearProgressIndicator(
               minHeight: 7,
               value: value,
               backgroundColor: Colors.grey.shade200,
-              color: barColor,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _infoCard(v) {
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(18),
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.07),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            "Informasi Kendaraan",
-            style: GoogleFonts.poppins(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 15),
-
-          Row(
-            children: [
-              Image.asset("odometer.jpg", width: 28),
-              const SizedBox(width: 15),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    "${v?['kilometer_total'] ?? 0} Kilometer",
-                    style: GoogleFonts.poppins(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  Text(
-                    "Total perjalanan",
-                    style: GoogleFonts.poppins(
-                      fontSize: 14,
-                      color: Colors.grey,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 25),
-
-          Row(
-            children: [
-              Image.asset("clock.jpg", width: 28),
-              const SizedBox(width: 15),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    "${v?['total_minutes'] ?? 0} menit",
-                    style: GoogleFonts.poppins(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  Text(
-                    "Waktu berkendara",
-                    style: GoogleFonts.poppins(
-                      fontSize: 14,
-                      color: Colors.grey,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 25),
-
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(vertical: 12),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: Colors.grey.shade300),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Image.asset("routing.jpg", width: 18),
-                const SizedBox(width: 8),
-                Text(
-                  "Log Perjalanan",
-                  style: GoogleFonts.poppins(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _oilCard(BuildContext context, v) {
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(18),
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.07),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            "Oli Mesin Kendaraan",
-            style: GoogleFonts.poppins(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-
-          const SizedBox(height: 20),
-
-          Text(
-            "${v?['kilometer_last_oil'] ?? 0} Kilometer",
-            style: GoogleFonts.poppins(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          Text(
-            "Terakhir ganti oli",
-            style: GoogleFonts.poppins(fontSize: 14, color: Colors.grey),
-          ),
-
-          const SizedBox(height: 20),
-
-          Text(
-            "${v?['distance_oil'] ?? 0}/${v?['kilometer_oil_target'] ?? 5000} Kilometer",
-            style: GoogleFonts.poppins(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          Text(
-            "Ganti oli",
-            style: GoogleFonts.poppins(fontSize: 14, color: Colors.grey),
-          ),
-
-          const SizedBox(height: 20),
-
-          GestureDetector(
-            onTap: () => Navigator.pushNamed(context, '/atur-jadwal'),
-            child: Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: Colors.grey.shade300),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Image.asset("calender.jpg", width: 18),
-                  const SizedBox(width: 8),
-                  Text(
-                    "Atur Jadwal",
-                    style: GoogleFonts.poppins(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
+              valueColor: AlwaysStoppedAnimation(barColor),
             ),
           ),
         ],
