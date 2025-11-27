@@ -60,8 +60,8 @@ Follow these steps to ensure that the local environment is suitable for developm
 ### Clone Repository
 
 ```bash
-git clone https://github.com/AldaniP/sinergista.git
-cd sinergista
+git clone https://github.com/gustigratia/URide
+cd URide
 ```
 
 ### Install Dependencies
