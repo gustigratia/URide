@@ -117,20 +117,22 @@ class _SignInPageState extends State<SignInPage> {
                   ],
                 ),
               ),
-
-              SizedBox(height: scale(context, 10)),
-              Align(
-                alignment: Alignment.centerRight,
-                child: Text(
-                  "Lupa Kata Sandi?",
-                  style: TextStyle(
-                    fontSize: scale(context, 13),
-                    fontWeight: FontWeight.w500,
-                    color: const Color(0xFFF7A81B),
-                  ),
-                ),
-              ),
-
+      Align(
+        alignment: Alignment.centerRight,
+        child: GestureDetector(
+          onTap: () {
+            Navigator.pushNamed(context, '/ubah-kata-sandi');
+          },
+          child: Text(
+            "Lupa Kata Sandi?",
+            style: TextStyle(
+              fontSize: scale(context, 13),
+              fontWeight: FontWeight.w500,
+              color: const Color(0xFFF7A81B),
+            ),
+          ),
+        ),
+      ),
               SizedBox(height: scale(context, 26)),
 
               GestureDetector(
