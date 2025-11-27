@@ -29,7 +29,7 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.amber),
         useMaterial3: true,
       ),
-      initialRoute: AppRoutes.home,
+      initialRoute: AppRoutes.signin,
       routes: AppRoutes.routes,
       onGenerateRoute: AppRoutes.generateRoute,
     );
