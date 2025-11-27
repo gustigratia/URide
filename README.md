@@ -140,6 +140,7 @@ Use a standard format so that the change history is easy for the team to read (u
     Make changes, then commit with a clear message.
 
     ```bash
+    git add .
     git commit -m "feat: implement auth logic"
     ```
 
