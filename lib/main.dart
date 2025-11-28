@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:uride/screen/edit_kendaraan_page.dart';
 import 'package:uride/screen/profle_page.dart';
-import 'package:uride/screen/schedule.page.dart';
+// import 'package:uride/screen/schedule.page.dart';
 import 'package:uride/screen/vehicle_detail_page.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
