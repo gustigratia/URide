@@ -11,16 +11,72 @@ class ProfilePage extends StatefulWidget {
 class _ProfilePageState extends State<ProfilePage> {
   bool isEditing = false;
 
-  final TextEditingController nameC = TextEditingController(
-    text: "Sule Sutisna",
-  );
-  final TextEditingController emailC = TextEditingController(
-    text: "sulesutisna25@email.com",
-  );
-  final TextEditingController phoneC = TextEditingController(
-    text: "+62 812-3456-7890",
-  );
+  // CONTROLLERS
+  final TextEditingController nameC = TextEditingController();
+  final TextEditingController emailC = TextEditingController();
+  final TextEditingController phoneC = TextEditingController();
 
+  // Hardcode user ID
+  final String userId = "ac2240e5-5bf9-4314-8892-0f925639bde8";
+
+  @override
+  void initState() {
+    super.initState();
+    loadUser();
+  }
+
+  // ======================================================
+  //                    LOAD USER DATA
+  // ======================================================
+  Future<void> loadUser() async {
+    final supabase = Supabase.instance.client;
+
+    try {
+      final data = await supabase
+          .from("users")
+          .select()
+          .eq("id", userId)
+          .maybeSingle();
+
+      if (data != null) {
+        setState(() {
+          nameC.text = data["username"] ?? "";
+          emailC.text = data["email"] ?? "";
+          phoneC.text = data["phone"] ?? "";
+        });
+      }
+
+      print("LOAD SUCCESS: $data");
+    } catch (e) {
+      print("ERROR LOAD USER: $e");
+    }
+  }
+
+  // ======================================================
+  //                    SAVE PROFILE
+  // ======================================================
+  Future<void> saveProfile() async {
+    final supabase = Supabase.instance.client;
+
+    try {
+      await supabase
+          .from("users")
+          .update({
+            "username": nameC.text,
+            "email": emailC.text,
+            "phone": phoneC.text,
+          })
+          .eq("id", userId);
+
+      print("UPDATE SUCCESS");
+    } catch (e) {
+      print("ERROR UPDATE: $e");
+    }
+  }
+
+  // ======================================================
+  //                        UI
+  // ======================================================
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -40,10 +96,7 @@ class _ProfilePageState extends State<ProfilePage> {
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
-            // ===================== HEADER =====================
-            // ===================== HEADER PROFIL =====================
-            // ===================== HEADER PROFIL =====================
-            // ===================== HEADER PROFIL =====================
+            // ================= HEADER =================
             Container(
               padding: const EdgeInsets.all(18),
               decoration: BoxDecoration(
@@ -72,11 +125,10 @@ class _ProfilePageState extends State<ProfilePage> {
 
                   const SizedBox(width: 16),
 
-                  // USERNAME (FIX HEIGHT 24px = tidak berubah)
+                  // USERNAME
                   Expanded(
                     child: SizedBox(
-                      height:
-                          28, // Tinggi fix agar tidak berubah saat edit/tidak edit
+                      height: 28,
                       child: isEditing
                           ? TextField(
                               controller: nameC,
@@ -119,7 +171,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
                   const SizedBox(width: 12),
 
-                  // ICON TETAP DI POSISI DAN UKURAN YANG SAMA
+                  // ICON EDIT / CHECK
                   SizedBox(
                     width: 36,
                     height: 36,
@@ -136,7 +188,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         },
                         child: Icon(
                           isEditing ? Icons.check : Icons.edit,
-                          size: 20, // FIXED SIZE
+                          size: 20,
                           color: Colors.black,
                         ),
                       ),
@@ -148,7 +200,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
             const SizedBox(height: 16),
 
-            // ===================== EMAIL CARD =====================
+            // ================= EMAIL =================
             _valueCard(
               icon: Icons.email_outlined,
               title: "Email",
@@ -156,7 +208,7 @@ class _ProfilePageState extends State<ProfilePage> {
               isEditing: isEditing,
             ),
 
-            // ===================== PHONE CARD =====================
+            // ================= PHONE =================
             _valueCard(
               icon: Icons.phone_outlined,
               title: "Phone",
@@ -164,7 +216,7 @@ class _ProfilePageState extends State<ProfilePage> {
               isEditing: isEditing,
             ),
 
-            // ===================== LOGOUT =====================
+            // ================= LOGOUT =================
             _logoutCard(),
           ],
         ),
@@ -172,87 +224,83 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  // =====================================================
-  //                 CARD DENGAN TEXTFIELD
-  // =====================================================
+  // ======================================================
+  //                     CARD FIELD
+  // ======================================================
   Widget _valueCard({
-  required IconData icon,
-  required String title,
-  required TextEditingController controller,
-  required bool isEditing,
-}) {
-  return Container(
-    margin: const EdgeInsets.only(bottom: 12),
-    padding: const EdgeInsets.all(16),
-    decoration: BoxDecoration(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(14),
-    ),
-    child: Row(
-      children: [
-        Icon(icon, color: Colors.black87),
-        const SizedBox(width: 14),
+    required IconData icon,
+    required String title,
+    required TextEditingController controller,
+    required bool isEditing,
+  }) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: Colors.black87),
+          const SizedBox(width: 14),
 
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.grey,
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.grey,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 6),
+                const SizedBox(height: 6),
 
-              // ===========================================
-              //      FIX HEIGHT - TIDAK BERUBAH SAAT EDIT
-              // ===========================================
-              SizedBox(
-                height: 22, // Tinggi FIX untuk text & TextField
-                child: isEditing
-                    ? TextField(
-                        controller: controller,
-                        style: const TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w500,
-                          height: 1.0, // penting
-                        ),
-                        cursorColor: Colors.black,
-                        decoration: const InputDecoration(
-                          isDense: true, // penting
-                          contentPadding: EdgeInsets.zero, // penting
-                          border: UnderlineInputBorder(),
-                        ),
-                      )
-                    : Align(
-                        alignment: Alignment.centerLeft,
-                        child: Text(
-                          controller.text,
+                SizedBox(
+                  height: 22,
+                  child: isEditing
+                      ? TextField(
+                          controller: controller,
                           style: const TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.w500,
-                            height: 1.0, // supaya sama tinggi
+                            height: 1.0,
                           ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                          cursorColor: Colors.black,
+                          decoration: const InputDecoration(
+                            isDense: true,
+                            contentPadding: EdgeInsets.zero,
+                            border: UnderlineInputBorder(),
+                          ),
+                        )
+                      : Align(
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            controller.text,
+                            style: const TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w500,
+                              height: 1.0,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
-                      ),
-              ),
-            ],
+                ),
+              ],
+            ),
           ),
-        ),
-      ],
-    ),
-  );
-}
+        ],
+      ),
+    );
+  }
 
-
-  // =====================================================
-  //                        LOGOUT
-  // =====================================================
+  // ======================================================
+  //                      LOGOUT
+  // ======================================================
   Widget _logoutCard() {
     return Container(
       padding: const EdgeInsets.all(4),
@@ -273,27 +321,5 @@ class _ProfilePageState extends State<ProfilePage> {
         onTap: () {},
       ),
     );
-  }
-
-  // =====================================================
-  //                     SAVE PROFILE (HARDCORE ID = 1)
-  // =====================================================
-  Future<void> saveProfile() async {
-    final supabase = Supabase.instance.client;
-
-    try {
-      await supabase
-          .from("users")
-          .update({
-            "name": nameC.text,
-            "email": emailC.text,
-            "phone": phoneC.text,
-          })
-          .eq("id", 1);
-
-      print("UPDATE SUCCESS");
-    } catch (e) {
-      print("ERROR UPDATE: $e");
-    }
   }
 }

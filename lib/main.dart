@@ -1,14 +1,18 @@
 import 'package:flutter/material.dart';
-// import 'package:uride/screen/edit_kendaraan_page.dart';
-import 'package:uride/screen/profle_page.dart';
-// import 'package:uride/screen/schedule.page.dart';
-// import 'package:uride/screen/vehicle_detail_page.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:uride/routes/app_routes.dart';
+import 'package:uride/screen/profile_page.dart';
+import 'env.dart';
 
-void main() async {
+// Global Supabase instance
+final supabase = Supabase.instance.client;
+
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
   await Supabase.initialize(
-    url: 'https://mxwxxtaaxksddeijpgbb.supabase.co',
-    anonKey: 'sb_publishable_xDF-CQX3wPWcVbm2tpzXdA_0JHyBW4j',
+    url: Env.supabaseUrl,
+    anonKey: Env.supabaseAnonKey,
   );
 
   runApp(const MyApp());
@@ -21,7 +25,8 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
+      debugShowCheckedModeBanner: false,
+      title: 'URide',
       theme: ThemeData(
         // This is the theme of your application.
         //
@@ -41,12 +46,6 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
       ),
       home: const ProfilePage(),
-      routes: {
-        // '/detail-kendaraan': (context) => const VehicleDetailPage(),
-        // '/edit-kendaraan': (context) => const EditKendaraanPage(),
-        // '/atur-jadwal': (context) => const SchedulePage(),
-        '/profile': (context) => const ProfilePage(),
-      },
     );
   }
 }
