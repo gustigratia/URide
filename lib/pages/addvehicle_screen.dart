@@ -24,13 +24,6 @@ class _TambahKendaraanPageState extends State<TambahKendaraanPage> {
     // ambil user yg sedang login
     final userId = 'ac2240e5-5bf9-4314-8892-0f925639bde8';
 
-    if (userId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text("User tidak ditemukan, harap login ulang")),
-      );
-      return;
-    }
 
     final data = {
       "userid": userId, // <<< tambahan penting
