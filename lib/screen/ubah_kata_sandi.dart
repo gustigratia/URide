@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:uride/routes/app_routes.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class UbahKataSandiPage extends StatefulWidget {
   const UbahKataSandiPage({super.key});
@@ -10,10 +10,50 @@ class UbahKataSandiPage extends StatefulWidget {
 
 class _UbahKataSandiPageState extends State<UbahKataSandiPage> {
   final _emailController = TextEditingController();
+  bool isLoading = false;
 
   double scale(BuildContext context, double value) {
     final width = MediaQuery.of(context).size.width;
     return value * (width / 390);
+  }
+
+  Future<void> _sendResetEmail() async {
+    final email = _emailController.text.trim();
+
+    if (email.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Email tidak boleh kosong")),
+      );
+      return;
+    }
+
+    setState(() => isLoading = true);
+
+    try {
+      await Supabase.instance.client.auth.resetPasswordForEmail(
+        email,
+        redirectTo: "await Supabase.instance.client.auth.resetPasswordForEmail(email);", 
+      );
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            "Link reset kata sandi telah dikirim. Silakan cek email Anda.",
+          ),
+        ),
+      );
+
+    } on AuthException catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.message)),
+      );
+    } catch (_) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Terjadi kesalahan tak terduga")),
+      );
+    } finally {
+      setState(() => isLoading = false);
+    }
   }
 
   @override
@@ -27,17 +67,12 @@ class _UbahKataSandiPageState extends State<UbahKataSandiPage> {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               SizedBox(height: scale(context, 40)),
-
-              // LOGO URide
               Image.asset(
                 "assets/images/uride.png",
                 width: scale(context, 160),
-                fit: BoxFit.contain,
               ),
-
               SizedBox(height: scale(context, 40)),
 
-              // TITLE
               Align(
                 alignment: Alignment.centerLeft,
                 child: Text(
@@ -45,14 +80,11 @@ class _UbahKataSandiPageState extends State<UbahKataSandiPage> {
                   style: TextStyle(
                     fontSize: scale(context, 22),
                     fontWeight: FontWeight.w700,
-                    color: Colors.black,
                   ),
                 ),
               ),
-
               SizedBox(height: scale(context, 8)),
 
-              // DESCRIPTION
               Align(
                 alignment: Alignment.centerLeft,
                 child: Text(
@@ -66,7 +98,6 @@ class _UbahKataSandiPageState extends State<UbahKataSandiPage> {
 
               SizedBox(height: scale(context, 28)),
 
-              // LABEL EMAIL
               Align(
                 alignment: Alignment.centerLeft,
                 child: Text(
@@ -74,46 +105,32 @@ class _UbahKataSandiPageState extends State<UbahKataSandiPage> {
                   style: TextStyle(
                     fontSize: scale(context, 14),
                     fontWeight: FontWeight.w500,
-                    color: Colors.black87,
                   ),
                 ),
               ),
-
               SizedBox(height: scale(context, 8)),
 
-              // EMAIL TEXTFIELD
               Container(
                 padding: EdgeInsets.symmetric(horizontal: scale(context, 18)),
                 height: scale(context, 55),
                 decoration: BoxDecoration(
-                  color: Colors.white,
                   borderRadius: BorderRadius.circular(scale(context, 14)),
                   border: Border.all(color: Colors.grey.shade300),
                 ),
-                child: Center(
-                  child: TextField(
-                    controller: _emailController,
-                    keyboardType: TextInputType.emailAddress,
-                    style: TextStyle(fontSize: scale(context, 14)),
-                    decoration: InputDecoration(
-                      border: InputBorder.none,
-                      hintText: "Masukkan email Anda",
-                      hintStyle: TextStyle(
-                        fontSize: scale(context, 14),
-                        color: Colors.grey.shade400,
-                      ),
-                    ),
+                child: TextField(
+                  controller: _emailController,
+                  keyboardType: TextInputType.emailAddress,
+                  decoration: const InputDecoration(
+                    border: InputBorder.none,
+                    hintText: "Masukkan email Anda",
                   ),
                 ),
               ),
 
               SizedBox(height: scale(context, 30)),
 
-              // BUTTON RESET PASSWORD
               GestureDetector(
-                onTap: () {
-                Navigator.pushNamed(context, AppRoutes.verifikasiKode);                
-                },
+                onTap: isLoading ? null : _sendResetEmail,
                 child: Container(
                   height: scale(context, 52),
                   width: double.infinity,
@@ -123,7 +140,7 @@ class _UbahKataSandiPageState extends State<UbahKataSandiPage> {
                   ),
                   child: Center(
                     child: Text(
-                      "Ubah Kata Sandi",
+                      isLoading ? "Mengirim..." : "Ubah Kata Sandi",
                       style: TextStyle(
                         fontSize: scale(context, 16),
                         fontWeight: FontWeight.w600,
