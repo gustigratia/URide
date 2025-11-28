@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uride/routes/app_routes.dart';
-
 
 class VerifikasiKodePage extends StatefulWidget {
   const VerifikasiKodePage({super.key});
@@ -10,8 +10,11 @@ class VerifikasiKodePage extends StatefulWidget {
 }
 
 class _VerifikasiKodePageState extends State<VerifikasiKodePage> {
+  // 8 digit OTP
   final List<TextEditingController> _controllers =
-      List.generate(5, (_) => TextEditingController());
+      List.generate(8, (_) => TextEditingController());
+
+  bool isLoading = false;
 
   double scale(BuildContext context, double value) {
     final width = MediaQuery.of(context).size.width;
@@ -20,7 +23,7 @@ class _VerifikasiKodePageState extends State<VerifikasiKodePage> {
 
   Widget _otpBox(BuildContext context, TextEditingController c) {
     return Container(
-      width: scale(context, 50),
+      // width dihapus, biar ikut lebar Expanded
       height: scale(context, 55),
       alignment: Alignment.center,
       decoration: BoxDecoration(
@@ -53,8 +56,50 @@ class _VerifikasiKodePageState extends State<VerifikasiKodePage> {
     );
   }
 
+  Future<void> _verifyOTP() async {
+    final email = ModalRoute.of(context)!.settings.arguments as String;
+    final otp = _controllers.map((e) => e.text).join("");
+
+    if (otp.length < 8) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Isi semua 8 digit kode OTP.")),
+      );
+      return;
+    }
+
+    setState(() => isLoading = true);
+
+    try {
+      final res = await Supabase.instance.client.auth.verifyOTP(
+        email: email,
+        token: otp,
+        type: OtpType.recovery,
+      );
+
+      if (res.user != null) {
+        Navigator.pushNamed(context, AppRoutes.buatPasswordBaru);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Kode OTP salah.")),
+        );
+      }
+    } on AuthException catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("OTP salah: ${e.message}")),
+      );
+    } catch (_) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Terjadi kesalahan tak terduga")),
+      );
+    } finally {
+      setState(() => isLoading = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final email = ModalRoute.of(context)!.settings.arguments as String;
+
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
@@ -63,13 +108,10 @@ class _VerifikasiKodePageState extends State<VerifikasiKodePage> {
           child: Column(
             children: [
               SizedBox(height: scale(context, 40)),
-
-              // LOGO
               Image.asset(
                 "assets/images/uride.png",
                 width: scale(context, 160),
               ),
-
               SizedBox(height: scale(context, 40)),
 
               // TITLE
@@ -83,15 +125,14 @@ class _VerifikasiKodePageState extends State<VerifikasiKodePage> {
                   ),
                 ),
               ),
-
               SizedBox(height: scale(context, 8)),
 
               // DESCRIPTION
               Align(
                 alignment: Alignment.centerLeft,
                 child: Text(
-                  "Kami telah mengirimkan tautan reset ke alpha...@gmail.com. "
-                  "Masukkan 5 digit kode yang tertera di email",
+                  "Kami telah mengirimkan kode OTP ke $email.\n"
+                  "Masukkan 8 digit kode yang tertera di email.",
                   style: TextStyle(
                     fontSize: scale(context, 14),
                     color: Colors.grey.shade600,
@@ -101,21 +142,25 @@ class _VerifikasiKodePageState extends State<VerifikasiKodePage> {
 
               SizedBox(height: scale(context, 32)),
 
-              // OTP BOXES
+              // OTP BOXES (pakai Expanded biar ga overflow)
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: _controllers
-                    .map((c) => _otpBox(context, c))
-                    .toList(),
+                children: List.generate(
+                  _controllers.length,
+                  (index) => Expanded(
+                    child: Padding(
+                      padding:
+                          EdgeInsets.symmetric(horizontal: scale(context, 3)),
+                      child: _otpBox(context, _controllers[index]),
+                    ),
+                  ),
+                ),
               ),
 
               SizedBox(height: scale(context, 32)),
 
               // BUTTON VERIFY
               GestureDetector(
-                onTap: () {
-                  Navigator.pushNamed(context, AppRoutes.buatPasswordBaru);
-                },
+                onTap: isLoading ? null : _verifyOTP,
                 child: Container(
                   height: scale(context, 52),
                   width: double.infinity,
@@ -125,7 +170,7 @@ class _VerifikasiKodePageState extends State<VerifikasiKodePage> {
                   ),
                   child: Center(
                     child: Text(
-                      "Verifikasi Kode",
+                      isLoading ? "Memverifikasi..." : "Verifikasi Kode",
                       style: TextStyle(
                         fontSize: scale(context, 16),
                         fontWeight: FontWeight.w600,
@@ -150,8 +195,14 @@ class _VerifikasiKodePageState extends State<VerifikasiKodePage> {
                     ),
                   ),
                   GestureDetector(
-                    onTap: () {
-                      // TODO: kirim ulang kode
+                    onTap: () async {
+                      await Supabase.instance.client.auth
+                          .resetPasswordForEmail(email);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text("Kode telah dikirim ulang."),
+                        ),
+                      );
                     },
                     child: Text(
                       "Kirim ulang",

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:uride/routes/app_routes.dart';
 
 class UbahKataSandiPage extends StatefulWidget {
   const UbahKataSandiPage({super.key});
@@ -17,7 +18,7 @@ class _UbahKataSandiPageState extends State<UbahKataSandiPage> {
     return value * (width / 390);
   }
 
-  Future<void> _sendResetEmail() async {
+  Future<void> _sendResetOTP() async {
     final email = _emailController.text.trim();
 
     if (email.isEmpty) {
@@ -30,17 +31,20 @@ class _UbahKataSandiPageState extends State<UbahKataSandiPage> {
     setState(() => isLoading = true);
 
     try {
-      await Supabase.instance.client.auth.resetPasswordForEmail(
-        email,
-        redirectTo: "await Supabase.instance.client.auth.resetPasswordForEmail(email);", 
-      );
+      //Kirim OTP 
+      await Supabase.instance.client.auth.resetPasswordForEmail(email);
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text(
-            "Link reset kata sandi telah dikirim. Silakan cek email Anda.",
-          ),
+          content: Text("Kode OTP telah dikirim ke email Anda."),
         ),
+      );
+
+      //Arahkan ke halaman verifikasi kode + bawa email
+      Navigator.pushNamed(
+        context,
+        AppRoutes.verifikasiKode,
+        arguments: email,
       );
 
     } on AuthException catch (e) {
@@ -88,7 +92,7 @@ class _UbahKataSandiPageState extends State<UbahKataSandiPage> {
               Align(
                 alignment: Alignment.centerLeft,
                 child: Text(
-                  "Masukkan email Anda untuk mengatur ulang kata sandi",
+                  "Masukkan email Anda untuk menerima kode OTP reset password",
                   style: TextStyle(
                     fontSize: scale(context, 14),
                     color: Colors.grey.shade600,
@@ -130,7 +134,7 @@ class _UbahKataSandiPageState extends State<UbahKataSandiPage> {
               SizedBox(height: scale(context, 30)),
 
               GestureDetector(
-                onTap: isLoading ? null : _sendResetEmail,
+                onTap: isLoading ? null : _sendResetOTP,
                 child: Container(
                   height: scale(context, 52),
                   width: double.infinity,
@@ -140,7 +144,7 @@ class _UbahKataSandiPageState extends State<UbahKataSandiPage> {
                   ),
                   child: Center(
                     child: Text(
-                      isLoading ? "Mengirim..." : "Ubah Kata Sandi",
+                      isLoading ? "Mengirim..." : "Kirim Kode OTP",
                       style: TextStyle(
                         fontSize: scale(context, 16),
                         fontWeight: FontWeight.w600,
