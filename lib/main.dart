@@ -44,7 +44,7 @@ class MyApp extends StatelessWidget {
       routes: {
         '/detail-kendaraan': (context) => const VehicleDetailPage(),
         '/edit-kendaraan': (context) => const EditKendaraanPage(),
-        '/atur-jadwal': (context) => const SchedulePage(),
+        // '/atur-jadwal': (context) => const SchedulePage(),
         '/profile': (context) => const ProfilePage(),
       },
     );
