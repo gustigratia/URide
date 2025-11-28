@@ -266,15 +266,21 @@ class HomeScreen extends StatelessWidget {
                     const SizedBox(height: 8),
                     Align(
                       alignment: Alignment.centerRight,
-                      child: const Text(
-                        "Lihat selengkapnya",
-                        style: TextStyle(
-                          color: Colors.orange,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
+                      child: GestureDetector(
+                        onTap: () {
+                          Navigator.pushNamed(context, '/lalulintas');
+                        },
+                        child: const Text(
+                          "Lihat selengkapnya",
+                          style: TextStyle(
+                            color: Colors.orange,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
                       ),
-                    ),
+                    )
+
                   ],
                 );
               },
