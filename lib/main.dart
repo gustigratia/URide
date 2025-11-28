@@ -3,6 +3,9 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uride/routes/app_routes.dart';
 import 'env.dart';
 
+// Global Supabase instance
+final supabase = Supabase.instance.client;
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -29,7 +32,7 @@ class MyApp extends StatelessWidget {
       ),
 
       // route awal
-      initialRoute: AppRoutes.signup,
+      initialRoute: AppRoutes.signin,
 
       routes: AppRoutes.routes,
       onGenerateRoute: AppRoutes.generateRoute,
