@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class EditKendaraanPage extends StatefulWidget {
@@ -20,7 +19,6 @@ class _EditKendaraanPageState extends State<EditKendaraanPage> {
   void didChangeDependencies() {
     super.didChangeDependencies();
 
-    // Ambil vehicleId dari argument
     final args = ModalRoute.of(context)!.settings.arguments as Map?;
     vehicleId = args?['id'];
 
@@ -29,7 +27,6 @@ class _EditKendaraanPageState extends State<EditKendaraanPage> {
     }
   }
 
-  // Ambil data kendaraan dari Supabase
   Future<void> fetchVehicleData() async {
     final supabase = Supabase.instance.client;
 
@@ -48,20 +45,19 @@ class _EditKendaraanPageState extends State<EditKendaraanPage> {
     }
   }
 
-  // Update ke Supabase
   Future<void> updateVehicle() async {
     final supabase = Supabase.instance.client;
 
-    final userId = "ac2240e5-5bf9-4314-8892-0f925639bde8"; // sementara hardcode
+    final userId = "ac2240e5-5bf9-4314-8892-0f925639bde8";
 
     await supabase
         .from('vehicles')
         .update({
-          'vehiclename': namaC.text.trim(),
-          'vehiclenumber': platC.text.trim(),
-          'kilometer': int.tryParse(kilometerC.text.trim()) ?? 0,
-          'userid': userId,
-        })
+      'vehiclename': namaC.text.trim(),
+      'vehiclenumber': platC.text.trim(),
+      'kilometer': int.tryParse(kilometerC.text.trim()) ?? 0,
+      'userid': userId,
+    })
         .eq('id', vehicleId!);
 
     if (mounted) Navigator.pop(context, true);
@@ -77,7 +73,6 @@ class _EditKendaraanPageState extends State<EditKendaraanPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-
               const SizedBox(height: 10),
 
               Row(
@@ -86,11 +81,11 @@ class _EditKendaraanPageState extends State<EditKendaraanPage> {
                     onTap: () => Navigator.pop(context),
                     child: const Icon(Icons.arrow_back, size: 28),
                   ),
-                  Expanded(
+                  const Expanded(
                     child: Center(
                       child: Text(
                         "Edit Informasi Kendaraan",
-                        style: GoogleFonts.poppins(
+                        style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.w600,
                         ),
@@ -120,40 +115,45 @@ class _EditKendaraanPageState extends State<EditKendaraanPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-
-                    Text("Nama Kendaraan",
-                      style: GoogleFonts.poppins(
+                    const Text(
+                      "Nama Kendaraan",
+                      style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w600,
-                      )),
+                      ),
+                    ),
                     const SizedBox(height: 8),
                     _inputField("Masukkan nama kendaraan", namaC),
 
                     const SizedBox(height: 22),
 
-                    Text("Nomor plat",
-                      style: GoogleFonts.poppins(
+                    const Text(
+                      "Nomor plat",
+                      style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w600,
-                      )),
+                      ),
+                    ),
                     const SizedBox(height: 8),
                     _inputField("Masukkan nomor plat kendaraan", platC),
 
                     const SizedBox(height: 22),
 
-                    Text("Kilometer",
-                      style: GoogleFonts.poppins(
+                    const Text(
+                      "Kilometer",
+                      style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w600,
-                      )),
+                      ),
+                    ),
                     const SizedBox(height: 8),
                     _inputField("Masukkan kilometer kendaraan", kilometerC),
 
                     const SizedBox(height: 26),
 
-                    Text(
+                    const Text(
                       "Waktu berkendara",
-                      style: GoogleFonts.poppins(
+                      style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w600,
                       ),
@@ -163,9 +163,9 @@ class _EditKendaraanPageState extends State<EditKendaraanPage> {
 
                     Text(
                       "Catatan : waktu berkendara akan mulai dihitung saat Anda memasukkan informasi kendaraan.",
-                      style: GoogleFonts.poppins(
+                      style: TextStyle(
                         fontSize: 12,
-                        color: Colors.grey.shade600,
+                        color: Colors.grey,
                         height: 1.4,
                       ),
                     ),
@@ -184,9 +184,9 @@ class _EditKendaraanPageState extends State<EditKendaraanPage> {
                           elevation: 0,
                         ),
                         onPressed: updateVehicle,
-                        child: Text(
+                        child: const Text(
                           "Simpan",
-                          style: GoogleFonts.poppins(
+                          style: TextStyle(
                             fontWeight: FontWeight.w600,
                             fontSize: 15,
                             color: Colors.white,
@@ -206,7 +206,6 @@ class _EditKendaraanPageState extends State<EditKendaraanPage> {
     );
   }
 
-  // INPUT FIELD REUSABLE — tetap sama, hanya tambahkan controller
   Widget _inputField(String hint, TextEditingController controller) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 18),
@@ -219,7 +218,7 @@ class _EditKendaraanPageState extends State<EditKendaraanPage> {
         decoration: InputDecoration(
           hintText: hint,
           border: InputBorder.none,
-          hintStyle: GoogleFonts.poppins(
+          hintStyle: TextStyle(
             color: Colors.grey.shade500,
             fontSize: 14,
           ),
