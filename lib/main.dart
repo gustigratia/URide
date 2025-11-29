@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uride/routes/app_routes.dart';
 import 'env.dart';
+
 // Global Supabase instance
 final supabase = Supabase.instance.client;
 
@@ -29,7 +30,10 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.amber),
         useMaterial3: true,
       ),
+
+      // route awal
       initialRoute: AppRoutes.signin,
+
       routes: AppRoutes.routes,
       onGenerateRoute: AppRoutes.generateRoute,
     );

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:uride/routes/app_routes.dart';
 
 class BuatPasswordBaruPage extends StatefulWidget {
   const BuatPasswordBaruPage({super.key});
@@ -14,9 +16,78 @@ class _BuatPasswordBaruPageState extends State<BuatPasswordBaruPage> {
   final _passwordController = TextEditingController();
   final _confirmController = TextEditingController();
 
+  bool isLoading = false;
+
   double scale(BuildContext context, double value) {
     final width = MediaQuery.of(context).size.width;
     return value * (width / 390);
+  }
+
+  Future<void> _updatePassword() async {
+    final newPass = _passwordController.text.trim();
+    final confirmPass = _confirmController.text.trim();
+
+    if (newPass.isEmpty || confirmPass.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Semua field harus diisi.")),
+      );
+      return;
+    }
+
+    if (newPass.length < 6) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Password minimal 6 karakter.")),
+      );
+      return;
+    }
+
+    if (newPass != confirmPass) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Konfirmasi password tidak cocok.")),
+      );
+      return;
+    }
+
+    setState(() => isLoading = true);
+
+    try {
+      //Update password ke Supabase
+      final res = await Supabase.instance.client.auth.updateUser(
+        UserAttributes(password: newPass),
+      );
+
+      if (res.user != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Kata sandi berhasil diubah."),
+          ),
+        );
+
+        // logout session lama
+        await Supabase.instance.client.auth.signOut();
+
+        // Redirect → Sign In
+        Navigator.pushNamedAndRemoveUntil(
+          context,
+          AppRoutes.signin,
+          (route) => false,
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Gagal mengubah kata sandi.")),
+        );
+      }
+    } on AuthException catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Error: ${e.message}")),
+      );
+    } catch (_) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Terjadi kesalahan tak terduga.")),
+      );
+    } finally {
+      setState(() => isLoading = false);
+    }
   }
 
   @override
@@ -31,7 +102,6 @@ class _BuatPasswordBaruPageState extends State<BuatPasswordBaruPage> {
             children: [
               SizedBox(height: scale(context, 40)),
 
-              // LOGO
               Image.asset(
                 "assets/images/uride.png",
                 width: scale(context, 160),
@@ -45,11 +115,7 @@ class _BuatPasswordBaruPageState extends State<BuatPasswordBaruPage> {
                 "Kata sandi baru",
                 _passwordController,
                 passwordVisible1,
-                () {
-                  setState(() {
-                    passwordVisible1 = !passwordVisible1;
-                  });
-                },
+                () => setState(() => passwordVisible1 = !passwordVisible1),
               ),
 
               SizedBox(height: scale(context, 16)),
@@ -59,20 +125,13 @@ class _BuatPasswordBaruPageState extends State<BuatPasswordBaruPage> {
                 "Konfirmasi kata sandi baru",
                 _confirmController,
                 passwordVisible2,
-                () {
-                  setState(() {
-                    passwordVisible2 = !passwordVisible2;
-                  });
-                },
+                () => setState(() => passwordVisible2 = !passwordVisible2),
               ),
 
               SizedBox(height: scale(context, 30)),
 
-              // BUTTON
               GestureDetector(
-                onTap: () {
-                  // nanti isi logic set password
-                },
+                onTap: isLoading ? null : _updatePassword,
                 child: Container(
                   height: scale(context, 52),
                   width: double.infinity,
@@ -82,7 +141,7 @@ class _BuatPasswordBaruPageState extends State<BuatPasswordBaruPage> {
                   ),
                   child: Center(
                     child: Text(
-                      "Ubah Kata Sandi",
+                      isLoading ? "Mengubah..." : "Ubah Kata Sandi",
                       style: TextStyle(
                         fontSize: scale(context, 16),
                         fontWeight: FontWeight.w600,
