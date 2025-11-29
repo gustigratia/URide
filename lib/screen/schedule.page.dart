@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 class SchedulePage extends StatelessWidget {
   const SchedulePage({super.key});
@@ -11,16 +10,13 @@ class SchedulePage extends StatelessWidget {
     return Scaffold(
       backgroundColor: Colors.white,
 
-      /// ---------------------------------------------------------
-      /// APPBAR (Tetap di atas)
-      /// ---------------------------------------------------------
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
         centerTitle: true,
-        title: Text(
+        title: const Text(
           "Atur Jadwal",
-          style: GoogleFonts.poppins(
+          style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w600,
             color: Colors.black,
@@ -32,9 +28,6 @@ class SchedulePage extends StatelessWidget {
         ),
       ),
 
-      /// ---------------------------------------------------------
-      /// BODY (Scrollable)
-      /// ---------------------------------------------------------
       body: SafeArea(
         top: false,
         child: SingleChildScrollView(
@@ -43,10 +36,9 @@ class SchedulePage extends StatelessWidget {
             children: [
               const SizedBox(height: 20),
 
-              /// ------------------- TITLE -------------------
-              Text(
+              const Text(
                 "Yamaha NMAX 2023",
-                style: GoogleFonts.poppins(
+                style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.w600,
                 ),
@@ -54,12 +46,10 @@ class SchedulePage extends StatelessWidget {
 
               const SizedBox(height: 10),
 
-              /// MOTOR IMAGE
               Image.asset("nmax.jpg", width: width * 0.75, fit: BoxFit.contain),
 
               const SizedBox(height: 20),
 
-              /// ------------------- FORM CONTAINER -------------------
               Container(
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
@@ -76,10 +66,9 @@ class SchedulePage extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    /// Service Rutin
-                    Text(
+                    const Text(
                       "Service Rutin",
-                      style: GoogleFonts.poppins(
+                      style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
                       ),
@@ -94,10 +83,9 @@ class SchedulePage extends StatelessWidget {
 
                     const SizedBox(height: 25),
 
-                    /// Oli Mesin Kendaraan
-                    Text(
+                    const Text(
                       "Oli Mesin Kendaraan",
-                      style: GoogleFonts.poppins(
+                      style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
                       ),
@@ -107,9 +95,9 @@ class SchedulePage extends StatelessWidget {
 
                     Text(
                       "Kilometer kendaraan",
-                      style: GoogleFonts.poppins(
+                      style: TextStyle(
                         fontSize: 14,
-                        color: Colors.grey.shade600,
+                        color: Colors.grey,
                       ),
                     ),
 
@@ -121,9 +109,9 @@ class SchedulePage extends StatelessWidget {
 
                     Text(
                       "Jadwal ganti oli",
-                      style: GoogleFonts.poppins(
+                      style: TextStyle(
                         fontSize: 14,
-                        color: Colors.grey.shade600,
+                        color: Colors.grey,
                       ),
                     ),
 
@@ -133,7 +121,6 @@ class SchedulePage extends StatelessWidget {
 
                     const SizedBox(height: 30),
 
-                    /// Button
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
@@ -146,9 +133,9 @@ class SchedulePage extends StatelessWidget {
                           elevation: 0,
                         ),
                         onPressed: () {},
-                        child: Text(
+                        child: const Text(
                           "Simpan",
-                          style: GoogleFonts.poppins(
+                          style: TextStyle(
                             fontSize: 16,
                             color: Colors.white,
                             fontWeight: FontWeight.w600,
@@ -181,7 +168,7 @@ class SchedulePage extends StatelessWidget {
       child: TextField(
         decoration: InputDecoration(
           hintText: hint,
-          hintStyle: GoogleFonts.poppins(
+          hintStyle: TextStyle(
             color: Colors.grey.shade500,
             fontSize: 14,
           ),
@@ -205,7 +192,7 @@ class SchedulePage extends StatelessWidget {
             child: TextField(
               decoration: InputDecoration(
                 hintText: hint,
-                hintStyle: GoogleFonts.poppins(
+                hintStyle: TextStyle(
                   color: Colors.grey.shade500,
                   fontSize: 14,
                 ),

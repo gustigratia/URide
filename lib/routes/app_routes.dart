@@ -9,6 +9,8 @@ import 'package:uride/screen/lokasi_parkir.dart';
 import 'package:uride/screen/ubah_kata_sandi.dart';
 import 'package:uride/screen/verifikasi_kode.dart';
 import 'package:uride/screen/buat_password_baru.dart';
+import 'package:uride/screen/vehicle_detail_page.dart';
+import 'package:uride/screen/search_result.dart';
 import 'package:uride/screen/profile_page.dart';
 
 class AppRoutes {
@@ -17,6 +19,8 @@ class AppRoutes {
   static const signup = '/signup';
   static const search = '/search';
   static const parking = '/parking';
+  static const vehicle = '/vehicle';
+  static const search_result = '/search-result';
   static const ubahKataSandi = '/ubah-kata-sandi';
   static const verifikasiKode = '/verifikasi-kode';
   static const buatPasswordBaru = '/buat-password-baru'; 
@@ -29,6 +33,8 @@ class AppRoutes {
     home: (_) => const HomeScreen(),
     signin: (_) => const SignInPage(),
     signup: (_) => const SignUpPage(),
+    vehicle: (_) => const VehicleDetailPage(),
+    search: (_) => const SearchPage(),
     ubahKataSandi: (_) => const UbahKataSandiPage(),
     verifikasiKode: (_) => const VerifikasiKodePage(),
     buatPasswordBaru: (_) => const BuatPasswordBaruPage(),
@@ -50,8 +56,20 @@ class AppRoutes {
         return _animatedRoute(const BuatPasswordBaruPage());
       case laluLintas:
         return _animatedRoute(const LaluLintasPage());
-      case profile:
-        return _animatedRoute(const ProfilePage());
+      case vehicle:
+        return _animatedRoute(const VehicleDetailPage());
+      case search_result:
+        return PageRouteBuilder(
+          transitionDuration: const Duration(milliseconds: 300),
+          pageBuilder: (_, __, ___) =>
+              SearchResultPage(arguments: settings.arguments as Map<String, dynamic>?),
+          transitionsBuilder: (_, animation, __, child) {
+            return FadeTransition(
+              opacity: animation,
+              child: child,
+            );
+          },
+        );
       default:
         return null;
     }

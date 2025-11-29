@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class VehicleDetailPage extends StatefulWidget {
@@ -61,9 +60,9 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
         backgroundColor: Colors.white,
         elevation: 0,
         centerTitle: true,
-        title: Text(
+        title: const Text(
           "Detail Kendaraan",
-          style: GoogleFonts.poppins(
+          style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w600,
             color: Colors.black,
@@ -132,7 +131,6 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    // Tombol kiri
                     GestureDetector(
                       onTap: () {
                         setState(() {
@@ -151,12 +149,11 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
 
                     const SizedBox(width: 12),
 
-                    // Nama Kendaraan
                     Expanded(
                       child: Text(
                         v?['vehiclename'] ?? "-",
                         textAlign: TextAlign.center,
-                        style: GoogleFonts.poppins(
+                        style: const TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.w600,
                         ),
@@ -165,7 +162,6 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
 
                     const SizedBox(width: 12),
 
-                    // Tombol kanan
                     GestureDetector(
                       onTap: () {
                         setState(() {
@@ -196,7 +192,7 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
 
                 Text(
                   v?['vehiclenumber'] ?? "-",
-                  style: GoogleFonts.poppins(
+                  style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w600,
                   ),
@@ -214,8 +210,8 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
                     );
 
                     if (result == true) {
-                      fetchVehicles(); // 🔥 refresh data
-                      setState(() {}); // update UI
+                      fetchVehicles();
+                      setState(() {});
                     }
                   },
                 ),
@@ -256,11 +252,11 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
 
                 const SizedBox(height: 25),
 
-                Align(
+                const Align(
                   alignment: Alignment.centerLeft,
                   child: Text(
                     "Rincian",
-                    style: GoogleFonts.poppins(
+                    style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
                     ),
@@ -284,9 +280,9 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
     );
   }
 
-  // ===========================================================================
+  // =======================================================================
   // COMPONENTS
-  // ===========================================================================
+  // =======================================================================
 
   Widget _vehicleTab({
     required String title,
@@ -308,7 +304,7 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
             const SizedBox(width: 8),
             Text(
               title,
-              style: GoogleFonts.poppins(
+              style: TextStyle(
                 fontSize: 16,
                 color: active ? Colors.white : Colors.grey.shade600,
                 fontWeight: FontWeight.w600,
@@ -340,7 +336,7 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
             Expanded(
               child: Text(
                 title,
-                style: GoogleFonts.poppins(
+                style: const TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w500,
                 ),
@@ -379,14 +375,17 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
           const SizedBox(height: 10),
           Text(
             title,
-            style: GoogleFonts.poppins(
+            style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
             ),
           ),
           Text(
             subtitle,
-            style: GoogleFonts.poppins(fontSize: 14, color: Colors.grey),
+            style: const TextStyle(
+              fontSize: 14,
+              color: Colors.grey,
+            ),
           ),
           const SizedBox(height: 10),
           ClipRRect(
@@ -420,9 +419,9 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
+          const Text(
             "Informasi Kendaraan",
-            style: GoogleFonts.poppins(
+            style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
             ),
@@ -438,14 +437,14 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
                 children: [
                   Text(
                     "${v?['kilometer_total'] ?? 0} Kilometer",
-                    style: GoogleFonts.poppins(
+                    style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
-                  Text(
+                  const Text(
                     "Total perjalanan",
-                    style: GoogleFonts.poppins(
+                    style: TextStyle(
                       fontSize: 14,
                       color: Colors.grey,
                     ),
@@ -466,14 +465,14 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
                 children: [
                   Text(
                     "${v?['total_minutes'] ?? 0} menit",
-                    style: GoogleFonts.poppins(
+                    style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
-                  Text(
+                  const Text(
                     "Waktu berkendara",
-                    style: GoogleFonts.poppins(
+                    style: TextStyle(
                       fontSize: 14,
                       color: Colors.grey,
                     ),
@@ -492,14 +491,14 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
               borderRadius: BorderRadius.circular(14),
               border: Border.all(color: Colors.grey.shade300),
             ),
-            child: Row(
+            child: const Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Image.asset("routing.jpg", width: 18),
-                const SizedBox(width: 8),
+                ImageIcon(AssetImage("routing.jpg"), size: 18),
+                SizedBox(width: 8),
                 Text(
                   "Log Perjalanan",
-                  style: GoogleFonts.poppins(
+                  style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
                   ),
@@ -529,9 +528,9 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
+          const Text(
             "Oli Mesin Kendaraan",
-            style: GoogleFonts.poppins(
+            style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
             ),
@@ -541,28 +540,28 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
 
           Text(
             "${v?['kilometer_last_oil'] ?? 0} Kilometer",
-            style: GoogleFonts.poppins(
+            style: const TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w600,
             ),
           ),
-          Text(
+          const Text(
             "Terakhir ganti oli",
-            style: GoogleFonts.poppins(fontSize: 14, color: Colors.grey),
+            style: TextStyle(fontSize: 14, color: Colors.grey),
           ),
 
           const SizedBox(height: 20),
 
           Text(
             "${v?['distance_oil'] ?? 0}/${v?['kilometer_oil_target'] ?? 5000} Kilometer",
-            style: GoogleFonts.poppins(
+            style: const TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w600,
             ),
           ),
-          Text(
+          const Text(
             "Ganti oli",
-            style: GoogleFonts.poppins(fontSize: 14, color: Colors.grey),
+            style: TextStyle(fontSize: 14, color: Colors.grey),
           ),
 
           const SizedBox(height: 20),
@@ -576,14 +575,14 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
                 borderRadius: BorderRadius.circular(14),
                 border: Border.all(color: Colors.grey.shade300),
               ),
-              child: Row(
+              child: const Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Image.asset("calender.jpg", width: 18),
-                  const SizedBox(width: 8),
+                  ImageIcon(AssetImage("calender.jpg"), size: 18),
+                  SizedBox(width: 8),
                   Text(
                     "Atur Jadwal",
-                    style: GoogleFonts.poppins(
+                    style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
                     ),

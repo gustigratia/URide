@@ -11,17 +11,16 @@ class ProfilePage extends StatefulWidget {
 class _ProfilePageState extends State<ProfilePage> {
   bool isEditing = false;
 
-  // CONTROLLERS
   final TextEditingController nameC = TextEditingController();
   final TextEditingController emailC = TextEditingController();
   final TextEditingController phoneC = TextEditingController();
 
-  // Hardcode user ID
-  final String userId = "ac2240e5-5bf9-4314-8892-0f925639bde8";
+  User? currentUser;
 
   @override
   void initState() {
     super.initState();
+    currentUser = Supabase.instance.client.auth.currentUser;
     loadUser();
   }
 
@@ -32,18 +31,21 @@ class _ProfilePageState extends State<ProfilePage> {
     final supabase = Supabase.instance.client;
 
     try {
+      if (currentUser == null) return;
+
+      // EMAIL dari auth.users
+      emailC.text = currentUser!.email ?? "";
+
+      // Ambil data tambahan dari public.users
       final data = await supabase
           .from("users")
           .select()
-          .eq("id", userId)
+          .eq("id", currentUser!.id)
           .maybeSingle();
 
       if (data != null) {
-        setState(() {
-          nameC.text = data["username"] ?? "";
-          emailC.text = data["email"] ?? "";
-          phoneC.text = data["phone"] ?? "";
-        });
+        nameC.text = data["username"] ?? "";
+        phoneC.text = data["phone"] ?? "";
       }
 
       print("LOAD SUCCESS: $data");
@@ -59,14 +61,10 @@ class _ProfilePageState extends State<ProfilePage> {
     final supabase = Supabase.instance.client;
 
     try {
-      await supabase
-          .from("users")
-          .update({
-            "username": nameC.text,
-            "email": emailC.text,
-            "phone": phoneC.text,
-          })
-          .eq("id", userId);
+      await supabase.from("users").update({
+        "username": nameC.text,
+        "phone": phoneC.text,
+      }).eq("id", currentUser!.id);
 
       print("UPDATE SUCCESS");
     } catch (e) {
@@ -81,7 +79,6 @@ class _ProfilePageState extends State<ProfilePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xfff5f5f5),
-
       appBar: AppBar(
         elevation: 0,
         backgroundColor: Colors.transparent,
@@ -91,12 +88,13 @@ class _ProfilePageState extends State<ProfilePage> {
           style: TextStyle(color: Colors.black, fontWeight: FontWeight.w600),
         ),
       ),
-
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
-            // ================= HEADER =================
+            // ======================================================
+            // HEADER PROFILE
+            // ======================================================
             Container(
               padding: const EdgeInsets.all(18),
               decoration: BoxDecoration(
@@ -108,9 +106,8 @@ class _ProfilePageState extends State<ProfilePage> {
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  // FOTO PROFIL
+                  // PHOTO
                   Container(
                     padding: const EdgeInsets.all(3),
                     decoration: const BoxDecoration(
@@ -133,45 +130,29 @@ class _ProfilePageState extends State<ProfilePage> {
                           ? TextField(
                               controller: nameC,
                               style: const TextStyle(
-                                fontSize: 19,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                                height: 1.0,
-                              ),
+                                  fontSize: 19,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white),
                               cursorColor: Colors.white,
                               decoration: const InputDecoration(
+                                border: InputBorder.none,
                                 isDense: true,
-                                contentPadding: EdgeInsets.zero,
-                                enabledBorder: UnderlineInputBorder(
-                                  borderSide: BorderSide(
-                                    color: Colors.white,
-                                    width: 1.3,
-                                  ),
-                                ),
-                                focusedBorder: UnderlineInputBorder(
-                                  borderSide: BorderSide(
-                                    color: Colors.white,
-                                    width: 1.6,
-                                  ),
-                                ),
                               ),
                             )
                           : Text(
                               nameC.text,
-                              overflow: TextOverflow.ellipsis,
                               style: const TextStyle(
-                                fontSize: 19,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                                height: 1.0,
-                              ),
+                                  fontSize: 19,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white),
+                              overflow: TextOverflow.ellipsis,
                             ),
                     ),
                   ),
 
                   const SizedBox(width: 12),
 
-                  // ICON EDIT / CHECK
+                  // EDIT / CHECK
                   SizedBox(
                     width: 36,
                     height: 36,
@@ -200,15 +181,15 @@ class _ProfilePageState extends State<ProfilePage> {
 
             const SizedBox(height: 16),
 
-            // ================= EMAIL =================
+            // EMAIL (read-only karena email dari auth)
             _valueCard(
               icon: Icons.email_outlined,
               title: "Email",
               controller: emailC,
-              isEditing: isEditing,
+              isEditing: false, // email tidak bisa diedit
             ),
 
-            // ================= PHONE =================
+            // PHONE
             _valueCard(
               icon: Icons.phone_outlined,
               title: "Phone",
@@ -216,7 +197,7 @@ class _ProfilePageState extends State<ProfilePage> {
               isEditing: isEditing,
             ),
 
-            // ================= LOGOUT =================
+            // LOGOUT BUTTON
             _logoutCard(),
           ],
         ),
@@ -244,7 +225,6 @@ class _ProfilePageState extends State<ProfilePage> {
         children: [
           Icon(icon, color: Colors.black87),
           const SizedBox(width: 14),
-
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -258,38 +238,23 @@ class _ProfilePageState extends State<ProfilePage> {
                   ),
                 ),
                 const SizedBox(height: 6),
-
-                SizedBox(
-                  height: 22,
-                  child: isEditing
-                      ? TextField(
-                          controller: controller,
-                          style: const TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w500,
-                            height: 1.0,
-                          ),
-                          cursorColor: Colors.black,
-                          decoration: const InputDecoration(
-                            isDense: true,
-                            contentPadding: EdgeInsets.zero,
-                            border: UnderlineInputBorder(),
-                          ),
-                        )
-                      : Align(
-                          alignment: Alignment.centerLeft,
-                          child: Text(
-                            controller.text,
-                            style: const TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w500,
-                              height: 1.0,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
+                isEditing
+                    ? TextField(
+                        controller: controller,
+                        decoration: const InputDecoration(
+                          isDense: true,
+                          border: UnderlineInputBorder(),
                         ),
-                ),
+                      )
+                    : Text(
+                        controller.text,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
               ],
             ),
           ),
@@ -313,12 +278,17 @@ class _ProfilePageState extends State<ProfilePage> {
         title: const Text(
           "Logout",
           style: TextStyle(
+            color: Colors.red,
             fontSize: 15,
             fontWeight: FontWeight.w500,
-            color: Colors.red,
           ),
         ),
-        onTap: () {},
+        onTap: () async {
+          await Supabase.instance.client.auth.signOut();
+          if (mounted) {
+            Navigator.pushReplacementNamed(context, "/sign-in");
+          }
+        },
       ),
     );
   }

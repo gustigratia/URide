@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:uride/widgets/bottom_nav.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class SearchPage extends StatefulWidget {
   const SearchPage({super.key});
@@ -9,6 +10,42 @@ class SearchPage extends StatefulWidget {
 }
 
 class _SearchPageState extends State<SearchPage> {
+  Future<Map<String, List<Map<String, dynamic>>>> searchFromDatabase(String keyword) async {
+    final supabase = Supabase.instance.client;
+
+    if (keyword.trim().isEmpty) {
+      return {
+        'bengkel': [],
+        'spbu': [],
+      };
+    }
+
+    // QUERY TABLE BENGKEL
+    final bengkelResult = await supabase
+        .from('workshops')
+        .select()
+        .ilike('bengkelname', '%$keyword%');
+
+    // QUERY TABLE SPBU
+    final spbuResult = await supabase
+        .from('spbu')
+        .select()
+        .ilike('name', '%$keyword%');
+
+    // Return dipisah untuk tab view
+    return {
+      'bengkel': bengkelResult
+          .map((d) => {...d, 'type': 'bengkel'})
+          .toList(),
+
+      'spbu': spbuResult
+          .map((d) => {...d, 'type': 'spbu'})
+          .toList(),
+    };
+  }
+
+
+
   final TextEditingController _controller = TextEditingController();
   final FocusNode _focusNode = FocusNode();
   List<String> history = [
@@ -203,7 +240,22 @@ class _SearchPageState extends State<SearchPage> {
             child: TextField(
               controller: _controller,
               focusNode: _focusNode,
-              onSubmitted: addHistory,
+              onSubmitted: (value) async {
+                print("VALUE: $value");
+
+                final hasil = await searchFromDatabase(value);
+
+                Navigator.pushNamed(
+                  context,
+                  '/search-result',
+                  arguments: {
+                    'query': value,
+                    'bengkel': hasil['bengkel'],
+                    'spbu': hasil['spbu'],
+                  },
+                );
+              },
+
               decoration: const InputDecoration(
                 hintText: "Search...",
                 hintStyle: TextStyle(color: Colors.grey),
