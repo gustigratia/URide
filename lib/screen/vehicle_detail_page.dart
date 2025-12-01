@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:uride/routes/app_routes.dart';
 
 class VehicleDetailPage extends StatefulWidget {
   const VehicleDetailPage({super.key});
@@ -90,8 +91,8 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
                   _vehicleTab(
                     title: "Motor",
                     icon: selectedType == "motor"
-                        ? "motor(active).png"
-                        : "motor(inactive).png",
+                        ? "images/motor(active).png"
+                        : "images/motor(inactive).png",
                     active: selectedType == "motor",
                     onTap: () {
                       setState(() {
@@ -104,8 +105,8 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
                   _vehicleTab(
                     title: "Mobil",
                     icon: selectedType == "mobil"
-                        ? "mobil(active).png"
-                        : "mobil(inactive).jpg",
+                        ? "images/mobil(active).png"
+                        : "images/mobil(inactive).jpg",
                     active: selectedType == "mobil",
                     onTap: () {
                       setState(() {
@@ -123,7 +124,10 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  _navArrow(() => setState(() => selectedIndex--), Icons.chevron_left),
+                  _navArrow(
+                    () => setState(() => selectedIndex--),
+                    Icons.chevron_left,
+                  ),
                   Expanded(
                     child: Text(
                       v?['vehiclename'] ?? "-",
@@ -135,17 +139,27 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
                       ),
                     ),
                   ),
-                  _navArrow(() => setState(() => selectedIndex++), Icons.chevron_right),
+                  _navArrow(
+                    () => setState(() => selectedIndex++),
+                    Icons.chevron_right,
+                  ),
                 ],
               ),
 
               const SizedBox(height: 5),
 
               // GAMBAR KENDARAAN
+              // GAMBAR KENDARAAN (DINAMIS)
               Image.asset(
-                "nmax.jpg",
+                v != null && v['img'] != null && v['img'] != ""
+                    ? "images/${v['img']}" // gunakan gambar dari database
+                    : "images/nmax.jpg", // fallback jika null
                 width: width * 0.75,
                 fit: BoxFit.contain,
+                errorBuilder: (context, error, stackTrace) {
+                  print("Gambar gagal dimuat: ${v?['img']}");
+                  return const Text("Gambar tidak ditemukan");
+                },
               ),
 
               const SizedBox(height: 5),
@@ -186,7 +200,11 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
                           color: const Color(0xFFFFD233).withOpacity(0.25),
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        child: Image.asset("routing.jpg", width: 22, height: 22),
+                        child: Image.asset(
+                          "images/routing.jpg",
+                          width: 22,
+                          height: 22,
+                        ),
                       ),
                       const SizedBox(width: 20),
                       Column(
@@ -216,12 +234,12 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
 
               // BUTTON EDIT
               _fullButton(
-                icon: "edit.jpg",
+                icon: "images/edit.jpg",
                 title: "Edit Informasi Kendaraan",
                 onTap: () async {
                   final result = await Navigator.pushNamed(
                     context,
-                    '/edit-kendaraan',
+                    AppRoutes.editKendaraan,
                     arguments: {
                       "id": v?['id'].toString(),
                       "index": selectedIndex,
@@ -241,7 +259,7 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
 
               // BUTTON TAMBAH KENDARAAN
               _fullButton(
-                icon: "edit.jpg",
+                icon: "images/edit.jpg",
                 title: "Tambah Kendaraan",
                 onTap: () {
                   Navigator.pushNamed(context, '/tambah-kendaraan');
@@ -255,7 +273,7 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
                 children: [
                   Expanded(
                     child: _statusBox(
-                      icon: "oli.jpg",
+                      icon: "images/oli.jpg",
                       title: "${(v?['kilometer'] ?? 0) % 5000} Km",
                       subtitle: "Ganti Oli",
                       value: ((v?['kilometer'] ?? 0) % 5000) / 5000,
@@ -264,7 +282,7 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
                   const SizedBox(width: 15),
                   Expanded(
                     child: _statusBox(
-                      icon: "wrench.jpg",
+                      icon: "images/wrench.jpg",
                       title: _nextServiceDate(v),
                       subtitle: "Servis Rutin",
                       value: _serviceProgress(v),
@@ -311,8 +329,19 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
 
   String _monthName(int m) {
     const arr = [
-      "", "Jan", "Feb", "Mar", "Apr", "Mei", "Jun",
-      "Jul", "Agu", "Sep", "Okt", "Nov", "Des"
+      "",
+      "Jan",
+      "Feb",
+      "Mar",
+      "Apr",
+      "Mei",
+      "Jun",
+      "Jul",
+      "Agu",
+      "Sep",
+      "Okt",
+      "Nov",
+      "Des",
     ];
     return arr[m];
   }
