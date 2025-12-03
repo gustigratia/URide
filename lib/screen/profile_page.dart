@@ -17,6 +17,9 @@ class _ProfilePageState extends State<ProfilePage> {
 
   User? currentUser;
 
+  String firstname = "";
+  String lastname = "";
+
   @override
   void initState() {
     super.initState();
@@ -33,10 +36,10 @@ class _ProfilePageState extends State<ProfilePage> {
     try {
       if (currentUser == null) return;
 
-      // EMAIL dari auth.users
+      // Email dari auth
       emailC.text = currentUser!.email ?? "";
 
-      // Ambil data tambahan dari public.users
+      // Ambil data dari public.users
       final data = await supabase
           .from("users")
           .select()
@@ -44,11 +47,16 @@ class _ProfilePageState extends State<ProfilePage> {
           .maybeSingle();
 
       if (data != null) {
-        nameC.text = data["username"] ?? "";
+        firstname = data["firstname"] ?? "";
+        lastname = data["lastname"] ?? "";
+
+        nameC.text = "$firstname $lastname".trim();
         phoneC.text = data["phone"] ?? "";
       }
 
+      setState(() {});
       print("LOAD SUCCESS: $data");
+
     } catch (e) {
       print("ERROR LOAD USER: $e");
     }
@@ -61,12 +69,21 @@ class _ProfilePageState extends State<ProfilePage> {
     final supabase = Supabase.instance.client;
 
     try {
+      // Pisahkan nama menjadi firstname & lastname
+      List<String> parts = nameC.text.trim().split(" ");
+      firstname = parts.isNotEmpty ? parts.first : "";
+      lastname = parts.length > 1 ? parts.sublist(1).join(" ") : "";
+
       await supabase.from("users").update({
-        "username": nameC.text,
+        "firstname": firstname,
+        "lastname": lastname,
         "phone": phoneC.text,
       }).eq("id", currentUser!.id);
 
       print("UPDATE SUCCESS");
+
+      await loadUser(); // refresh UI
+
     } catch (e) {
       print("ERROR UPDATE: $e");
     }
@@ -88,10 +105,14 @@ class _ProfilePageState extends State<ProfilePage> {
           style: TextStyle(color: Colors.black, fontWeight: FontWeight.w600),
         ),
       ),
+
+      bottomNavigationBar: _bottomNavBar(),
+
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
+
             // ======================================================
             // HEADER PROFILE
             // ======================================================
@@ -106,6 +127,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   // PHOTO
                   Container(
@@ -122,82 +144,82 @@ class _ProfilePageState extends State<ProfilePage> {
 
                   const SizedBox(width: 16),
 
-                  // USERNAME
+                  // NAME FIELD
                   Expanded(
-                    child: SizedBox(
-                      height: 28,
-                      child: isEditing
-                          ? TextField(
-                              controller: nameC,
-                              style: const TextStyle(
-                                  fontSize: 19,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white),
-                              cursorColor: Colors.white,
-                              decoration: const InputDecoration(
-                                border: InputBorder.none,
-                                isDense: true,
+                    child: isEditing
+                        ? TextField(
+                            controller: nameC,
+                            style: const TextStyle(
+                                fontSize: 19,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white),
+                            cursorColor: Colors.white,
+                            decoration: const InputDecoration(
+                              isDense: true,
+                              enabledBorder: UnderlineInputBorder(
+                                borderSide: BorderSide(color: Colors.white, width: 1.5),
                               ),
-                            )
-                          : Text(
-                              nameC.text,
-                              style: const TextStyle(
-                                  fontSize: 19,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white),
-                              overflow: TextOverflow.ellipsis,
+                              focusedBorder: UnderlineInputBorder(
+                                borderSide: BorderSide(color: Colors.white, width: 2),
+                              ),
                             ),
-                    ),
+                          )
+                        : Text(
+                            nameC.text,
+                            style: const TextStyle(
+                              fontSize: 19,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
                   ),
 
                   const SizedBox(width: 12),
 
-                  // EDIT / CHECK
-                  SizedBox(
-                    width: 36,
-                    height: 36,
-                    child: Material(
-                      color: Colors.white,
-                      shape: const CircleBorder(),
-                      child: InkWell(
-                        borderRadius: BorderRadius.circular(50),
-                        onTap: () async {
-                          if (isEditing) {
-                            await saveProfile();
-                          }
-                          setState(() => isEditing = !isEditing);
-                        },
-                        child: Icon(
-                          isEditing ? Icons.check : Icons.edit,
-                          size: 20,
-                          color: Colors.black,
-                        ),
+                  // EDIT BUTTON
+                  GestureDetector(
+                    onTap: () async {
+                      if (isEditing) await saveProfile();
+                      setState(() => isEditing = !isEditing);
+                    },
+                    child: Container(
+                      width: 36,
+                      height: 36,
+                      decoration: const BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.white,
+                      ),
+                      child: Icon(
+                        isEditing ? Icons.check : Icons.edit,
+                        size: 20,
+                        color: Colors.black,
                       ),
                     ),
-                  ),
+                  )
                 ],
               ),
             ),
 
             const SizedBox(height: 16),
 
-            // EMAIL (read-only karena email dari auth)
+            // EMAIL FIELD (read-only)
             _valueCard(
               icon: Icons.email_outlined,
               title: "Email",
               controller: emailC,
-              isEditing: false, // email tidak bisa diedit
+              isEditing: isEditing,
+              readOnly: true,
             ),
 
-            // PHONE
+            // PHONE FIELD
             _valueCard(
               icon: Icons.phone_outlined,
               title: "Phone",
               controller: phoneC,
               isEditing: isEditing,
+              readOnly: false,
             ),
 
-            // LOGOUT BUTTON
             _logoutCard(),
           ],
         ),
@@ -213,51 +235,57 @@ class _ProfilePageState extends State<ProfilePage> {
     required String title,
     required TextEditingController controller,
     required bool isEditing,
+    bool readOnly = false,
   }) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: Colors.black87),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.grey,
-                  ),
+          Row(
+            children: [
+              Icon(icon, color: Colors.black87),
+              const SizedBox(width: 14),
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.grey,
                 ),
-                const SizedBox(height: 6),
-                isEditing
-                    ? TextField(
-                        controller: controller,
-                        decoration: const InputDecoration(
-                          isDense: true,
-                          border: UnderlineInputBorder(),
-                        ),
-                      )
-                    : Text(
-                        controller.text,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-              ],
-            ),
+              ),
+            ],
           ),
+
+          const SizedBox(height: 6),
+
+          isEditing
+              ? TextField(
+                  controller: controller,
+                  readOnly: readOnly,
+                  decoration: const InputDecoration(
+                    isDense: true,
+                    border: UnderlineInputBorder(),
+                    focusedBorder: UnderlineInputBorder(
+                      borderSide: BorderSide(color: Colors.black, width: 1.5),
+                    ),
+                  ),
+                )
+              : Padding(
+                  padding: const EdgeInsets.only(left: 40),
+                  child: Text(
+                    controller.text,
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                )
         ],
       ),
     );
@@ -290,6 +318,36 @@ class _ProfilePageState extends State<ProfilePage> {
           }
         },
       ),
+    );
+  }
+
+  // ======================================================
+  //                   BOTTOM NAVIGATION BAR
+  // ======================================================
+  Widget _bottomNavBar() {
+    return BottomNavigationBar(
+      currentIndex: 2,
+      onTap: (i) {
+        if (i == 0) Navigator.pushNamed(context, "/home");
+        if (i == 1) Navigator.pushNamed(context, "/vehicle");
+        if (i == 2) Navigator.pushNamed(context, "/profile");
+      },
+      selectedItemColor: Colors.orange,
+      unselectedItemColor: Colors.grey,
+      items: const [
+        BottomNavigationBarItem(
+          icon: Icon(Icons.home_outlined),
+          label: "Home",
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.motorcycle_outlined),
+          label: "Kendaraan",
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.person_outline),
+          label: "Profil",
+        ),
+      ],
     );
   }
 }
