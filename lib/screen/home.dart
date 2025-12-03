@@ -1,78 +1,256 @@
 import 'package:flutter/material.dart';
 import 'package:uride/widgets/bottom_nav.dart';
-import 'package:uride/screen/search.dart';
-import 'package:uride/routes/app_routes.dart';
+import 'package:auto_size_text/auto_size_text.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
-
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
-  static const workshops = [
-    {
-      "name": "Bengkel Sinar Makmur",
-      "distance": "1 Km",
-      "rating": "4.7",
-      "image": "assets/images/workshop.png",
-      "status": "Buka",
-    },
-    {
-      "name": "Bengkel Jaya Motor",
-      "distance": "2.3 Km",
-      "rating": "4.5",
-      "image": "assets/images/workshop.png",
-      "status": "Tutup",
-    },
-    {
-      "name": "Bengkel FastFix",
-      "distance": "3 Km",
-      "rating": "4.8",
-      "image": "assets/images/workshop.png",
-      "status": "Buka",
-    },
-  ];
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
 
-  static const spbu = [
-    {
-      "name": "SPBU Pertamina 54.612.19",
-      "distance": "0.8 Km",
-      "rating": "4.6",
-      "image": "assets/images/spbu.png",
-      "status": "Buka",
-    },
-    {
-      "name": "SPBU Pertamina 54.601.83",
-      "distance": "1.4 Km",
-      "rating": "4.4",
-      "image": "assets/images/spbu.png",
-      "status": "Buka",
-    },
-    {
-      "name": "SPBU Shell Raya",
-      "distance": "2.1 Km",
-      "rating": "4.7",
-      "image": "assets/images/spbu.png",
-      "status": "Tutup",
-    },
-  ];
+class _HomeScreenState extends State<HomeScreen> {
+  final supabase = Supabase.instance.client;
 
+  List<Map<String, dynamic>> workshops = [];
+  List<Map<String, dynamic>> spbu = [];
+
+  bool isLoading = true;
+  Position? userPosition;
+  String locationError = '';
+  String firstName = "";
 
   @override
+  void initState() {
+    super.initState();
+    _initAll();
+  }
+
+  Future<void> _initAll() async {
+    await _loadFirstName();
+    await _determinePosition();
+    await fetchData();
+  }
+
+  Future<void> fetchData() async {
+    setState(() {
+      isLoading = true;
+      locationError = '';
+    });
+
+    try {
+      final workshopData = await supabase.from('workshops').select().order('id');
+      final spbuData = await supabase.from('spbu').select().order('id');
+
+      // Convert to List<Map<String,dynamic>>
+      final w = List<Map<String, dynamic>>.from(workshopData ?? []);
+      final s = List<Map<String, dynamic>>.from(spbuData ?? []);
+
+      // Compute distance string for each item (if we have userPosition)
+      final updatedW = w.map((e) => _withDistance(e)).toList();
+      final updatedS = s.map((e) => _withDistance(e)).toList();
+
+      if (mounted) {
+        setState(() {
+          workshops = updatedW;
+          spbu = updatedS;
+          isLoading = false;
+        });
+      }
+    } catch (err, st) {
+      debugPrint('Error fetching data from Supabase: $err\n$st');
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+          locationError = 'Gagal mengambil data: $err';
+        });
+      }
+    }
+  }
+
+  Future<void> _loadFirstName() async {
+    print("=== LOAD FIRSTNAME START ===");
+
+    final user = supabase.auth.currentUser;
+
+    // Debug cek user
+    if (user == null) {
+      print("User is NULL (belum login)");
+      return;
+    }
+
+    print("Current User ID: ${user.id}");
+
+    try {
+      print("Querying users table...");
+
+      final data = await supabase
+          .from('users')
+          .select('firstname')
+          .eq('id', user.id)
+          .maybeSingle();
+
+      print("Raw Supabase Response: $data");
+
+      if (data == null) {
+        print("Data is NULL → kemungkinan record belum ada di tabel users.");
+        return;
+      }
+
+      if (data['firstname'] == null) {
+        print("firstname is NULL → record ada tapi kolom kosong.");
+        return;
+      }
+
+      print("Firstname found: ${data['firstname']}");
+
+      if (mounted) {
+        setState(() {
+          firstName = data['firstname'];
+        });
+        print("Firstname set to state: $firstName");
+      }
+
+    } catch (e) {
+      print("Error loading firstname: $e");
+    }
+
+    print("=== LOAD FIRSTNAME END ===");
+  }
+
+
+
+
+  Map<String, dynamic> _withDistance(Map<String, dynamic> item) {
+    print("=== DEBUG ITEM ===");
+    print("Item raw: $item");
+    print("User position: ${userPosition?.latitude}, ${userPosition?.longitude}");
+
+    try {
+      final lat = item['latitude'];
+      final lng = item['longitude'];
+      print("Lat from DB: $lat  | Lng from DB: $lng");
+
+      if (lat != null && lng != null && userPosition != null) {
+        final double latD =
+        (lat is num) ? lat.toDouble() : double.parse(lat.toString());
+        final double lngD =
+        (lng is num) ? lng.toDouble() : double.parse(lng.toString());
+
+        print("Lat parsed: $latD | Lng parsed: $lngD");
+
+        final meters = Geolocator.distanceBetween(
+          userPosition!.latitude,
+          userPosition!.longitude,
+          latD,
+          lngD,
+        );
+
+        print("Distance calculated: $meters meters");
+
+        item['distance_m'] = meters;
+        item['distance'] = _formatDistance(meters);
+      } else {
+        print("Lat/Lng null, skipping distance calc.");
+        item['distance_m'] = null;
+        item['distance'] = '--';
+      }
+    } catch (e) {
+      print("ERROR distance calc: $e");
+      item['distance_m'] = null;
+      item['distance'] = '--';
+    }
+
+    // DEBUG rating
+    print("Raw rating: ${item['rating']}");
+
+    try {
+      final r = item['rating'];
+      if (r != null) {
+        final numeric = (r is num) ? r.toDouble() : double.parse(r.toString());
+        item['rating'] = numeric.toStringAsFixed(1);
+      } else {
+        item['rating'] = '0.0';
+      }
+    } catch (_) {
+      print("Error parsing rating");
+      item['rating'] = item['rating']?.toString() ?? '0.0';
+    }
+
+    print("=== END DEBUG ITEM ===\n\n");
+
+    return item;
+  }
+
+
+  String _formatDistance(double meters) {
+    if (meters < 1000) {
+      return '${meters.toStringAsFixed(0)} m';
+    } else {
+      final km = meters / 1000;
+      return '${km.toStringAsFixed(2)} km';
+    }
+  }
+
+  // Geolocator helpers
+  Future<void> _determinePosition() async {
+    try {
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        locationError = 'Location services are disabled.';
+        return;
+      }
+
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) {
+          locationError = 'Location permissions are denied';
+          return;
+        }
+      }
+
+      if (permission == LocationPermission.deniedForever) {
+        locationError = 'Location permissions are permanently denied';
+        return;
+      }
+
+      final pos = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
+      if (mounted) {
+        setState(() {
+          userPosition = pos;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error getting location: $e');
+      locationError = 'Gagal mendapatkan lokasi: $e';
+    }
+  }
+
+  // UI building below (kept similar to original file, but using fetched data)
+  @override
   Widget build(BuildContext context) {
+    if (isLoading) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
     return Scaffold(
       backgroundColor: const Color(0xFFF7F7F7),
       bottomNavigationBar: CustomBottomNav(
         currentIndex: 0,
         onTap: (index) {
-          print("Tapped: $index");
+          // handle bottom nav tap if needed
         },
       ),
       body: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // const SizedBox(height: 10),
             _buildHeader(context),
-            // const SizedBox(height: 20),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Column(
@@ -80,22 +258,16 @@ class HomeScreen extends StatelessWidget {
                 children: [
                   const SizedBox(height: 20),
                   _buildTrafficCard(),
-
                   const SizedBox(height: 20),
                   _buildWeatherRow(context),
-
                   const SizedBox(height: 20),
                   _buildNearestWorkshopTitle(),
-
                   const SizedBox(height: 12),
                   buildWorkshopCarousel(),
-
                   const SizedBox(height: 20),
                   _buildNearestSpbuTitle(),
-
                   const SizedBox(height: 12),
                   buildSpbuCarousel(),
-
                   const SizedBox(height: 80),
                 ],
               ),
@@ -136,18 +308,17 @@ class HomeScreen extends StatelessWidget {
                   fit: BoxFit.contain,
                 ),
               ),
-
               Row(
                 children: const [
-                  Icon(Icons.notifications_none, color: Colors.white),
+                  Icon(Icons.person, color: Colors.white),
                   SizedBox(width: 15),
                   Icon(Icons.settings, color: Colors.white),
                 ],
               ),
             ],
           ),
-          const Text(
-            "Selamat Pagi Gusti!",
+          Text(
+            firstName.isEmpty ? "Selamat Pagi!" : "Selamat Pagi, $firstName!",
             style: TextStyle(
               fontSize: 18,
               color: Colors.white,
@@ -187,7 +358,6 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-
   Widget _buildTrafficCard() {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -203,15 +373,13 @@ class HomeScreen extends StatelessWidget {
             height: 120,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(12),
-              image: DecorationImage(
+              image: const DecorationImage(
                 image: AssetImage("assets/images/map.png"),
                 fit: BoxFit.cover,
               ),
             ),
           ),
-
           const SizedBox(width: 15),
-
           // Traffic info
           Expanded(
             child: LayoutBuilder(
@@ -222,7 +390,6 @@ class HomeScreen extends StatelessWidget {
                   status,
                   constraints.maxWidth,
                 );
-
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -231,7 +398,6 @@ class HomeScreen extends StatelessWidget {
                       style: TextStyle(color: Colors.grey),
                     ),
                     const SizedBox(height: 4),
-
                     Text(
                       status,
                       style: const TextStyle(
@@ -240,15 +406,12 @@ class HomeScreen extends StatelessWidget {
                         fontSize: 20,
                       ),
                     ),
-
-                    // Garis dinamis
                     Container(
                       margin: const EdgeInsets.symmetric(vertical: 8),
                       height: 3,
                       width: lineWidth,
                       color: lineColor,
                     ),
-
                     const Text(
                       "12.9 Kilometer",
                       style: TextStyle(
@@ -257,7 +420,6 @@ class HomeScreen extends StatelessWidget {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-
                     const SizedBox(height: 5),
                     const Text(
                       "Perjalanan anda hari ini",
@@ -280,7 +442,6 @@ class HomeScreen extends StatelessWidget {
                         ),
                       ),
                     )
-
                   ],
                 );
               },
@@ -293,17 +454,20 @@ class HomeScreen extends StatelessWidget {
 
   Widget _buildWeatherRow(BuildContext context) {
     return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        _weatherCard(
-          percent: 79,
-          title: "Berpotensi\nhujan",
-          subtitle: "Berawan",
-          // icon: Icons.cloud,
-          icon: Image.asset('assets/icons/weather.png'),
-          isActive: true,
+        Expanded(
+          child: _weatherCard(
+            percent: 79,
+            title: "Berpotensi\nhujan",
+            subtitle: "Berawan",
+            icon: Image.asset('assets/icons/weather.png'),
+            isActive: true,
+          ),
         ),
-        _menuCards(context),
+        const SizedBox(width: 12),
+        Expanded(
+          child: _menuCards(context),
+        ),
       ],
     );
   }
@@ -316,7 +480,6 @@ class HomeScreen extends StatelessWidget {
     required bool isActive,
   }) {
     return Container(
-      width: 200,
       height: 120,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -341,20 +504,21 @@ class HomeScreen extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    AutoSizeText(
                       "$percent%",
                       style: const TextStyle(
                         fontSize: 35,
                         color: Color(0xff292D32),
                         fontWeight: FontWeight.bold,
                       ),
+                      minFontSize: 8,
+                      maxLines: 1,
                     ),
                     const SizedBox(height: 4),
                     Text(title, style: const TextStyle(fontSize: 12)),
                   ],
                 ),
               ),
-
               Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -373,7 +537,7 @@ class HomeScreen extends StatelessWidget {
                   const SizedBox(height: 8),
                   SizedBox(
                     width: 90,
-                    child: Text(
+                    child: AutoSizeText(
                       subtitle,
                       textAlign: TextAlign.center,
                       style: const TextStyle(
@@ -382,6 +546,7 @@ class HomeScreen extends StatelessWidget {
                         fontWeight: FontWeight.w600,
                       ),
                       maxLines: 2,
+                      minFontSize: 8,
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
@@ -396,13 +561,12 @@ class HomeScreen extends StatelessWidget {
 
   Widget _menuCards(BuildContext context) {
     return Container(
-      width: 200,
       height: 120,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Color(0xFFE0E0E0)),
+        border: Border.all(color: const Color(0xFFE0E0E0)),
         boxShadow: [
           BoxShadow(
             color: Colors.black12.withOpacity(0.08),
@@ -426,8 +590,6 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-
-
   Widget _menuCard(String title, String iconPath, {VoidCallback? onTap}) {
     return GestureDetector(
       onTap: onTap,
@@ -438,12 +600,12 @@ class HomeScreen extends StatelessWidget {
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Color(0xFFE0E0E0)),
+              border: Border.all(color: const Color(0xFFE0E0E0)),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black12.withOpacity(0.08),
                   blurRadius: 6,
-                  offset: Offset(0, 2),
+                  offset: const Offset(0, 2),
                 ),
               ],
             ),
@@ -461,8 +623,6 @@ class HomeScreen extends StatelessWidget {
       ),
     );
   }
-
-
 
   Widget _buildNearestWorkshopTitle() {
     return Row(
@@ -498,7 +658,6 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-
   Widget _buildWorkshopCard({
     required String name,
     required String distance,
@@ -522,7 +681,6 @@ class HomeScreen extends StatelessWidget {
               ),
             ),
           ),
-
           // Card info
           Positioned(
             left: 16,
@@ -542,45 +700,59 @@ class HomeScreen extends StatelessWidget {
                 ],
               ),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   // Info kiri
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        name,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xff3d3d3d),
-                          fontSize: 16,
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        AutoSizeText(
+                          name,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xff3d3d3d),
+                            fontSize: 16,
+                          ),
+                          maxLines: 1,
+                          minFontSize: 10,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                      ),
-                      const SizedBox(height: 6),
-                      Row(
-                        children: [
-                          const Icon(Icons.location_on, size: 16, color: Colors.grey),
-                          SizedBox(width: 4),
-                          Text(distance, style: const TextStyle(fontSize: 13)),
-                          SizedBox(width: 12),
-                          const Icon(Icons.star, size: 16, color: Colors.amber),
-                          SizedBox(width: 4),
-                          Text(rating, style: const TextStyle(fontSize: 13)),
-                        ],
-                      ),
-                    ],
+                        const SizedBox(height: 6),
+                        Row(
+                          children: [
+                            const Icon(Icons.location_on, size: 16, color: Colors.grey),
+                            const SizedBox(width: 4),
+                            Flexible(
+                              child: Text(
+                                distance,
+                                style: const TextStyle(fontSize: 13),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            const Icon(Icons.star, size: 16, color: Colors.amber),
+                            const SizedBox(width: 4),
+                            Flexible(
+                              child: Text(
+                                rating,
+                                style: const TextStyle(fontSize: 13),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
-
                   // Status
                   Container(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 22,
-                      vertical: 10,
+                      horizontal: 14,
+                      vertical: 8,
                     ),
                     decoration: BoxDecoration(
                       color: status == "Buka" ? Colors.green : Colors.red,
                       borderRadius: BorderRadius.circular(30),
-
                     ),
                     child: Text(
                       status,
@@ -610,11 +782,11 @@ class HomeScreen extends StatelessWidget {
           return Padding(
             padding: const EdgeInsets.only(right: 12),
             child: _buildWorkshopCard(
-              name: item["name"]!,
-              distance: item["distance"]!,
-              rating: item["rating"]!,
-              image: item["image"]!,
-              status: item["status"]!,
+              name: item["bengkelname"] ?? 'Unnamed',
+              distance: item["distance"] ?? '--',
+              rating: item["rating"]?.toString() ?? '0.0',
+              image: item["image"] ?? 'assets/images/workshop.png',
+              status: (item["is_open"] == true) ? 'Buka' : 'Tutup',
             ),
           );
         },
@@ -645,7 +817,6 @@ class HomeScreen extends StatelessWidget {
               ),
             ),
           ),
-
           // Card info
           Positioned(
             left: 16,
@@ -665,40 +836,52 @@ class HomeScreen extends StatelessWidget {
                 ],
               ),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   // Info kiri
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        name,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xff3d3d3d),
-                          fontSize: 14,
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          name,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xff3d3d3d),
+                            fontSize: 14,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 6),
-                      Row(
-                        children: [
-                          const Icon(Icons.location_on, size: 16, color: Colors.grey),
-                          SizedBox(width: 4),
-                          Text(distance, style: const TextStyle(fontSize: 13)),
-                          SizedBox(width: 12),
-                          const Icon(Icons.star, size: 16, color: Colors.amber),
-                          SizedBox(width: 4),
-                          Text(rating, style: const TextStyle(fontSize: 13)),
-                        ],
-                      ),
-                    ],
+                        const SizedBox(height: 6),
+                        Row(
+                          children: [
+                            const Icon(Icons.location_on, size: 16, color: Colors.grey),
+                            const SizedBox(width: 4),
+                            Flexible(
+                              child: Text(
+                                distance,
+                                style: const TextStyle(fontSize: 13),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            const Icon(Icons.star, size: 16, color: Colors.amber),
+                            const SizedBox(width: 4),
+                            Flexible(
+                              child: Text(
+                                rating,
+                                style: const TextStyle(fontSize: 13),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
-
                   // Status
                   Container(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 22,
-                      vertical: 10,
+                      horizontal: 14,
+                      vertical: 8,
                     ),
                     decoration: BoxDecoration(
                       color: status == "Buka" ? Colors.green : Colors.red,
@@ -732,11 +915,11 @@ class HomeScreen extends StatelessWidget {
           return Padding(
             padding: const EdgeInsets.only(right: 12),
             child: _buildSpbuCard(
-              name: item["name"]!,
-              distance: item["distance"]!,
-              rating: item["rating"]!,
-              image: item["image"]!,
-              status: item["status"]!,
+              name: item["name"] ?? 'Unnamed',
+              distance: item["distance"] ?? '--',
+              rating: item["rating"]?.toString() ?? '0.0',
+              image: item["image"] ?? 'assets/images/spbu.png',
+              status: (item["is_open"] == true) ? 'Buka' : 'Tutup',
             ),
           );
         },
@@ -745,6 +928,7 @@ class HomeScreen extends StatelessWidget {
   }
 }
 
+// Helper functions outside the class
 Color _getTrafficColor(String status) {
   switch (status.toLowerCase()) {
     case "macet":
