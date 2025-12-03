@@ -1,19 +1,129 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:uride/routes/app_routes.dart';   // tambahkan ini
-
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:uride/routes/app_routes.dart';
 
 class AjukanLayananScreen extends StatefulWidget {
-  const AjukanLayananScreen({Key? key}) : super(key: key);
+  final int workshopId;
+  final String workshopName;
+  final String workshopAddress;
+
+  const AjukanLayananScreen({
+    Key? key,
+    required this.workshopId,
+    required this.workshopName,
+    required this.workshopAddress,
+  }) : super(key: key);
 
   @override
   State<AjukanLayananScreen> createState() => _AjukanLayananScreenState();
 }
 
 class _AjukanLayananScreenState extends State<AjukanLayananScreen> {
+  final MapController mapController = MapController();
+  LatLng? currentLocation;
+  bool isLoading = true;
+  StreamSubscription<Position>? positionStream;
+
   String selectedVehicle = 'sepeda';
   String selectedType = 'normal';
   final TextEditingController addressController = TextEditingController();
+  final bool isOnLocation = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _initLocation();
+  }
+
+  Future<void> _initLocation() async {
+    bool serviceEnabled;
+    LocationPermission permission;
+
+    serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      await Geolocator.openLocationSettings();
+      return;
+    }
+
+    permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied) return;
+    }
+
+    try {
+      final pos = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+      );
+
+      setState(() {
+        currentLocation = LatLng(pos.latitude, pos.longitude);
+        isLoading = false;
+      });
+
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && currentLocation != null) {
+          mapController.move(currentLocation!, 16);
+        }
+      });
+
+      positionStream = Geolocator.getPositionStream().listen((pos) {
+        final newPos = LatLng(pos.latitude, pos.longitude);
+
+        setState(() {
+          currentLocation = newPos;
+        });
+
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            mapController.move(newPos, mapController.camera.zoom);
+          }
+        });
+      });
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _setPinToCurrentLocation() async {
+    try {
+      final pos = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+      );
+
+      setState(() {
+        currentLocation = LatLng(pos.latitude, pos.longitude);
+      });
+
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && currentLocation != null) {
+          mapController.move(currentLocation!, 16);
+        }
+      });
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -36,71 +146,60 @@ class _AjukanLayananScreenState extends State<AjukanLayananScreen> {
         ),
         centerTitle: true,
       ),
+
       body: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+
             // Map Section
-            Container(
-              margin: const EdgeInsets.all(16),
-              height: 200,
-              decoration: BoxDecoration(
-                color: Colors.grey[200],
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Stack(
-                children: [
-                  // Simulated Map
-                  Container(
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(12),
-                      gradient: LinearGradient(
-                        colors: [
-                          Colors.blue[100]!,
-                          Colors.green[50]!,
-                          Colors.yellow[50]!,
-                        ],
-                      ),
-                    ),
-                  ),
-                  // Center Pin
-                  const Center(
-                    child: Icon(
-                      Icons.location_on,
-                      color: Colors.red,
-                      size: 40,
-                    ),
-                  ),
-                  // Adjust Pin Button
-                  Positioned(
-                    bottom: 12,
-                    right: 12,
-                    child: ElevatedButton.icon(
-                      onPressed: () {},
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.white,
-                        foregroundColor: Colors.black,
-                        elevation: 2,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 8,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                      ),
-                      icon: const Icon(Icons.push_pin, size: 16),
-                      label: const Text(
-                        'Sesuaikan Pin',
-                        style: TextStyle(fontSize: 12),
-                      ),
-                    ),
-                  ),
-                ],
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: Container(
+                margin: const EdgeInsets.all(16),
+                height: 200,
+                child: isLoading
+                    ? const Center(child: CircularProgressIndicator())
+                    : currentLocation == null
+                        ? const Center(child: Text('Lokasi tidak tersedia'))
+                        : Stack(
+                            children: [
+                              FlutterMap(
+                                mapController: mapController,
+                                options: MapOptions(
+                                  initialCenter: currentLocation!,
+                                  initialZoom: 16,
+                                ),
+                                children: [
+                                  TileLayer(
+                                    urlTemplate:
+                                        "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+                                    userAgentPackageName: "com.example.app",
+                                  ),
+                                ],
+                              ),
+                              Center(
+                                child: Icon(
+                                  Icons.location_on,
+                                  color: Colors.red,
+                                  size: 50,
+                                ),
+                              ),
+                              Positioned(
+                                bottom: 12,
+                                right: 12,
+                                child: FloatingActionButton(
+                                  mini: true,
+                                  onPressed: _setPinToCurrentLocation,
+                                  child: const Icon(Icons.my_location),
+                                ),
+                              ),
+                            ],
+                          ),
               ),
             ),
 
-            // Detail Alamat Section
+            // Detail Alamat
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Column(
@@ -125,18 +224,8 @@ class _AjukanLayananScreenState extends State<AjukanLayananScreen> {
                     maxLines: 3,
                     decoration: InputDecoration(
                       hintText: 'Tuliskan detail lokasi Anda...',
-                      hintStyle: TextStyle(color: Colors.grey[400]),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide(color: Colors.grey[300]!),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide(color: Colors.grey[300]!),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: const BorderSide(color: Colors.amber, width: 2),
                       ),
                       contentPadding: const EdgeInsets.all(12),
                     ),
@@ -147,7 +236,7 @@ class _AjukanLayananScreenState extends State<AjukanLayananScreen> {
 
             const SizedBox(height: 24),
 
-            // Pilih Jenis Kendaraan
+            // Kendaraan
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Column(
@@ -161,23 +250,11 @@ class _AjukanLayananScreenState extends State<AjukanLayananScreen> {
                     ),
                   ),
                   const SizedBox(height: 12),
-                  _buildVehicleOption(
-                    icon: Icons.pedal_bike,
-                    label: 'Sepeda',
-                    value: 'sepeda',
-                  ),
+                  _buildVehicleOption(icon: Icons.pedal_bike, label: 'Sepeda', value: 'sepeda'),
                   const SizedBox(height: 8),
-                  _buildVehicleOption(
-                    icon: Icons.two_wheeler,
-                    label: 'Motor',
-                    value: 'motor',
-                  ),
+                  _buildVehicleOption(icon: Icons.two_wheeler, label: 'Motor', value: 'motor'),
                   const SizedBox(height: 8),
-                  _buildVehicleOption(
-                    icon: Icons.directions_car,
-                    label: 'Mobil',
-                    value: 'mobil',
-                  ),
+                  _buildVehicleOption(icon: Icons.directions_car, label: 'Mobil', value: 'mobil'),
                 ],
               ),
             ),
@@ -198,23 +275,11 @@ class _AjukanLayananScreenState extends State<AjukanLayananScreen> {
                     ),
                   ),
                   const SizedBox(height: 12),
-                  _buildRequestType(
-                    color: Colors.red,
-                    label: 'Emergency',
-                    value: 'emergency',
-                  ),
+                  _buildRequestType(color: Colors.red, label: 'Emergency', value: 'emergency'),
                   const SizedBox(height: 8),
-                  _buildRequestType(
-                    color: Colors.amber,
-                    label: 'Normal',
-                    value: 'normal',
-                  ),
+                  _buildRequestType(color: Colors.amber, label: 'Normal', value: 'normal'),
                   const SizedBox(height: 8),
-                  _buildRequestType(
-                    color: Colors.green,
-                    label: 'Santai',
-                    value: 'santai',
-                  ),
+                  _buildRequestType(color: Colors.green, label: 'Santai', value: 'santai'),
                 ],
               ),
             ),
@@ -223,61 +288,33 @@ class _AjukanLayananScreenState extends State<AjukanLayananScreen> {
           ],
         ),
       ),
+
       bottomSheet: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 10,
-              offset: const Offset(0, -5),
+      color: Colors.white,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      child: SizedBox(
+        width: double.infinity,
+        child: ElevatedButton(
+          onPressed: _submitLayanan,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.amber,
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
             ),
-          ],
-        ),
-        child: Row(
-          children: [
-            Expanded(
-              child: ElevatedButton(
-                onPressed: () {
-                  // Handle submit
-                  _submitLayanan();
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.amber,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  elevation: 0,
-                ),
-                child: const Text(
-                  'Ajukan Layanan',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
+          ),
+          child: const Text(
+            'Ajukan Layanan',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: Colors.white,
             ),
-            const SizedBox(width: 12),
-            Container(
-              decoration: BoxDecoration(
-                border: Border.all(color: Colors.amber),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: IconButton(
-                onPressed: () {
-                  // Handle chat
-                },
-                icon: const Icon(Icons.chat_bubble_outline),
-                color: Colors.amber,
-              ),
-            ),
-          ],
+          ),
         ),
       ),
+    ),
+
     );
   }
 
@@ -288,11 +325,7 @@ class _AjukanLayananScreenState extends State<AjukanLayananScreen> {
   }) {
     final isSelected = selectedVehicle == value;
     return InkWell(
-      onTap: () {
-        setState(() {
-          selectedVehicle = value;
-        });
-      },
+      onTap: () => setState(() => selectedVehicle = value),
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
@@ -305,36 +338,13 @@ class _AjukanLayananScreenState extends State<AjukanLayananScreen> {
         ),
         child: Row(
           children: [
-            Icon(icon, color: Colors.amber, size: 24),
+            Icon(icon, color: Colors.amber),
             const SizedBox(width: 12),
-            Text(
-              label,
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
+            Text(label),
             const Spacer(),
-            Container(
-              width: 20,
-              height: 20,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: isSelected ? Colors.amber : Colors.grey[300]!,
-                  width: 2,
-                ),
-                color: isSelected ? Colors.amber : Colors.transparent,
-              ),
-              child: isSelected
-                  ? const Center(
-                      child: CircleAvatar(
-                        radius: 4,
-                        backgroundColor: Colors.white,
-                      ),
-                    )
-                  : null,
-            ),
+            isSelected
+                ? const Icon(Icons.check_circle, color: Colors.amber)
+                : const Icon(Icons.circle_outlined, color: Colors.grey),
           ],
         ),
       ),
@@ -348,11 +358,7 @@ class _AjukanLayananScreenState extends State<AjukanLayananScreen> {
   }) {
     final isSelected = selectedType == value;
     return InkWell(
-      onTap: () {
-        setState(() {
-          selectedType = value;
-        });
-      },
+      onTap: () => setState(() => selectedType = value),
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
@@ -365,43 +371,13 @@ class _AjukanLayananScreenState extends State<AjukanLayananScreen> {
         ),
         child: Row(
           children: [
-            Container(
-              width: 12,
-              height: 12,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: color,
-              ),
-            ),
+            Container(width: 12, height: 12, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
             const SizedBox(width: 12),
-            Text(
-              label,
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
+            Text(label),
             const Spacer(),
-            Container(
-              width: 20,
-              height: 20,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: isSelected ? Colors.amber : Colors.grey[300]!,
-                  width: 2,
-                ),
-                color: isSelected ? Colors.amber : Colors.transparent,
-              ),
-              child: isSelected
-                  ? const Center(
-                      child: CircleAvatar(
-                        radius: 4,
-                        backgroundColor: Colors.white,
-                      ),
-                    )
-                  : null,
-            ),
+            isSelected
+                ? const Icon(Icons.check_circle, color: Colors.amber)
+                : const Icon(Icons.circle_outlined, color: Colors.grey),
           ],
         ),
       ),
@@ -409,34 +385,32 @@ class _AjukanLayananScreenState extends State<AjukanLayananScreen> {
   }
 
   void _submitLayanan() {
-  if (addressController.text.isEmpty) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Mohon isi detail alamat'),
-        backgroundColor: Colors.red,
-      ),
+    if (addressController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Mohon isi detail alamat'), backgroundColor: Colors.red),
+      );
+      return;
+    }
+
+    Navigator.pushNamed(
+      context,
+      AppRoutes.konfirmasiAjuan,
+      arguments: {
+        'workshopId': widget.workshopId,
+        'workshopName': widget.workshopName,
+        'workshopAddress': widget.workshopAddress,
+        'vehicleType': selectedVehicle,
+        'requestType': selectedType,
+        'isOnLocation': isOnLocation,
+        'userAddress': addressController.text,
+      },
     );
-    return;
   }
-
-  Navigator.pushNamed(
-    context,
-    AppRoutes.konfirmasiAjuan,
-    arguments: {
-      'workshopName': 'Bengkel Bengkelan',
-      'workshopAddress': 'Jl Kenangan No 1',
-      'userAddress': addressController.text,
-      'vehicleType': selectedVehicle,
-      'requestType': selectedType,
-      'isOnLocation': true,
-    },
-  );
-}
-
 
   @override
   void dispose() {
     addressController.dispose();
+    positionStream?.cancel();
     super.dispose();
   }
 }

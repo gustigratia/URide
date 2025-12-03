@@ -11,13 +11,23 @@ class BengkelListScreen extends StatefulWidget {
 }
 
 class _BengkelListScreenState extends State<BengkelListScreen> {
-  String selectedFilter = 'Terdekat';
+  String selectedFilter = 'All';
   List<Map<String, dynamic>> bengkelList = [];
+  TextEditingController searchController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
     fetchWorkshops();
+    searchController.addListener(() {
+      setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    searchController.dispose();
+    super.dispose();
   }
 
   Future<void> fetchWorkshops() async {
@@ -31,15 +41,40 @@ class _BengkelListScreenState extends State<BengkelListScreen> {
             'name': item['bengkelname'],
             'is_open': item['is_open'],
             'distance': '2 Km',
-            'rating': 4.7,
+            'rating': item['rating'] ?? 0.0,
             'image':
                 'https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?w=800',
+            'save': item['save'] ?? false,
           };
         }).toList();
       });
     } catch (e) {
       print('Error fetch: $e');
     }
+  }
+
+  List<Map<String, dynamic>> getFilteredList() {
+    List<Map<String, dynamic>> filtered = bengkelList;
+
+    // Filter by selectedFilter
+    if (selectedFilter == 'Favorit') {
+      filtered = filtered.where((b) => b['save'] == true).toList();
+    } else if (selectedFilter == 'Rating') {
+      filtered = List.from(filtered);
+      filtered.sort((a, b) => (b['rating'] ?? 0).compareTo(a['rating'] ?? 0));
+    } else if (selectedFilter == 'Buka') {
+      filtered = filtered.where((b) => b['is_open'] == true).toList();
+    }
+
+    // Filter by search text, case-insensitive
+    String query = searchController.text.toLowerCase();
+    if (query.isNotEmpty) {
+      filtered = filtered
+          .where((b) => b['name'].toString().toLowerCase().contains(query))
+          .toList();
+    }
+
+    return filtered;
   }
 
   @override
@@ -68,6 +103,7 @@ class _BengkelListScreenState extends State<BengkelListScreen> {
           Padding(
             padding: const EdgeInsets.all(16.0),
             child: TextField(
+              controller: searchController,
               decoration: InputDecoration(
                 hintText: 'Search...',
                 hintStyle: TextStyle(color: Colors.grey[400]),
@@ -87,13 +123,13 @@ class _BengkelListScreenState extends State<BengkelListScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 16.0),
             child: Row(
               children: [
-                _buildFilterChip('Terdekat'),
+                Expanded(child: _buildFilterChip('All')),
                 const SizedBox(width: 8),
-                _buildFilterChip('Rating'),
+                Expanded(child: _buildFilterChip('Favorit')),
                 const SizedBox(width: 8),
-                _buildFilterChip('Layanan'),
+                Expanded(child: _buildFilterChip('Rating')),
                 const SizedBox(width: 8),
-                _buildFilterChip('Ulasan'),
+                Expanded(child: _buildFilterChip('Buka')),
               ],
             ),
           ),
@@ -103,9 +139,9 @@ class _BengkelListScreenState extends State<BengkelListScreen> {
                 ? const Center(child: CircularProgressIndicator())
                 : ListView.builder(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
-                    itemCount: bengkelList.length,
+                    itemCount: getFilteredList().length,
                     itemBuilder: (context, index) {
-                      final data = bengkelList[index];
+                      final data = getFilteredList()[index];
                       return GestureDetector(
                         onTap: () {
                           Navigator.pushNamed(
@@ -134,15 +170,16 @@ class _BengkelListScreenState extends State<BengkelListScreen> {
         });
       },
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        alignment: Alignment.center,
+        padding: const EdgeInsets.symmetric(vertical: 8),
         decoration: BoxDecoration(
-          color: isSelected ? Colors.blue[50] : Colors.grey[200],
+          color: isSelected ? Colors.amber : Colors.grey[200],
           borderRadius: BorderRadius.circular(10),
         ),
         child: Text(
           label,
           style: TextStyle(
-            color: isSelected ? Colors.blue[700] : Colors.grey[700],
+            color: isSelected ? Colors.white : Colors.grey[700],
             fontSize: 13,
             fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
           ),

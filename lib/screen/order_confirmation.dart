@@ -1,9 +1,9 @@
 // File: lib/screen/konfirmasi_ajuan.dart
 
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class KonfirmasiAjuanScreen extends StatefulWidget {
-  // Parameter yang diterima dari screen sebelumnya
   final String workshopName;
   final String workshopAddress;
   final String userAddress;
@@ -52,6 +52,39 @@ class _KonfirmasiAjuanScreenState extends State<KonfirmasiAjuanScreen> {
       default:
         return Colors.amber;
     }
+  }  
+
+  Future<void> submitToSupabase() async {
+    try {
+      final user = Supabase.instance.client.auth.currentUser;
+
+      await Supabase.instance.client.from('orders').insert({
+        'user_id': user?.id,
+        'workshop_name': widget.workshopName,
+        'workshop_address': widget.workshopAddress,
+        'user_address': widget.userAddress,
+        'vehicle_type': widget.vehicleType,
+        'request_type': widget.requestType,
+        'is_on_location': widget.isOnLocation,
+        'payment_method': selectedPayment,
+        'total_fee': totalFee,
+        'created_at': DateTime.now().toIso8601String(),
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Ajuan berhasil dikirim"),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Gagal mengirim ajuan: $e"),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   @override
@@ -81,7 +114,7 @@ class _KonfirmasiAjuanScreenState extends State<KonfirmasiAjuanScreen> {
           children: [
             const SizedBox(height: 16),
 
-            // Workshop Info Card
+            // WORKSHOP INFO CARD (Fixed)
             Container(
               margin: const EdgeInsets.symmetric(horizontal: 16),
               padding: const EdgeInsets.all(16),
@@ -150,7 +183,7 @@ class _KonfirmasiAjuanScreenState extends State<KonfirmasiAjuanScreen> {
 
             const SizedBox(height: 16),
 
-            // Ajuan Anda Card
+            // AJUAN ANDA
             Container(
               margin: const EdgeInsets.symmetric(horizontal: 16),
               padding: const EdgeInsets.all(16),
@@ -177,7 +210,7 @@ class _KonfirmasiAjuanScreenState extends State<KonfirmasiAjuanScreen> {
                   ),
                   const SizedBox(height: 16),
 
-                  // Address
+                  // USER ADDRESS
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -198,35 +231,12 @@ class _KonfirmasiAjuanScreenState extends State<KonfirmasiAjuanScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Row(
-                              children: [
-                                const Text(
-                                  'Peta',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                    vertical: 2,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: Colors.amber,
-                                    borderRadius: BorderRadius.circular(4),
-                                  ),
-                                  child: const Text(
-                                    'Peta',
-                                    style: TextStyle(
-                                      fontSize: 10,
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ),
-                              ],
+                            const Text(
+                              'Lokasi Anda',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                             const SizedBox(height: 4),
                             Text(
@@ -244,7 +254,6 @@ class _KonfirmasiAjuanScreenState extends State<KonfirmasiAjuanScreen> {
 
                   const SizedBox(height: 16),
 
-                  // Service Tags
                   Row(
                     children: [
                       _buildTag(
@@ -270,22 +279,14 @@ class _KonfirmasiAjuanScreenState extends State<KonfirmasiAjuanScreen> {
                   ),
 
                   const SizedBox(height: 12),
-
-                  // Edit Button
                   Align(
                     alignment: Alignment.centerRight,
                     child: TextButton.icon(
-                      onPressed: () {
-                        Navigator.pop(context);
-                      },
+                      onPressed: () => Navigator.pop(context),
                       icon: const Icon(Icons.edit, size: 16),
                       label: const Text('Ubah ajuan'),
                       style: TextButton.styleFrom(
                         foregroundColor: Colors.amber,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
-                        ),
                       ),
                     ),
                   ),
@@ -295,7 +296,42 @@ class _KonfirmasiAjuanScreenState extends State<KonfirmasiAjuanScreen> {
 
             const SizedBox(height: 16),
 
-            // Ringkasan Biaya Card
+            // BIAYA
+            Container(
+              margin: const EdgeInsets.symmetric(horizontal: 16),
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 10,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Ringkasan Biaya',
+                      style:
+                          TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                  const SizedBox(height: 16),
+                  _buildCostRow('Jasa layanan', serviceFee),
+                  const SizedBox(height: 12),
+                  _buildCostRow('Biaya perjalanan', travelFee),
+                  const SizedBox(height: 12),
+                  const Divider(),
+                  const SizedBox(height: 12),
+                  _buildCostRow('Total Biaya', totalFee, isBold: true),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 16),
+
+            // PAYMENT
             Container(
               margin: const EdgeInsets.symmetric(horizontal: 16),
               padding: const EdgeInsets.all(16),
@@ -314,68 +350,11 @@ class _KonfirmasiAjuanScreenState extends State<KonfirmasiAjuanScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
-                    'Ringkasan Biaya',
+                    'Metode Pembayaran',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
                     ),
-                  ),
-                  const SizedBox(height: 16),
-                  _buildCostRow('Jasa layanan', serviceFee),
-                  const SizedBox(height: 12),
-                  _buildCostRow('Biaya perjalanan', travelFee),
-                  const SizedBox(height: 12),
-                  const Divider(),
-                  const SizedBox(height: 12),
-                  _buildCostRow('Total Biaya', totalFee, isBold: true),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 16),
-
-            // Metode Pembayaran Card
-            Container(
-              margin: const EdgeInsets.symmetric(horizontal: 16),
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 10,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        'Metode Pembayaran',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      TextButton(
-                        onPressed: () {},
-                        child: Row(
-                          children: const [
-                            Text(
-                              'Pilih Metode Pembayaran',
-                              style: TextStyle(fontSize: 12),
-                            ),
-                            SizedBox(width: 4),
-                            Icon(Icons.chevron_right, size: 16),
-                          ],
-                        ),
-                      ),
-                    ],
                   ),
                   const SizedBox(height: 12),
                   _buildPaymentOption('dana', 'Dana', '💳'),
@@ -430,7 +409,9 @@ class _KonfirmasiAjuanScreenState extends State<KonfirmasiAjuanScreen> {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: _processPayment,
+                onPressed: () async {
+                  await submitToSupabase();
+                },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.amber,
                   foregroundColor: Colors.white,
@@ -438,7 +419,6 @@ class _KonfirmasiAjuanScreenState extends State<KonfirmasiAjuanScreen> {
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  elevation: 0,
                 ),
                 child: const Text(
                   'Bayar Sekarang',
@@ -563,44 +543,6 @@ class _KonfirmasiAjuanScreenState extends State<KonfirmasiAjuanScreen> {
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  void _processPayment() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
-        title: const Text('Konfirmasi Pembayaran'),
-        content: Text(
-          'Anda akan membayar Rp ${totalFee.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')} menggunakan ${selectedPayment.toUpperCase()}',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Batal'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              // TODO: Implement payment processing
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Pembayaran berhasil! Menunggu driver...'),
-                  backgroundColor: Colors.green,
-                ),
-              );
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.amber,
-              foregroundColor: Colors.white,
-            ),
-            child: const Text('Bayar'),
-          ),
-        ],
       ),
     );
   }

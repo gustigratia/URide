@@ -17,38 +17,47 @@ class AppRoutes {
   static const ajukanLayanan = '/order_service';
   static const konfirmasiAjuan = '/order_confirmation';
   static const listbengkel = '/workshop';
+  static const String verifikasiKode = '/verifikasi-kode';
 
   static Map<String, WidgetBuilder> routes = {
     home: (_) => const HomeScreen(),
     signin: (_) => const SignInPage(),
     search: (_) => const SearchPage(),
     parking: (_) => const LokasiParkir(),
-    ajukanLayanan: (_) => const AjukanLayananScreen(),
     listbengkel: (_) => const BengkelListScreen(),
   };
 
   static Route<dynamic>? generateRoute(RouteSettings settings) {
-    switch (settings.name) {
+  switch (settings.name) {
 
-      case workshopDetail:
-        final args = settings.arguments as Map<String, dynamic>;
-        return _animatedRoute(
-          BengkelDetailScreen(workshopId: args['workshopId']),
-        );
+    case workshopDetail:
+    final args = settings.arguments as Map<String, dynamic>;
+    return _animatedRoute(
+      BengkelDetailScreen(workshopId: args['workshopId']),
+    );
 
-      case konfirmasiAjuan:
-        final args = settings.arguments as Map<String, dynamic>?;
-        return _animatedRoute(
-          KonfirmasiAjuanScreen(
-            workshopName: args?['workshopName'] ?? '',
-            workshopAddress: args?['workshopAddress'] ?? '',
-            userAddress: args?['userAddress'] ?? '',
-            vehicleType: args?['vehicleType'] ?? '',
-            requestType: args?['requestType'] ?? '',
-            isOnLocation: args?['isOnLocation'] ?? false,
-          ),
-        );
+    case ajukanLayanan:
+      final args = settings.arguments as Map<String, dynamic>;
+      return _animatedRoute(
+        AjukanLayananScreen(
+          workshopId: args['workshopId'],
+          workshopName: args['workshopName'],
+          workshopAddress: args['workshopAddress'],
+        ),
+      );
 
+    case konfirmasiAjuan:
+      final args = settings.arguments as Map<String, dynamic>?;
+      return _animatedRoute(
+        KonfirmasiAjuanScreen(
+          workshopName: args?['workshopName'] ?? '',
+          workshopAddress: args?['workshopAddress'] ?? '',
+          userAddress: args?['userAddress'] ?? '',
+          vehicleType: args?['vehicleType'] ?? '',
+          requestType: args?['requestType'] ?? '',
+          isOnLocation: args?['isOnLocation'] ?? false,
+        ),
+      );
       default:
         return null;
     }
