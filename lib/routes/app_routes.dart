@@ -13,6 +13,7 @@ import 'package:uride/screen/vehicle_detail_page.dart';
 import 'package:uride/screen/search_result.dart';
 import 'package:uride/screen/edit_kendaraan_page.dart';
 import 'package:uride/screen/orderhistory_screen.dart';
+import 'package:uride/screen/chatbot.dart';
 
 class AppRoutes {
   static const home = '/home';
@@ -28,6 +29,7 @@ class AppRoutes {
   static const laluLintas = '/lalulintas';
   static const editKendaraan = '/edit-kendaraan';
   static const orderHistory = '/history';
+  static const chatbot = '/chatbot';
 
 
   static Map<String, WidgetBuilder> routes = {
@@ -42,6 +44,7 @@ class AppRoutes {
     laluLintas: (_)=> const LaluLintasPage(), 
     editKendaraan: (_) => const EditKendaraanPage(),
     orderHistory: (_) => const OrderHistoryScreen(),
+    chatbot: (_) => const ChatbotPage(),
   };
 
   static Route<dynamic>? generateRoute(RouteSettings settings) {
@@ -58,6 +61,8 @@ class AppRoutes {
         return _animatedRoute(const BuatPasswordBaruPage());
       case laluLintas:
         return _animatedRoute(const LaluLintasPage());
+      case chatbot:
+        return _animatedRoute(const ChatbotPage());
       case vehicle:
         return _animatedRoute(const VehicleDetailPage());
       case editKendaraan:
