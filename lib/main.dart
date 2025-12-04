@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:URide/pages/orderhistory_screen.dart';
+import 'package:uride/screen/orderhistory_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 void main() async {
