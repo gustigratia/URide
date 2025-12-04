@@ -32,7 +32,7 @@ class MyApp extends StatelessWidget {
       ),
 
       // route awal
-      initialRoute: AppRoutes.upload,
+      initialRoute: AppRoutes.signin,
 
       routes: AppRoutes.routes,
       onGenerateRoute: AppRoutes.generateRoute,

@@ -8,6 +8,7 @@ class SignUpPage extends StatefulWidget {
   State<SignUpPage> createState() => _SignUpPageState();
 }
 
+
 class _SignUpPageState extends State<SignUpPage> {
   bool passwordVisible = false;
   bool confirmVisible = false;
@@ -50,7 +51,7 @@ class _SignUpPageState extends State<SignUpPage> {
         data: {
           "first_name": _firstName.text.trim(),
           "last_name": _lastName.text.trim(),
-          "phone": _phone.text.trim(),
+          "phone": "+62${_phone.text.trim()}",
         },
       );
 
@@ -125,10 +126,6 @@ class _SignUpPageState extends State<SignUpPage> {
                 ),
               ),
               SizedBox(height: scale(context, 20)),
-
-              // =============================
-              // PHONE
-              // =============================
               Align(
                 alignment: Alignment.centerLeft,
                 child: Text(
@@ -143,18 +140,36 @@ class _SignUpPageState extends State<SignUpPage> {
 
               _inputBox(
                 context,
-                TextField(
-                  controller: _phone,
-                  keyboardType: TextInputType.phone,
-                  style: TextStyle(fontSize: scale(context, 14)),
-                  decoration: _dec("+62      8123456789", context),
+                Row(
+                  children: [
+                    Text(
+                    "+62 ",
+                      style: TextStyle(
+                        fontSize: scale(context, 14),
+                        fontWeight: FontWeight.w600,
+                        color: Colors.black87,
+                      ),
+                    ),
+                    Expanded(
+                      child: TextField(
+                        controller: _phone,
+                        keyboardType: TextInputType.phone,
+                        style: TextStyle(fontSize: scale(context, 14)),
+                          decoration: InputDecoration(
+                            border: InputBorder.none,
+                            hintText: "8123456789",
+                            hintStyle: TextStyle(
+                              fontSize: scale(context, 14),
+                            color: Colors.grey.shade400,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              SizedBox(height: scale(context, 20)),
 
-              // =============================
-              // EMAIL
-              // =============================
+              SizedBox(height: scale(context, 20)),
               Align(
                 alignment: Alignment.centerLeft,
                 child: Text(

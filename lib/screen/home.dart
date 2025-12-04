@@ -374,11 +374,14 @@ class _HomeScreenState extends State<HomeScreen> {
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(12),
               image: const DecorationImage(
-                image: AssetImage("assets/images/map.png"),
                 fit: BoxFit.cover,
+                image: NetworkImage(
+                  'https://mxwxxtaaxksddeijpgbb.supabase.co/storage/v1/object/public/images/workshops/1764858311426_34.jpg',
+                ),
               ),
             ),
           ),
+
           const SizedBox(width: 15),
           // Traffic info
           Expanded(

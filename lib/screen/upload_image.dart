@@ -40,8 +40,8 @@ class _UploadImageTestScreenState extends State<UploadImageTestScreen> {
 
       final fileName = "${DateTime.now().millisecondsSinceEpoch}_${basename(_selectedImage!.path)}";
 
-      final result = await supabase.storage.from('uploads').upload(
-        "workshops/$fileName",   // <-- SAVE KE FOLDER workshops
+      final result = await supabase.storage.from('images').upload(
+        "workshops/$fileName",
         _selectedImage!,
         fileOptions: const FileOptions(cacheControl: '3600', upsert: false),
       );

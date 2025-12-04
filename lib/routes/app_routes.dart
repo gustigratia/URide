@@ -57,6 +57,8 @@ class AppRoutes {
         return _animatedRoute(const LaluLintasPage());
       case vehicle:
         return _animatedRoute(const VehicleDetailPage());
+      case upload:
+        return _animatedRoute(const UploadImageTestScreen());
       case search_result:
         return PageRouteBuilder(
           transitionDuration: const Duration(milliseconds: 300),
