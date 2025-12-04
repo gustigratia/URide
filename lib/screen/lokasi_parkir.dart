@@ -1,316 +1,254 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'package:geolocator/geolocator.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
 
-class LokasiParkir extends StatelessWidget {
-  const LokasiParkir({super.key});
+const String GOOGLE_API_KEY = "ISI_API_KEY_KAMU";
+
+class LokasiParkirPage extends StatefulWidget {
+  const LokasiParkirPage({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final width = MediaQuery.of(context).size.width;
-    double scale(num value) => value * (width / 390);
+  State<LokasiParkirPage> createState() => _LokasiParkirPageState();
+}
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFF7F7F7),
-      body: SafeArea(
-        child: Column(
-          children: [
-            // HEADER
-            Padding(
-              padding: EdgeInsets.symmetric(
-                horizontal: scale(20),
-                vertical: scale(10),
-              ),
-              child: Row(
-                children: [
-                  GestureDetector(
-                    onTap: () => Navigator.pop(context),
-                    child: Icon(
-                      Icons.arrow_back_ios_new_rounded,
-                      size: scale(20),
-                      color: Colors.black,
-                    ),
-                  ),
-                  SizedBox(width: scale(16)),
-                  Expanded(
-                    child: Text(
-                      "Lokasi Parkir",
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: scale(20),
-                        fontWeight: FontWeight.w600,
-                        color: Colors.black,
-                      ),
-                    ),
-                  ),
-                  SizedBox(width: scale(36)),
-                ],
-              ),
-            ),
+class _LokasiParkirPageState extends State<LokasiParkirPage> {
+  Map<String, dynamic>? activeParking;
+  List<Map<String, dynamic>> history = [];
+  bool loading = true;
 
-            // CONTENT (SCROLLABLE)
-            Expanded(
-              child: ListView(
-                padding: EdgeInsets.zero,
-                children: [
-                  SizedBox(height: scale(16)),
-
-                  // SEARCH BAR (now scrollable)
-                  Padding(
-                    padding: EdgeInsets.symmetric(horizontal: scale(20)),
-                    child: Container(
-                      padding: EdgeInsets.symmetric(horizontal: scale(16)),
-                      height: scale(50),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(scale(14)),
-                        border: Border.all(
-                          color: Colors.grey.shade300,
-                          width: 1,
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          Image.asset(
-                            "assets/icons/search.png",
-                            width: scale(20),
-                            height: scale(20),
-                            color: Colors.grey,
-                            fit: BoxFit.contain,
-                          ),
-                          SizedBox(width: scale(10)),
-                          Text(
-                            "Search...",
-                            style: TextStyle(
-                              color: Colors.grey.shade400,
-                              fontSize: scale(14),
-                            ),
-                          ),
-                          Spacer(),
-                          Image.asset(
-                            "assets/icons/filter.png",
-                            width: scale(20),
-                            height: scale(20),
-                            color: Colors.grey,
-                            fit: BoxFit.contain,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-
-                  SizedBox(height: scale(20)),
-
-                  // CARD PARKIR TERKINI
-                  Padding(
-                    padding: EdgeInsets.symmetric(horizontal: scale(20)),
-                    child: parkirTerkiniCard(scale),
-                  ),
-
-                  SizedBox(height: scale(20)),
-
-                  // TITLE: RIWAYAT
-                  Padding(
-                    padding: EdgeInsets.symmetric(horizontal: scale(20)),
-                    child: Row(
-                      children: [
-                        Image.asset(
-                          "assets/icons/clock.png",
-                          width: scale(20),
-                          height: scale(20),
-                          fit: BoxFit.contain,
-                          color: Colors.black87,
-                        ),
-                        SizedBox(width: scale(8)),
-                        Text(
-                          "Riwayat",
-                          style: TextStyle(
-                            fontSize: scale(16),
-                            fontWeight: FontWeight.w600,
-                            color: Colors.black,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  SizedBox(height: scale(12)),
-
-                  // HISTORY LIST
-                  Padding(
-                    padding: EdgeInsets.symmetric(horizontal: scale(20)),
-                    child: Column(
-                      children: [
-                        historyItem(
-                          scale: scale,
-                          alamat:
-                              "Jl. Sulawesi, Ngagel, Kec. Wonokromo, Surabaya, Jawa Timur 60281",
-                          tanggal: "24 April 2024",
-                          jam: "13.21",
-                        ),
-                        historyItem(
-                          scale: scale,
-                          alamat:
-                              "Jl. Dharmahusada No.144, Mojo, Kec. Gubeng, Surabaya, Jawa Timur 60285",
-                          tanggal: "23 April 2024",
-                          jam: "12.23",
-                        ),
-                        historyItem(
-                          scale: scale,
-                          alamat:
-                              "Kampus A UNAIR, Jl. Prof. DR. Moestopo No.47, Pacar Kembang,\nKec. Tambaksari, Surabaya, Jawa Timur 60132",
-                          tanggal: "20 April 2024",
-                          jam: "06.21",
-                        ),
-                        historyItem(
-                          scale: scale,
-                          alamat:
-                              "Jl. Pahlawan, Alun-alun Contong, Kec. Bubutan, Surabaya, Jawa Timur",
-                          tanggal: "19 April 2024",
-                          jam: "10.12",
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  SizedBox(height: scale(20)),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
+  @override
+  void initState() {
+    super.initState();
+    loadParkingData();
   }
 
-  // PARKIR TERKINI CARD
-  Widget parkirTerkiniCard(Function scale) {
+  // ============================================================
+  //  LOAD DATA PARKING
+  // ============================================================
+  Future<void> loadParkingData() async {
+    final user = Supabase.instance.client.auth.currentUser;
+
+    if (user == null) return;
+
+    final res = await Supabase.instance.client
+        .from('parking')
+        .select('*')
+        .eq('userid', user.id)
+        .order('id', ascending: false);
+
+    if (res.isNotEmpty) {
+      activeParking = res.first;
+      if (res.length > 1) {
+        history = res.sublist(1).map((e) => Map<String, dynamic>.from(e)).toList();
+      }
+    }
+
+    setState(() => loading = false);
+  }
+
+  // ============================================================
+  // AMBIL ALAMAT DARI LAT / LNG
+  // ============================================================
+  Future<String> getAddress(double lat, double lng) async {
+    final url = Uri.parse(
+        "https://maps.googleapis.com/maps/api/geocode/json?latlng=$lat,$lng&key=$GOOGLE_API_KEY");
+
+    final response = await http.get(url);
+    final data = jsonDecode(response.body);
+
+    if (data["status"] == "OK") {
+      return data["results"][0]["formatted_address"];
+    } else {
+      return "Alamat tidak ditemukan";
+    }
+  }
+
+  // ============================================================
+  //  SIMPAN LOKASI PARKIR KE DATABASE
+  // ============================================================
+  Future<void> saveParkingLocation() async {
+    try {
+      Position pos = await Geolocator.getCurrentPosition(
+          desiredAccuracy: LocationAccuracy.high);
+
+      final user = Supabase.instance.client.auth.currentUser;
+
+      final now = DateTime.now();
+      final tanggal = "${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}";
+      final waktu = "${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}:00";
+
+      final res = await Supabase.instance.client.from('parking').insert({
+        'userid': user!.id,
+        'latitude': pos.latitude,
+        'longitude': pos.longitude,
+        'tanggal': tanggal,
+        'waktu': waktu,
+      }).select();
+
+      print("INSERT RESULT = $res");
+
+      loadParkingData();
+    } catch (e) {
+      print("ERROR INSERT: $e");
+    }
+  }
+
+  // ============================================================
+  //  OPEN GOOGLE MAPS
+  // ============================================================
+  Future<void> openInGoogleMaps(double lat, double lng) async {
+    final url = Uri.parse(
+        "https://www.google.com/maps/search/?api=1&query=$lat,$lng");
+
+    if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
+      throw Exception("Tidak bisa membuka Google Maps");
+    }
+  }
+
+  // ============================================================
+  //  CARD LOKASI PARKIR (AKTIF)
+  // ============================================================
+  Widget buildActiveCard() {
+    final lat = activeParking!["latitude"];
+    final lng = activeParking!["longitude"];
+    final tanggal = activeParking!["tanggal"];
+    final waktu = activeParking!["waktu"];
+
+    final mapUrl =
+        "https://maps.googleapis.com/maps/api/staticmap?center=$lat,$lng"
+        "&zoom=17&size=600x300&maptype=roadmap&markers=color:red%7C$lat,$lng"
+        "&key=$GOOGLE_API_KEY";
+
     return Container(
-      padding: EdgeInsets.all(scale(20)),
+      margin: const EdgeInsets.only(top: 15),
+      padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(scale(20)),
+        borderRadius: BorderRadius.circular(22),
+        boxShadow: [
+          BoxShadow(
+              color: Colors.black.withOpacity(0.06),
+              blurRadius: 12,
+              offset: const Offset(0, 4))
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            children: [
-              Image.asset(
-                "assets/icons/location.png",
-                width: scale(22),
-                height: scale(22),
-                fit: BoxFit.contain,
-              ),
-              SizedBox(width: scale(8)),
+            children: const [
+              Icon(Icons.location_on, color: Colors.orange),
+              SizedBox(width: 8),
               Text(
                 "Lokasi Parkir",
-                style: TextStyle(
-                  fontSize: scale(18),
-                  fontWeight: FontWeight.w600,
-                ),
+                style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
               ),
             ],
           ),
 
-          SizedBox(height: scale(16)),
+          const SizedBox(height: 14),
 
           ClipRRect(
-            borderRadius: BorderRadius.circular(scale(14)),
-            child: Image.asset(
-              "assets/images/map_placeholder.png",
-              height: scale(170),
+            borderRadius: BorderRadius.circular(16),
+            child: Image.network(
+              mapUrl,
+              height: 180,
               width: double.infinity,
               fit: BoxFit.cover,
             ),
           ),
 
-          SizedBox(height: scale(18)),
+          const SizedBox(height: 14),
 
-          Text(
-            "Jl. Raya Kertajaya Indah No.79, Manyar Sabrangan,\n"
-            "Kec. Mulyorejo, Surabaya, Jawa Timur 60116",
-            style: TextStyle(
-              fontSize: scale(15),
-              fontWeight: FontWeight.w700,
-              height: 1.4,
-            ),
+          FutureBuilder(
+            future: getAddress(lat, lng),
+            builder: (context, snapshot) {
+              if (!snapshot.hasData) {
+                return const Text("Memuat alamat...");
+              }
+              return Text(
+                snapshot.data!,
+                style: const TextStyle(fontSize: 14),
+              );
+            },
           ),
 
-          SizedBox(height: scale(20)),
+          const SizedBox(height: 14),
 
           Row(
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Image.asset(
-                        "assets/icons/calendar.png",
-                        width: scale(18),
-                        height: scale(18),
-                        fit: BoxFit.contain,
-                      ),
-                      SizedBox(width: scale(8)),
-                      Text(
-                        "24 April 2024",
-                        style: TextStyle(
-                          fontSize: scale(14),
-                          color: Colors.grey.shade600,
-                        ),
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: scale(10)),
-                  Row(
-                    children: [
-                      Image.asset(
-                        "assets/icons/clock.png",
-                        width: scale(18),
-                        height: scale(18),
-                        fit: BoxFit.contain,
-                      ),
-                      SizedBox(width: scale(8)),
-                      Text(
-                        "13.21",
-                        style: TextStyle(
-                          fontSize: scale(14),
-                          color: Colors.grey.shade600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
+              const Icon(Icons.calendar_today, size: 16),
+              const SizedBox(width: 6),
+              Text("$tanggal"),
+              const SizedBox(width: 18),
+              const Icon(Icons.access_time, size: 16),
+              const SizedBox(width: 6),
+              Text("$waktu"),
+            ],
+          ),
+
+          const SizedBox(height: 16),
+
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.white,
+              elevation: 0,
+              side: const BorderSide(color: Colors.grey),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(30),
               ),
-              Spacer(),
-              Container(
-                padding: EdgeInsets.symmetric(
-                  horizontal: scale(18),
-                  vertical: scale(10),
-                ),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(scale(40)),
-                  border: Border.all(color: Colors.grey.shade300),
-                  color: Colors.white,
-                ),
-                child: Row(
-                  children: [
-                    Text(
-                      "Tuju Lokasi",
-                      style: TextStyle(
-                        fontSize: scale(14),
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    SizedBox(width: scale(10)),
-                    Image.asset(
-                      "assets/icons/arrow.png",
-                      width: scale(16),
-                      height: scale(16),
-                      fit: BoxFit.contain,
-                    ),
-                  ],
-                ),
-              ),
+            ),
+            onPressed: () => openInGoogleMaps(lat, lng),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: const [
+                Text("Tuju Lokasi Parkir", style: TextStyle(color: Colors.black)),
+                SizedBox(width: 6),
+                Icon(Icons.arrow_forward_ios, size: 16, color: Colors.black),
+              ],
+            ),
+          )
+        ],
+      ),
+    );
+  }
+
+  // ============================================================
+  //  CARD RIWAYAT
+  // ============================================================
+  Widget buildHistoryCard(Map<String, dynamic> data) {
+    return Container(
+      margin: const EdgeInsets.only(top: 12),
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: [
+          BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 8,
+              offset: const Offset(0, 3))
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          FutureBuilder(
+            future: getAddress(data["latitude"], data["longitude"]),
+            builder: (c, s) =>
+                Text(s.data?.toString() ?? "Memuat alamat..."),
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              const Icon(Icons.calendar_today, size: 16),
+              const SizedBox(width: 6),
+              Text("${data["tanggal"]}"),
+              const Spacer(),
+              Text("${data["waktu"]}"),
             ],
           ),
         ],
@@ -318,79 +256,72 @@ class LokasiParkir extends StatelessWidget {
     );
   }
 
-  // HISTORY ITEM CARD
-  Widget historyItem({
-    required Function scale,
-    required String alamat,
-    required String tanggal,
-    required String jam,
-  }) {
-    return Container(
-      margin: EdgeInsets.only(bottom: scale(14)),
-      padding: EdgeInsets.all(scale(20)),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(scale(18)),
+  // ============================================================
+  //  BUILD UI
+  // ============================================================
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xffF5F5F5),
+      appBar: AppBar(
+        elevation: 0,
+        backgroundColor: Colors.white,
+        title: const Text(
+          "Lokasi Parkir",
+          style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+        ),
+        iconTheme: const IconThemeData(color: Colors.black),
       ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            child: Text(
-              alamat,
-              style: TextStyle(
-                fontSize: scale(15),
-                fontWeight: FontWeight.w600,
-                height: 1.4,
+      body: loading
+          ? const Center(child: CircularProgressIndicator())
+          : SingleChildScrollView(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // BUTTON SIMPAN LOKASI
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: saveParkingLocation,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xffFAE9C4),
+                  elevation: 0,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(15),
+                  ),
+                ),
+                child: const Text(
+                  "Simpan Lokasi Parkir",
+                  style: TextStyle(
+                      color: Colors.black,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold),
+                ),
               ),
             ),
-          ),
-          SizedBox(width: scale(12)),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Row(
-                children: [
-                  Text(
-                    tanggal,
-                    style: TextStyle(
-                      fontSize: scale(14),
-                      color: Colors.grey.shade600,
-                    ),
-                  ),
-                  SizedBox(width: scale(6)),
-                  Image.asset(
-                    "assets/icons/calendar.png",
-                    width: scale(18),
-                    height: scale(18),
-                    fit: BoxFit.contain,
-                    color: Colors.grey.shade600,
-                  ),
-                ],
+
+            if (activeParking != null) buildActiveCard(),
+
+            const SizedBox(height: 20),
+            const Text(
+              "Riwayat",
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+            ),
+
+            if (history.isEmpty)
+              const Padding(
+                padding: EdgeInsets.only(top: 8),
+                child: Text(
+                  "Belum ada riwayat parkir.",
+                  style: TextStyle(color: Colors.grey),
+                ),
               ),
-              SizedBox(height: scale(10)),
-              Row(
-                children: [
-                  Text(
-                    jam,
-                    style: TextStyle(
-                      fontSize: scale(14),
-                      color: Colors.grey.shade600,
-                    ),
-                  ),
-                  SizedBox(width: scale(6)),
-                  Image.asset(
-                    "assets/icons/clock.png",
-                    width: scale(18),
-                    height: scale(18),
-                    fit: BoxFit.contain,
-                    color: Colors.grey.shade600,
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ],
+
+            for (var item in history) buildHistoryCard(item),
+          ],
+        ),
       ),
     );
   }

@@ -36,6 +36,7 @@ class AppRoutes {
     verifikasiKode: (_) => const VerifikasiKodePage(),
     buatPasswordBaru: (_) => const BuatPasswordBaruPage(),
     laluLintas: (_)=> const LaluLintasPage(), 
+    parking: (_) => const LokasiParkirPage(),
   };
 
   static Route<dynamic>? generateRoute(RouteSettings settings) {
@@ -43,7 +44,7 @@ class AppRoutes {
       case search:
         return _animatedRoute(const SearchPage());
       case parking:
-        return _animatedRoute(const LokasiParkir());
+        return _animatedRoute(const LokasiParkirPage());
       case ubahKataSandi:
         return _animatedRoute(const UbahKataSandiPage());
       case verifikasiKode:
