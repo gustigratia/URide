@@ -1,17 +1,21 @@
 name: uride
-description: A Flutter UI identical to provided mockup
-publish_to: "none"
+description: "A new Flutter project."
+
+publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 
 version: 1.0.0+1
 
 environment:
-  sdk: ">=3.3.0 <4.0.0"
+  sdk: ^3.8.1
 
 dependencies:
   flutter:
     sdk: flutter
+  cupertino_icons: ^1.0.8
+  supabase_flutter: ^2.10.3
+  auto_size_text: ^3.0.0
+  geolocator: ^12.0.0
   google_fonts: ^6.2.1
-  supabase_flutter: ^2.0.0
   url_launcher: ^6.2.5
   latlong2: ^0.9.0
   flutter_map: ^6.1.0
@@ -19,21 +23,25 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^3.0.0
+
+  flutter_lints: ^5.0.0
 
 flutter:
   uses-material-design: true
 
-assets:
+  assets:
+    - assets/images/
     - assets/icons/
-    - assets/images/motor-clicked.png
-    - assets/images/mobil-clicked.png 
-    - assets/images/motor-default.png
-    - assets/images/mobil-default.png
-    - assets/images/bengkel.png
-    - assets/images/normal.png
-    - assets/images/emergency.png
-    - assets/images/derek.png
-    - assets/images/arrow.png
-    - assets/images/call.png
-    - assets/images/message.png
+
+  fonts:
+    - family: Euclid
+      fonts:
+        - asset: assets/euclid-circular-a/Euclid Circular A Regular.ttf
+        - asset: assets/euclid-circular-a/Euclid Circular A Medium.ttf
+          weight: 500
+        - asset: assets/euclid-circular-a/Euclid Circular A SemiBold.ttf
+          weight: 600
+        - asset: assets/euclid-circular-a/Euclid Circular A Bold.ttf
+          weight: 700
+        - asset: assets/euclid-circular-a/Euclid Circular A Light.ttf
+          weight: 300
