@@ -23,9 +23,16 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
 
   Future<void> fetchOrders() async {
     final supabase = Supabase.instance.client;
+    final user = supabase.auth.currentUser;
 
-    // ambil user id - hardcode
-    final userId = 'ac2240e5-5bf9-4314-8892-0f925639bde8';
+    if (user == null) {
+      setState(() {
+        loading = false;
+      });
+      return;
+    }
+
+    final userId = user.id;
 
     final response = await supabase
         .from('orders')
@@ -58,7 +65,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
                     _searchBar(),
                     const SizedBox(height: 25),
 
-                    // group by date 
+                    // group by date
                     ..._buildOrderGroups(searchC.text),
                   ],
                 ),
@@ -109,11 +116,11 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
 
         final workshop = o['workshops'];
         final vehicle = o['vehicles'];
-        String rawLoc = workshop?['bengkellocation']?.toString() ?? "0,0";
-        List<String> loc = rawLoc.split(",");
 
-        double lat = double.tryParse(loc[0].trim()) ?? 0;
-        double lng = double.tryParse(loc.length > 1 ? loc[1].trim() : "0") ?? 0;
+        double lat =
+            double.tryParse(workshop?['latitude']?.toString() ?? "") ?? 0;
+        double lng =
+            double.tryParse(workshop?['longitude']?.toString() ?? "") ?? 0;
 
         widgets.add(
           _orderCard(
@@ -122,7 +129,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
             statusCancelled: cancelled,
             title: cleanText(workshop?['bengkelname'] ?? "-"),
             address: cleanText(workshop?['address'] ?? "-"),
-            fullAddress: cleanText(workshop?['bengkellocation'] ?? "-"),
+            fullAddress: cleanText(workshop?['address'] ?? "-"),
             typeVehicle: cleanText(vehicle?['vehicletype'] ?? "-"),
             typeCase: cleanText(o['ordertype'] ?? "-"),
             onTap: () {
@@ -134,8 +141,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
                     statusOngoing: ongoing,
                     title: cleanText(workshop?['bengkelname'] ?? "-"),
                     address: cleanText(workshop?['address'] ?? "-"),
-                    fullAddress:
-                        workshop?['bengkellocation']?.toString() ?? "-",
+                    fullAddress: workshop?['address'] ?? "-",
                     typeVehicle: cleanText(vehicle?['vehicletype'] ?? "-"),
                     typeCase: cleanText(o['ordertype'] ?? "-"),
                     lat: lat,
@@ -265,7 +271,6 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
                     style: GoogleFonts.poppins(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
-                      
                     ),
                   ),
                 ),
@@ -286,9 +291,9 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.03), 
-                    blurRadius: 8, 
-                    offset: const Offset(0, 2), 
+                    color: Colors.black.withOpacity(0.03),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
                   ),
                 ],
               ),

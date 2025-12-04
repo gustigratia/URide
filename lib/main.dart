@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:URide/pages/addvehicle_screen.dart';
 import 'package:URide/pages/orderhistory_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -30,7 +29,6 @@ class URide extends StatelessWidget {
       initialRoute: "/order-history",
 
       routes: {
-        "/add-vehicle": (context) => const TambahKendaraanPage(),
         "/order-history": (context) => const OrderHistoryScreen(),
       },
     );
