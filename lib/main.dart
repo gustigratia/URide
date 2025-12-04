@@ -1,36 +1,42 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:uride/screen/orderhistory_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:uride/routes/app_routes.dart';
+import 'env.dart';
 
-void main() async {
-    await Supabase.initialize(
-    url: 'https://mxwxxtaaxksddeijpgbb.supabase.co',
-    anonKey: 'sb_publishable_xDF-CQX3wPWcVbm2tpzXdA_0JHyBW4j',
+// Global Supabase instance
+final supabase = Supabase.instance.client;
+
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  await Supabase.initialize(
+    url: Env.supabaseUrl,
+    anonKey: Env.supabaseAnonKey,
   );
 
-  runApp(const URide());
+  runApp(const MyApp());
 }
 
-class URide extends StatelessWidget {
-  const URide({super.key});
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: "Tambah Kendaraan",
+      title: 'URide',
       theme: ThemeData(
-        scaffoldBackgroundColor: const Color(0xffF5F5F5),
-        textTheme: GoogleFonts.poppinsTextTheme(),
-        useMaterial3: false,
+        fontFamily: "Euclid",
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.amber),
+        useMaterial3: true,
       ),
 
-      initialRoute: "/order-history",
+      // route awal
+      initialRoute: AppRoutes.signin,
 
-      routes: {
-        "/order-history": (context) => const OrderHistoryScreen(),
-      },
+      routes: AppRoutes.routes,
+      onGenerateRoute: AppRoutes.generateRoute,
     );
   }
 }
