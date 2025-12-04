@@ -11,6 +11,7 @@ import 'package:uride/screen/verifikasi_kode.dart';
 import 'package:uride/screen/buat_password_baru.dart';
 import 'package:uride/screen/vehicle_detail_page.dart';
 import 'package:uride/screen/search_result.dart';
+import 'package:uride/screen/upload_image.dart';
 
 class AppRoutes {
   static const home = '/home';
@@ -19,6 +20,7 @@ class AppRoutes {
   static const search = '/search';
   static const parking = '/parking';
   static const vehicle = '/vehicle';
+  static const upload = '/upload';
   static const search_result = '/search-result';
   static const ubahKataSandi = '/ubah-kata-sandi';
   static const verifikasiKode = '/verifikasi-kode';
@@ -32,6 +34,7 @@ class AppRoutes {
     signup: (_) => const SignUpPage(),
     vehicle: (_) => const VehicleDetailPage(),
     search: (_) => const SearchPage(),
+    upload: (_) => const UploadImageTestScreen(),
     ubahKataSandi: (_) => const UbahKataSandiPage(),
     verifikasiKode: (_) => const VerifikasiKodePage(),
     buatPasswordBaru: (_) => const BuatPasswordBaruPage(),
