@@ -17,7 +17,6 @@ class SearchResultPage extends StatelessWidget {
       length: 2,
       child: Scaffold(
         backgroundColor: const Color(0xFFF7F7F7),
-
         body: Column(
           children: [
             _buildHeader(context, query),
@@ -138,7 +137,6 @@ class SearchResultPage extends StatelessWidget {
     );
   }
 
-
   // ========================= LIST =========================
 
   Widget _buildList(List data) {
@@ -159,7 +157,7 @@ class SearchResultPage extends StatelessWidget {
 
         final name = item['name'] ?? item['bengkelname'] ?? "Tanpa Nama";
         final rating = (item['rating'] ?? "4.5").toString();
-        final distance = (item['distance'] ?? "1.2 km").toString();
+        final distance = (item['distance'] ?? "--").toString();
         final status = item['status'] ?? "Buka";
         final image = item['image'] ?? "assets/images/workshop.png";
 
@@ -269,3 +267,4 @@ class SearchResultPage extends StatelessWidget {
     );
   }
 }
+
