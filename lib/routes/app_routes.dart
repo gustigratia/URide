@@ -12,6 +12,7 @@ import 'package:uride/screen/buat_password_baru.dart';
 import 'package:uride/screen/vehicle_detail_page.dart';
 import 'package:uride/screen/search_result.dart';
 import 'package:uride/screen/edit_kendaraan_page.dart';
+import 'package:uride/screen/profile_page.dart';
 
 class AppRoutes {
   static const home = '/home';
@@ -26,6 +27,8 @@ class AppRoutes {
   static const buatPasswordBaru = '/buat-password-baru'; 
   static const laluLintas = '/lalulintas';
   static const editKendaraan = '/edit-kendaraan'; 
+  static const profile = '/profile';
+
 
 
   static Map<String, WidgetBuilder> routes = {
@@ -39,6 +42,7 @@ class AppRoutes {
     buatPasswordBaru: (_) => const BuatPasswordBaruPage(),
     laluLintas: (_)=> const LaluLintasPage(), 
     editKendaraan: (_) => const EditKendaraanPage(),
+    profile: (_)=> const ProfilePage(),
   };
 
   static Route<dynamic>? generateRoute(RouteSettings settings) {

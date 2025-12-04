@@ -94,8 +94,8 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
                   _vehicleTab(
                     title: "Motor",
                     icon: selectedType == "motor"
-                        ? "images/motor(active).png"
-                        : "images/motor(inactive).png",
+                        ? "assets/images/motor(active).png"
+                        : "assets/images/motor(inactive).png",
                     active: selectedType == "motor",
                     onTap: () {
                       setState(() {
@@ -108,8 +108,8 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
                   _vehicleTab(
                     title: "Mobil",
                     icon: selectedType == "mobil"
-                        ? "images/mobil(active).png"
-                        : "images/mobil(inactive).jpg",
+                        ? "assets/images/mobil(active).png"
+                        : "assets/images/mobil(inactive).jpg",
                     active: selectedType == "mobil",
                     onTap: () {
                       setState(() {
@@ -137,7 +137,7 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
                 ),
                 const SizedBox(height: 20),
                 _fullButton(
-                  icon: "images/edit.jpg",
+                  icon: "assets/images/edit.jpg",
                   title: "Tambah Kendaraan",
                   onTap: () {
                     Navigator.pushNamed(context, '/tambah-kendaraan');
@@ -192,8 +192,8 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
                     },
                     child: Image.asset(
                       v != null && v['img'] != null && v['img'] != ""
-                          ? "images/${v['img']}"
-                          : "images/nmax.jpg",
+                          ? "assets/images/${v['img']}"
+                          : "assets/images/nmax.jpg",
                       key: ValueKey("img-${v?['id']}"),
                       fit: BoxFit.contain,
                     ),
@@ -236,7 +236,7 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Image.asset(
-                          "images/routing.jpg",
+                          "assets/images/routing.jpg",
                           width: 22,
                           height: 22,
                         ),
@@ -269,7 +269,7 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
 
                 // EDIT BUTTON — FIXED
                 _fullButton(
-                  icon: "images/edit.jpg",
+                  icon: "assets/images/edit.jpg",
                   title: "Edit Informasi Kendaraan",
                   onTap: () async {
                     final result = await Navigator.pushNamed(
@@ -292,7 +292,7 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
 
                 const SizedBox(height: 10),
                 _fullButton(
-                  icon: "images/edit.jpg",
+                  icon: "assets/images/edit.jpg",
                   title: "Tambah Kendaraan",
                   onTap: () {
                     Navigator.pushNamed(context, '/tambah-kendaraan');
@@ -305,7 +305,7 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
                   children: [
                     Expanded(
                       child: _statusBox(
-                        icon: "images/oli.jpg",
+                        icon: "assets/images/oli.jpg",
                         title: "${(v?['kilometer'] ?? 0) % 5000} Km",
                         subtitle: "Ganti Oli",
                         value: ((v?['kilometer'] ?? 0) % 5000) / 5000,
@@ -314,7 +314,7 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
                     const SizedBox(width: 15),
                     Expanded(
                       child: _statusBox(
-                        icon: "images/wrench.jpg",
+                        icon: "assets/images/wrench.jpg",
                         title: _nextServiceDate(v),
                         subtitle: "Servis Rutin",
                         value: _serviceProgress(v),
