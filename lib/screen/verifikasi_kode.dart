@@ -77,7 +77,7 @@ class _VerifikasiKodePageState extends State<VerifikasiKodePage> {
       );
 
       if (res.user != null) {
-        Navigator.pushNamed(context, 'buat_password_baru');
+        Navigator.pushNamed(context, AppRoutes.buatPasswordBaru);
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text("Kode OTP salah.")),

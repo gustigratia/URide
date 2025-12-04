@@ -4,6 +4,7 @@ import 'package:uride/routes/app_routes.dart';
 import 'env.dart';
 import 'package:uride/screen/order_service.dart';
 import 'package:uride/screen/workshop.dart';
+
 // Global Supabase instance
 final supabase = Supabase.instance.client;
 
@@ -18,6 +19,7 @@ Future<void> main() async {
   runApp(const MyApp());
 }
 
+
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
@@ -31,7 +33,10 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.amber),
         useMaterial3: true,
       ),
-      initialRoute: AppRoutes.home,
+
+      // route awal
+      initialRoute: AppRoutes.signin,
+
       routes: AppRoutes.routes,
       onGenerateRoute: AppRoutes.generateRoute,
     );
