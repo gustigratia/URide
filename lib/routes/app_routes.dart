@@ -11,6 +11,8 @@ import 'package:uride/screen/verifikasi_kode.dart';
 import 'package:uride/screen/buat_password_baru.dart';
 import 'package:uride/screen/vehicle_detail_page.dart';
 import 'package:uride/screen/search_result.dart';
+import 'package:uride/screen/edit_kendaraan_page.dart';
+import 'package:uride/screen/orderhistory_screen.dart';
 
 class AppRoutes {
   static const home = '/home';
@@ -24,6 +26,8 @@ class AppRoutes {
   static const verifikasiKode = '/verifikasi-kode';
   static const buatPasswordBaru = '/buat-password-baru'; 
   static const laluLintas = '/lalulintas';
+  static const editKendaraan = '/edit-kendaraan';
+  static const orderHistory = '/history';
 
 
 
@@ -39,6 +43,8 @@ class AppRoutes {
     buatPasswordBaru: (_) => const BuatPasswordBaruPage(),
     laluLintas: (_)=> const LaluLintasPage(), 
     parking: (_) => const LokasiParkirPage(),
+    editKendaraan: (_) => const EditKendaraanPage(),
+    orderHistory: (_) => const OrderHistoryScreen(),
   };
 
   static Route<dynamic>? generateRoute(RouteSettings settings) {
@@ -57,6 +63,10 @@ class AppRoutes {
         return _animatedRoute(const LaluLintasPage());
       case vehicle:
         return _animatedRoute(const VehicleDetailPage());
+      case editKendaraan:
+        return _animatedRoute(const EditKendaraanPage());
+      case orderHistory:
+        return _animatedRoute(const OrderHistoryScreen());
       case search_result:
         return PageRouteBuilder(
           transitionDuration: const Duration(milliseconds: 300),
