@@ -13,63 +13,84 @@ class _EditKendaraanPageState extends State<EditKendaraanPage> {
   final platC = TextEditingController();
   final kilometerC = TextEditingController();
 
-  String? vehicleId;
+  late Object vehicleId;       // ✔ FIX: Tidak nullable
   int? vehicleIndex;
+  bool hasVehicleId = false;   // ✔ Untuk memastikan sebelum query
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
 
     final args = ModalRoute.of(context)!.settings.arguments as Map?;
-    vehicleId = args?['id'];
-    vehicleIndex = args?['index'];
 
-    if (vehicleId != null) {
-      fetchVehicleData();
+    if (args != null && args["id"] != null) {
+      vehicleId = args["id"];          // ✔ langsung assign Object
+      vehicleIndex = args["index"];
+      hasVehicleId = true;
+
+      fetchVehicleData();              // ✔ fetch setelah ID terisi
     }
   }
 
+  // ======================================================
+  //                 FETCH DATA KENDARAAN
+  // ======================================================
   Future<void> fetchVehicleData() async {
+    if (!hasVehicleId) return;
+
     final supabase = Supabase.instance.client;
+    final user = supabase.auth.currentUser;
+
+    if (user == null) return;
 
     final data = await supabase
-        .from('vehicles')
+        .from("vehicles")
         .select()
-        .eq('id', int.parse(vehicleId!))
+        .eq("id", vehicleId)           // ✔ aman, non-null
+        .eq("userid", user.id)
         .maybeSingle();
 
     if (data != null) {
       setState(() {
-        namaC.text = data['vehiclename'] ?? "";
-        platC.text = data['vehiclenumber'] ?? "";
-        kilometerC.text = data['kilometer']?.toString() ?? "";
+        namaC.text = data["vehiclename"] ?? "";
+        platC.text = data["vehiclenumber"] ?? "";
+        kilometerC.text = data["kilometer"]?.toString() ?? "";
       });
     }
   }
 
+  // ======================================================
+  //                 UPDATE DATA KENDARAAN
+  // ======================================================
   Future<void> updateVehicle() async {
-    final supabase = Supabase.instance.client;
+    if (!hasVehicleId) return;
 
-    final userId = "ac2240e5-5bf9-4314-8892-0f925639bde8";
+    final supabase = Supabase.instance.client;
+    final user = supabase.auth.currentUser;
+
+    if (user == null) return;
 
     await supabase
-        .from('vehicles')
+        .from("vehicles")
         .update({
-      'vehiclename': namaC.text.trim(),
-      'vehiclenumber': platC.text.trim(),
-      'kilometer': int.tryParse(kilometerC.text.trim()) ?? 0,
-      'userid': userId,
-    })
-        .eq('id', vehicleId!);
+          "vehiclename": namaC.text.trim(),
+          "vehiclenumber": platC.text.trim(),
+          "kilometer": int.tryParse(kilometerC.text.trim()) ?? 0,
+        })
+        .eq("id", vehicleId)           // ✔ aman
+        .eq("userid", user.id);        // ✔ hanya kendaraan milik user
 
-    if (mounted) {
-      Navigator.pop(context, {
-        "updated": true,
-        "index": vehicleIndex,
-      });
-    }
+    if (!mounted) return;
+
+    Navigator.pop(context, {
+      "updated": true,
+      "index": vehicleIndex,
+    });
   }
 
+  // ======================================================
+  //                         UI
+  // ======================================================
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -81,6 +102,8 @@ class _EditKendaraanPageState extends State<EditKendaraanPage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const SizedBox(height: 10),
+
+              // HEADER
               Row(
                 children: [
                   GestureDetector(
@@ -101,6 +124,7 @@ class _EditKendaraanPageState extends State<EditKendaraanPage> {
                   const SizedBox(width: 28),
                 ],
               ),
+
               const SizedBox(height: 25),
 
               Container(
@@ -117,6 +141,7 @@ class _EditKendaraanPageState extends State<EditKendaraanPage> {
                     ),
                   ],
                 ),
+
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -160,7 +185,6 @@ class _EditKendaraanPageState extends State<EditKendaraanPage> {
                         fontWeight: FontWeight.w600,
                       ),
                     ),
-
                     const SizedBox(height: 6),
 
                     Text(
@@ -199,6 +223,7 @@ class _EditKendaraanPageState extends State<EditKendaraanPage> {
                   ],
                 ),
               ),
+
               const SizedBox(height: 40),
             ],
           ),

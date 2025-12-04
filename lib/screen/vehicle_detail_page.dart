@@ -22,29 +22,23 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
     fetchVehicles();
   }
 
-  // ===============================================================
-  //                   FETCH SUPABASE VEHICLES
-  // ===============================================================
   Future<void> fetchVehicles() async {
     final supabase = Supabase.instance.client;
     final user = supabase.auth.currentUser;
-
     if (user == null) return;
-
-    final userId = user.id;
 
     final motorData = await supabase
         .from('vehicles')
         .select()
         .eq("vehicletype", "motor")
-        .eq("userid", userId)
+        .eq("userid", user.id)
         .order("id", ascending: true);
 
     final mobilData = await supabase
         .from('vehicles')
         .select()
         .eq("vehicletype", "mobil")
-        .eq("userid", userId)
+        .eq("userid", user.id)
         .order("id", ascending: true);
 
     setState(() {
@@ -62,7 +56,6 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
   @override
   Widget build(BuildContext context) {
     final width = MediaQuery.of(context).size.width;
-
     final list = selectedType == "motor" ? vehiclesMotor : vehiclesMobil;
     final hasVehicle = list.isNotEmpty;
     final v = currentVehicle;
@@ -87,10 +80,6 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
           onPressed: () => Navigator.pop(context),
         ),
       ),
-
-      // ===============================================================
-      //                              BODY
-      // ===============================================================
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -134,12 +123,9 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
 
               const SizedBox(height: 25),
 
-              // ===============================================================
-              //              EMPTY STATE (TIDAK ADA KENDARAAN)
-              // ===============================================================
+              // EMPTY STATE
               if (!hasVehicle) ...[
                 const SizedBox(height: 40),
-
                 const Text(
                   "Belum ada kendaraan",
                   style: TextStyle(
@@ -149,9 +135,7 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
                     fontWeight: FontWeight.w500,
                   ),
                 ),
-
                 const SizedBox(height: 20),
-
                 _fullButton(
                   icon: "images/edit.jpg",
                   title: "Tambah Kendaraan",
@@ -159,22 +143,15 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
                     Navigator.pushNamed(context, '/tambah-kendaraan');
                   },
                 ),
-
                 const SizedBox(height: 40),
               ],
 
-              // ===============================================================
-              //                  DETAIL KENDARAAN
-              // ===============================================================
+              // DETAIL KENDARAAN
               if (hasVehicle) ...[
-                // -----------------------------------------------------------
-                //              NAMA MOTOR (STATIC, NO ANIMATION)
-                // -----------------------------------------------------------
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    _navArrow(
-                        () => setState(() => selectedIndex--),
+                    _navArrow(() => setState(() => selectedIndex--),
                         Icons.chevron_left),
                     Expanded(
                       child: Text(
@@ -187,20 +164,15 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
                         ),
                       ),
                     ),
-                    _navArrow(
-                        () => setState(() => selectedIndex++),
+                    _navArrow(() => setState(() => selectedIndex++),
                         Icons.chevron_right),
                   ],
                 ),
 
                 const SizedBox(height: 15),
 
-                // -----------------------------------------------------------
-                //                 GAMBAR MOTOR (ANIMATED)
-                //        FIXED SIZE → LAYOUT DI BAWAH TIDAK GERAK
-                // -----------------------------------------------------------
                 SizedBox(
-                  height: 200, // FIXED HEIGHT BIAR LAYOUT STABIL
+                  height: 200,
                   width: width * 0.75,
                   child: AnimatedSwitcher(
                     duration: const Duration(milliseconds: 300),
@@ -212,7 +184,10 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
 
                       return SlideTransition(
                         position: slide,
-                        child: FadeTransition(opacity: animation, child: child),
+                        child: FadeTransition(
+                          opacity: animation,
+                          child: child,
+                        ),
                       );
                     },
                     child: Image.asset(
@@ -226,10 +201,6 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
                 ),
 
                 const SizedBox(height: 10),
-
-                // ===============================================================
-                //                NOMOR PLAT (STATIC)
-                // ===============================================================
                 Text(
                   v?['vehiclenumber'] ?? "-",
                   style: const TextStyle(
@@ -241,9 +212,7 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
 
                 const SizedBox(height: 15),
 
-                // ===============================================================
-                //              CARD TOTAL PERJALANAN (STATIC)
-                // ===============================================================
+                // CARD PERJALANAN
                 Container(
                   padding: const EdgeInsets.all(20),
                   margin: const EdgeInsets.only(bottom: 15),
@@ -298,9 +267,7 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
                   ),
                 ),
 
-                // ===============================================================
-                //                         BUTTON EDIT
-                // ===============================================================
+                // EDIT BUTTON — FIXED
                 _fullButton(
                   icon: "images/edit.jpg",
                   title: "Edit Informasi Kendaraan",
@@ -309,7 +276,7 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
                       context,
                       AppRoutes.editKendaraan,
                       arguments: {
-                        "id": v?['id'].toString(),
+                        "id": v?['id'], // kirim ID langsung
                         "index": selectedIndex,
                       },
                     );
@@ -324,7 +291,6 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
                 ),
 
                 const SizedBox(height: 10),
-
                 _fullButton(
                   icon: "images/edit.jpg",
                   title: "Tambah Kendaraan",
@@ -335,9 +301,6 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
 
                 const SizedBox(height: 20),
 
-                // ===============================================================
-                //                STATUS OLI & SERVIS (STATIC)
-                // ===============================================================
                 Row(
                   children: [
                     Expanded(
@@ -369,9 +332,6 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
     );
   }
 
-  // ===============================================================
-  //                   FORMAT TANGGAL & PROGRESS SERVIS
-  // ===============================================================
   String _nextServiceDate(dynamic v) {
     if (v == null || v['lastservicedate'] == null) return "-";
     final raw = DateTime.tryParse(v['lastservicedate'].toString());
@@ -397,9 +357,7 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
     return arr[m];
   }
 
-  // ===============================================================
-  //                   REUSABLE WIDGETS
-  // ===============================================================
+  // WIDGETS
   Widget _navArrow(VoidCallback onTap, IconData icon) {
     return GestureDetector(
       onTap: onTap,
