@@ -26,6 +26,8 @@ class AppRoutes {
   static const laluLintas = '/lalulintas';
 
 
+
+
   static Map<String, WidgetBuilder> routes = {
     home: (_) => const HomeScreen(),
     signin: (_) => const SignInPage(),
