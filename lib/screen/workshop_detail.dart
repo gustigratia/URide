@@ -17,6 +17,14 @@ class BengkelDetailScreen extends StatelessWidget {
     return data;
   }
 
+  Future<List<Map<String, dynamic>>> getWorkshopServices() async {
+    final data = await supabase
+        .from('service')
+        .select()
+        .eq('workshop_id', workshopId);
+    return List<Map<String, dynamic>>.from(data);
+  }
+
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<Map<String, dynamic>?>(
@@ -34,6 +42,7 @@ class BengkelDetailScreen extends StatelessWidget {
         }
 
         final w = snap.data!;
+        final price = w['price'] ?? 0;
 
         return Scaffold(
           backgroundColor: Colors.white,
@@ -64,7 +73,6 @@ class BengkelDetailScreen extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const SizedBox(height: 16),
-
                       // Gambar
                       Container(
                         margin: const EdgeInsets.symmetric(vertical: 16),
@@ -80,7 +88,6 @@ class BengkelDetailScreen extends StatelessWidget {
                           ),
                         ),
                       ),
-
                       // Nama & rating
                       Text(
                         w['bengkelname'] ?? 'Nama tidak tersedia',
@@ -104,7 +111,6 @@ class BengkelDetailScreen extends StatelessWidget {
                         ],
                       ),
                       const SizedBox(height: 16),
-
                       // Alamat
                       Container(
                         padding: const EdgeInsets.all(12),
@@ -127,7 +133,6 @@ class BengkelDetailScreen extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 12),
-
                       // Deskripsi
                       Text(
                         w['description'] ?? 'Tidak ada deskripsi',
@@ -138,7 +143,6 @@ class BengkelDetailScreen extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 16),
-
                       // Tombol aksi
                       Row(
                         children: [
@@ -163,7 +167,6 @@ class BengkelDetailScreen extends StatelessWidget {
                         ],
                       ),
                       const SizedBox(height: 24),
-
                       // Layanan pilihan
                       const Text(
                         'Layanan pilihan',
@@ -173,34 +176,33 @@ class BengkelDetailScreen extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 12),
+                      FutureBuilder<List<Map<String, dynamic>>>(
+                        future: getWorkshopServices(),
+                        builder: (context, snapService) {
+                          if (snapService.connectionState ==
+                              ConnectionState.waiting) {
+                            return const Center(
+                                child: CircularProgressIndicator());
+                          }
+                          if (snapService.hasError ||
+                              !snapService.hasData ||
+                              snapService.data!.isEmpty) {
+                            return const Text('Tidak ada layanan tersedia');
+                          }
 
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Colors.amber.shade50,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(Icons.build_circle,
-                                color: Colors.amber.shade700),
-                            const SizedBox(width: 12),
-                            const Text(
-                              'Derek kendaraan',
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ],
-                        ),
+                          final services = snapService.data!;
+
+                          return Column(
+                            children: services.map((s) {
+                              return _ServiceItem(
+                                icon: _getServiceIcon(s['name']),
+                                label: s['name'] ?? '-',
+                              );
+                            }).toList(),
+                          );
+                        },
                       ),
-                      const SizedBox(height: 8),
-                      _ServiceItem(icon: Icons.tire_repair, label: 'Tambal Ban'),
-                      _ServiceItem(icon: Icons.oil_barrel, label: 'Ganti Oli'),
-                      _ServiceItem(icon: Icons.car_repair, label: 'Service Mobil'),
                       const SizedBox(height: 24),
-
                       // Kontak darurat
                       const Text(
                         'Kontak Darurat :',
@@ -225,7 +227,6 @@ class BengkelDetailScreen extends StatelessWidget {
                   ),
                 ),
               ),
-
               // Tombol Ajukan Layanan
               Positioned(
                 left: 0,
@@ -244,6 +245,7 @@ class BengkelDetailScreen extends StatelessWidget {
                           'workshopId': workshopId,
                           'workshopName': w['bengkelname'] ?? '',
                           'workshopAddress': w['address'] ?? '',
+                          'price': price,
                         },
                       );
                     },
@@ -251,7 +253,7 @@ class BengkelDetailScreen extends StatelessWidget {
                       backgroundColor: Colors.amber,
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(50),
                       ),
                     ),
                     child: const Text(
@@ -271,14 +273,29 @@ class BengkelDetailScreen extends StatelessWidget {
       },
     );
   }
+
+  IconData _getServiceIcon(String? serviceName) {
+    switch (serviceName?.toLowerCase()) {
+      case 'derek kendaraan':
+        return Icons.local_shipping;
+      case 'ganti oli':
+        return Icons.oil_barrel;
+      case 'tambal ban':
+        return Icons.tire_repair;
+      case 'service mobil':
+        return Icons.car_repair;
+      case 'service motor':
+        return Icons.motorcycle;
+      default:
+        return Icons.build_circle;
+    }
+  }
 }
 
-// Tombol Simpan dinamis
+// Save Button
 class _SaveButton extends StatefulWidget {
   final int workshopId;
-
   const _SaveButton({super.key, required this.workshopId});
-
   @override
   State<_SaveButton> createState() => _SaveButtonState();
 }
@@ -324,7 +341,7 @@ class _SaveButtonState extends State<_SaveButton> {
           .update({'save': isSaved})
           .eq('id', widget.workshopId);
     } catch (e) {
-      setState(() => isSaved = !isSaved); // rollback jika gagal
+      setState(() => isSaved = !isSaved);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Gagal update save: $e')),
       );
@@ -388,7 +405,7 @@ class _SaveButtonState extends State<_SaveButton> {
   }
 }
 
-// Tombol aksi umum
+// Action Button
 class _ActionButton extends StatelessWidget {
   final IconData icon;
   final String label;
@@ -435,14 +452,12 @@ class _ActionButton extends StatelessWidget {
   }
 }
 
+// Service Item
 class _ServiceItem extends StatelessWidget {
   final IconData icon;
   final String label;
 
-  const _ServiceItem({
-    required this.icon,
-    required this.label,
-  });
+  const _ServiceItem({required this.icon, required this.label});
 
   @override
   Widget build(BuildContext context) {

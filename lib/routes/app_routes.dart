@@ -28,36 +28,39 @@ class AppRoutes {
   };
 
   static Route<dynamic>? generateRoute(RouteSettings settings) {
-  switch (settings.name) {
+    switch (settings.name) {
 
-    case workshopDetail:
-    final args = settings.arguments as Map<String, dynamic>;
-    return _animatedRoute(
-      BengkelDetailScreen(workshopId: args['workshopId']),
-    );
+      case workshopDetail:
+        final args = settings.arguments as Map<String, dynamic>;
+        return _animatedRoute(
+          BengkelDetailScreen(workshopId: args['workshopId']),
+        );
 
-    case ajukanLayanan:
-      final args = settings.arguments as Map<String, dynamic>;
-      return _animatedRoute(
-        AjukanLayananScreen(
-          workshopId: args['workshopId'],
-          workshopName: args['workshopName'],
-          workshopAddress: args['workshopAddress'],
-        ),
-      );
+      case ajukanLayanan:
+        final args = settings.arguments as Map<String, dynamic>;
+        return _animatedRoute(
+          AjukanLayananScreen(
+            workshopId: args['workshopId'],
+            workshopName: args['workshopName'],
+            workshopAddress: args['workshopAddress'],
+            price: args['price'],
+          ),
+        );
 
-    case konfirmasiAjuan:
-      final args = settings.arguments as Map<String, dynamic>?;
-      return _animatedRoute(
-        KonfirmasiAjuanScreen(
-          workshopName: args?['workshopName'] ?? '',
-          workshopAddress: args?['workshopAddress'] ?? '',
-          userAddress: args?['userAddress'] ?? '',
-          vehicleType: args?['vehicleType'] ?? '',
-          requestType: args?['requestType'] ?? '',
-          isOnLocation: args?['isOnLocation'] ?? false,
-        ),
-      );
+      case konfirmasiAjuan:
+        final args = settings.arguments as Map<String, dynamic>?;
+        return _animatedRoute(
+          KonfirmasiAjuanScreen(
+            workshopName: args?['workshopName'] ?? '',
+            workshopAddress: args?['workshopAddress'] ?? '',
+            userAddress: args?['userAddress'] ?? '',
+            vehicleType: args?['vehicleType'] ?? '',
+            requestType: args?['requestType'] ?? '',
+            isOnLocation: args?['isOnLocation'] ?? false,
+            price: args?['price'] ?? 0, // pastikan price dikirim
+          ),
+        );
+
       default:
         return null;
     }

@@ -10,6 +10,7 @@ class KonfirmasiAjuanScreen extends StatefulWidget {
   final String vehicleType;
   final String requestType;
   final bool isOnLocation;
+  final int price; // Tambahkan parameter price
 
   const KonfirmasiAjuanScreen({
     Key? key,
@@ -19,6 +20,7 @@ class KonfirmasiAjuanScreen extends StatefulWidget {
     required this.vehicleType,
     required this.requestType,
     this.isOnLocation = false,
+    required this.price, // pastikan diterima di constructor
   }) : super(key: key);
 
   @override
@@ -27,10 +29,10 @@ class KonfirmasiAjuanScreen extends StatefulWidget {
 
 class _KonfirmasiAjuanScreenState extends State<KonfirmasiAjuanScreen> {
   String selectedPayment = 'dana';
-  final int serviceFee = 40000;
-  final int travelFee = 5000;
+  // travelFee sekarang mengikuti price dari halaman sebelumnya
+  int get travelFee => widget.price;
 
-  int get totalFee => serviceFee + travelFee;
+  int get totalFee =>  travelFee;
 
   String _getVehicleIcon() {
     switch (widget.vehicleType.toLowerCase()) {
@@ -52,7 +54,7 @@ class _KonfirmasiAjuanScreenState extends State<KonfirmasiAjuanScreen> {
       default:
         return Colors.amber;
     }
-  }  
+  }
 
   Future<void> submitToSupabase() async {
     try {
@@ -114,7 +116,7 @@ class _KonfirmasiAjuanScreenState extends State<KonfirmasiAjuanScreen> {
           children: [
             const SizedBox(height: 16),
 
-            // WORKSHOP INFO CARD (Fixed)
+            // WORKSHOP INFO CARD
             Container(
               margin: const EdgeInsets.symmetric(horizontal: 16),
               padding: const EdgeInsets.all(16),
@@ -209,8 +211,6 @@ class _KonfirmasiAjuanScreenState extends State<KonfirmasiAjuanScreen> {
                     ),
                   ),
                   const SizedBox(height: 16),
-
-                  // USER ADDRESS
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -318,9 +318,7 @@ class _KonfirmasiAjuanScreenState extends State<KonfirmasiAjuanScreen> {
                       style:
                           TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
                   const SizedBox(height: 16),
-                  _buildCostRow('Jasa layanan', serviceFee),
-                  const SizedBox(height: 12),
-                  _buildCostRow('Biaya perjalanan', travelFee),
+                  _buildCostRow('Biaya Panggilan', travelFee), // pakai widget.price
                   const SizedBox(height: 12),
                   const Divider(),
                   const SizedBox(height: 12),
@@ -366,7 +364,7 @@ class _KonfirmasiAjuanScreenState extends State<KonfirmasiAjuanScreen> {
               ),
             ),
 
-            const SizedBox(height: 100),
+            const SizedBox(height: 130),
           ],
         ),
       ),

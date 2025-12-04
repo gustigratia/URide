@@ -9,12 +9,14 @@ class AjukanLayananScreen extends StatefulWidget {
   final int workshopId;
   final String workshopName;
   final String workshopAddress;
+  final int price;
 
   const AjukanLayananScreen({
     Key? key,
     required this.workshopId,
     required this.workshopName,
     required this.workshopAddress,
+    required this.price,
   }) : super(key: key);
 
   @override
@@ -174,7 +176,7 @@ class _AjukanLayananScreenState extends State<AjukanLayananScreen> {
                                   TileLayer(
                                     urlTemplate:
                                         "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
-                                    userAgentPackageName: "com.example.app",
+                                    userAgentPackageName: "com.example.uride",
                                   ),
                                 ],
                               ),
@@ -300,7 +302,7 @@ class _AjukanLayananScreenState extends State<AjukanLayananScreen> {
             backgroundColor: Colors.amber,
             padding: const EdgeInsets.symmetric(vertical: 16),
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(50),
             ),
           ),
           child: const Text(
@@ -403,6 +405,7 @@ class _AjukanLayananScreenState extends State<AjukanLayananScreen> {
         'requestType': selectedType,
         'isOnLocation': isOnLocation,
         'userAddress': addressController.text,
+        'price': widget.price,
       },
     );
   }

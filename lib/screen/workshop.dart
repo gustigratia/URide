@@ -34,6 +34,20 @@ class _BengkelListScreenState extends State<BengkelListScreen> {
     try {
       final response = await supabase.from('workshops').select();
 
+      List<int> workshopIds = response.map<int>((w) => w['id'] as int).toList();
+
+      final serviceResponse = await supabase
+          .from('service')
+          .select()
+          .filter('workshop_id', 'in', '(${workshopIds.join(',')})');
+
+      Map<int, List<String>> serviceMap = {};
+      for (var s in serviceResponse) {
+        int wid = s['workshop_id'];
+        if (!serviceMap.containsKey(wid)) serviceMap[wid] = [];
+        serviceMap[wid]!.add(s['name']);
+      }
+
       setState(() {
         bengkelList = response.map<Map<String, dynamic>>((item) {
           return {
@@ -45,6 +59,7 @@ class _BengkelListScreenState extends State<BengkelListScreen> {
             'image':
                 'https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?w=800',
             'save': item['save'] ?? false,
+            'services': serviceMap[item['id']] ?? [],
           };
         }).toList();
       });
@@ -56,7 +71,6 @@ class _BengkelListScreenState extends State<BengkelListScreen> {
   List<Map<String, dynamic>> getFilteredList() {
     List<Map<String, dynamic>> filtered = bengkelList;
 
-    // Filter by selectedFilter
     if (selectedFilter == 'Favorit') {
       filtered = filtered.where((b) => b['save'] == true).toList();
     } else if (selectedFilter == 'Rating') {
@@ -66,7 +80,6 @@ class _BengkelListScreenState extends State<BengkelListScreen> {
       filtered = filtered.where((b) => b['is_open'] == true).toList();
     }
 
-    // Filter by search text, case-insensitive
     String query = searchController.text.toLowerCase();
     if (query.isNotEmpty) {
       filtered = filtered
@@ -196,8 +209,10 @@ class BengkelCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    List<String> services = List<String>.from(data['services'] ?? []);
+
     return Container(
-      margin: const EdgeInsets.only(bottom: 80),
+      margin: const EdgeInsets.only(bottom: 100),
       child: Stack(
         clipBehavior: Clip.none,
         children: [
@@ -225,7 +240,7 @@ class BengkelCard extends StatelessWidget {
                 borderRadius: BorderRadius.circular(12),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.grey.withOpacity(0.1),
+                    color: Colors.grey.withOpacity(0.2),
                     blurRadius: 5,
                     offset: const Offset(0, 2),
                   ),
@@ -283,6 +298,32 @@ class BengkelCard extends StatelessWidget {
                       ),
                     ],
                   ),
+                  const SizedBox(height: 8),
+
+                  // Layanan
+                  if (services.isNotEmpty)
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 4,
+                      children: services.map((s) {
+                        return Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            border: Border.all(color: Colors.amber),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            s,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.black87,
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                    ),
                 ],
               ),
             ),
