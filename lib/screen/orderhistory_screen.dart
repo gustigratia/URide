@@ -4,7 +4,10 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'orderdetail_screen.dart';
 
 class OrderHistoryScreen extends StatefulWidget {
-  const OrderHistoryScreen({super.key});
+  // FINAL REVISI: newOrderId harus menjadi nullable di sini
+  final int? newOrderId; 
+
+  const OrderHistoryScreen({super.key, this.newOrderId});
 
   @override
   State<OrderHistoryScreen> createState() => _OrderHistoryScreenState();
@@ -18,9 +21,77 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
   @override
   void initState() {
     super.initState();
+    // Anda bisa menambahkan logika untuk newOrderId di sini jika perlu
     fetchOrders();
   }
 
+  // ==========================================================
+  //                  HELPER FUNCTIONS (DIPINDAHKAN KE SINI)
+  // ==========================================================
+
+  String formatDate(String rawDate) {
+    final date = DateTime.parse(rawDate);
+
+    const monthNames = [
+      "", // dummy biar index mulai dari 1
+      "Januari",
+      "Februari",
+      "Maret",
+      "April",
+      "Mei",
+      "Juni",
+      "Juli",
+      "Agustus",
+      "September",
+      "Oktober",
+      "November",
+      "Desember"
+    ];
+
+    final day = date.day;
+    final month = monthNames[date.month];
+    final year = date.year;
+
+    return "$day $month $year";
+  }
+
+  String cleanText(String text) {
+    if (text.isEmpty) return text;
+    text = text.replaceAll("_", " ");
+    text = text.toLowerCase();
+    return text
+        .split(" ")
+        .map((word) => word.isNotEmpty
+            ? "${word[0].toUpperCase()}${word.substring(1)}"
+            : "")
+        .join(" ");
+  }
+  
+  String _getIconForTag(String type) {
+    switch (type.toLowerCase()) {
+      case "motor":
+        return "images/motor-default.png";
+      case "normal":
+        return "images/normal.png";
+      case "emergency":
+        return "images/emergency.png";
+      case "derek kendaraan":
+        return "images/derek.png";
+      case "servis di lokasi":
+        return "images/derek.png";
+      case "mobil":
+        return "images/mobil-default.png";
+      case "peta":
+        return "images/arrow.png";
+      default:
+        return "images/derek.png";
+    }
+  }
+
+  // ==========================================================
+  //                  DATA FETCHING & GROUPING
+  // ==========================================================
+  
   Future<void> fetchOrders() async {
     final supabase = Supabase.instance.client;
     final user = supabase.auth.currentUser;
@@ -44,34 +115,6 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
       orders = response;
       loading = false;
     });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xffF9F9F9),
-      body: SafeArea(
-        child: loading
-            ? const Center(child: CircularProgressIndicator())
-            : SingleChildScrollView(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const SizedBox(height: 10),
-                    _header(),
-                    const SizedBox(height: 20),
-                    _searchBar(),
-                    const SizedBox(height: 25),
-
-                    // group by date
-                    ..._buildOrderGroups(searchC.text),
-                  ],
-                ),
-              ),
-      ),
-    );
   }
 
   List<Widget> _buildOrderGroups(String keyword) {
@@ -160,6 +203,10 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
 
     return widgets;
   }
+
+  // ==========================================================
+  //                       WIDGET BUILDERS
+  // ==========================================================
 
   Widget _header() {
     return Center(
@@ -437,33 +484,12 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
     );
   }
 
-  String _getIconForTag(String type) {
-    switch (type.toLowerCase()) {
-      case "motor":
-        return "images/motor-default.png";
-      case "normal":
-        return "images/normal.png";
-      case "emergency":
-        return "images/emergency.png";
-      case "derek kendaraan":
-        return "images/derek.png";
-      case "servis di lokasi":
-        return "images/derek.png";
-      case "mobil":
-        return "images/mobil-default.png";
-      case "peta":
-        return "images/arrow.png";
-      default:
-        return "images/derek.png";
-    }
-  }
-
   Widget _circleIcon(String assetPath) {
     return Container(
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        border: Border.all(color: Color(0xffEAEAEA)),
+        border: Border.all(color: const Color(0xffEAEAEA)),
       ),
       child: Image.asset(
         assetPath,
@@ -474,41 +500,31 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
     );
   }
 
-  String formatDate(String rawDate) {
-    final date = DateTime.parse(rawDate);
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xffF9F9F9),
+      body: SafeArea(
+        child: loading
+            ? const Center(child: CircularProgressIndicator())
+            : SingleChildScrollView(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: 10),
+                    _header(),
+                    const SizedBox(height: 20),
+                    _searchBar(),
+                    const SizedBox(height: 25),
 
-    const monthNames = [
-      "", // dummy biar index mulai dari 1
-      "Januari",
-      "Februari",
-      "Maret",
-      "April",
-      "Mei",
-      "Juni",
-      "Juli",
-      "Agustus",
-      "September",
-      "Oktober",
-      "November",
-      "Desember"
-    ];
-
-    final day = date.day;
-    final month = monthNames[date.month];
-    final year = date.year;
-
-    return "$day $month $year";
-  }
-
-  String cleanText(String text) {
-    if (text.isEmpty) return text;
-    text = text.replaceAll("_", " ");
-    text = text.toLowerCase();
-    return text
-        .split(" ")
-        .map((word) => word.isNotEmpty
-            ? "${word[0].toUpperCase()}${word.substring(1)}"
-            : "")
-        .join(" ");
+                    // group by date
+                    ..._buildOrderGroups(searchC.text),
+                  ],
+                ),
+              ),
+      ),
+    );
   }
 }

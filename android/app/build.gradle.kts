@@ -6,6 +6,7 @@ plugins {
 }
 
 android {
+<<<<<<< HEAD
     namespace = "com.example.uride"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = "27.0.12077973"
@@ -17,11 +18,28 @@ android {
 
     kotlinOptions {
         jvmTarget = JavaVersion.VERSION_11.toString()
+=======
+    namespace = "com.example.payment_page"
+    compileSdk = flutter.compileSdkVersion
+    ndkVersion = flutter.ndkVersion
+
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
+
+    kotlinOptions {
+        jvmTarget = JavaVersion.VERSION_17.toString()
+>>>>>>> 48401d6 (Initial commit of clean Flutter project)
     }
 
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
+<<<<<<< HEAD
         applicationId = "com.example.uride"
+=======
+        applicationId = "com.example.payment_page"
+>>>>>>> 48401d6 (Initial commit of clean Flutter project)
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion

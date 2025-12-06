@@ -13,6 +13,7 @@ import 'package:uride/screen/vehicle_detail_page.dart';
 import 'package:uride/screen/search_result.dart';
 import 'package:uride/screen/edit_kendaraan_page.dart';
 import 'package:uride/screen/orderhistory_screen.dart';
+import 'package:uride/screen/payment_page.dart';
 
 class AppRoutes {
   static const home = '/home';
@@ -28,6 +29,7 @@ class AppRoutes {
   static const laluLintas = '/lalulintas';
   static const editKendaraan = '/edit-kendaraan';
   static const orderHistory = '/history';
+  static const paymentPage = '/payment';
 
 
   static Map<String, WidgetBuilder> routes = {
@@ -41,7 +43,9 @@ class AppRoutes {
     buatPasswordBaru: (_) => const BuatPasswordBaruPage(),
     laluLintas: (_)=> const LaluLintasPage(), 
     editKendaraan: (_) => const EditKendaraanPage(),
-    orderHistory: (_) => const OrderHistoryScreen(),
+    // REVISI: orderHistory di sini menggunakan null karena ia opsional
+    orderHistory: (_) => const OrderHistoryScreen(newOrderId: null), 
+    // paymentPage DIHAPUS dari static routes
   };
 
   static Route<dynamic>? generateRoute(RouteSettings settings) {
@@ -62,8 +66,23 @@ class AppRoutes {
         return _animatedRoute(const VehicleDetailPage());
       case editKendaraan:
         return _animatedRoute(const EditKendaraanPage());
+        
       case orderHistory:
-        return _animatedRoute(const OrderHistoryScreen());
+        // REVISI: Mengambil ID pesanan jika ada
+        final historyArgs = settings.arguments as int?;
+        // newOrderId di-set ke historyArgs (bisa null)
+        return _animatedRoute(OrderHistoryScreen(newOrderId: historyArgs));
+
+      case paymentPage:
+        // REVISI: Mengambil data pesanan (Map<String, dynamic>)
+        final args = settings.arguments as Map<String, dynamic>?; 
+        if (args != null) {
+          // Panggil PaymentPage dan masukkan data ke orderInput
+          return _animatedRoute(PaymentPage(orderInput: args));
+        }
+        // Jika argumen tidak ada, kembali ke Home
+        return _animatedRoute(const HomeScreen()); 
+
       case search_result:
         return PageRouteBuilder(
           transitionDuration: const Duration(milliseconds: 300),
