@@ -1,3 +1,5 @@
+// lib/app_routes.dart
+
 import 'package:flutter/material.dart';
 
 import 'package:uride/screen/home.dart';
@@ -14,8 +16,10 @@ import 'package:uride/screen/search_result.dart';
 import 'package:uride/screen/edit_kendaraan_page.dart';
 import 'package:uride/screen/orderhistory_screen.dart';
 import 'package:uride/screen/payment_page.dart';
+import 'package:uride/screen/splash_screen.dart'; // <-- Import SplashScreen
 
 class AppRoutes {
+  static const splash = '/'; // <-- SET SEBAGAI ROOT PATH
   static const home = '/home';
   static const signin = '/signin';
   static const signup = '/signup';
@@ -33,6 +37,7 @@ class AppRoutes {
 
 
   static Map<String, WidgetBuilder> routes = {
+    splash: (_) => const SplashScreen(), // <-- ENTRY POINT DARI '/'
     home: (_) => const HomeScreen(),
     signin: (_) => const SignInPage(),
     signup: (_) => const SignUpPage(),
@@ -43,47 +48,40 @@ class AppRoutes {
     buatPasswordBaru: (_) => const BuatPasswordBaruPage(),
     laluLintas: (_)=> const LaluLintasPage(), 
     editKendaraan: (_) => const EditKendaraanPage(),
-    // REVISI: orderHistory di sini menggunakan null karena ia opsional
     orderHistory: (_) => const OrderHistoryScreen(newOrderId: null), 
-    // paymentPage DIHAPUS dari static routes
   };
 
   static Route<dynamic>? generateRoute(RouteSettings settings) {
     switch (settings.name) {
-      case search:
+      case AppRoutes.search:
         return _animatedRoute(const SearchPage());
-      case parking:
+      case AppRoutes.parking:
         return _animatedRoute(const LokasiParkir());
-      case ubahKataSandi:
+      case AppRoutes.ubahKataSandi:
         return _animatedRoute(const UbahKataSandiPage());
-      case verifikasiKode:
+      case AppRoutes.verifikasiKode:
         return _animatedRoute(const VerifikasiKodePage());
-      case buatPasswordBaru:
+      case AppRoutes.buatPasswordBaru:
         return _animatedRoute(const BuatPasswordBaruPage());
-      case laluLintas:
+      case AppRoutes.laluLintas:
         return _animatedRoute(const LaluLintasPage());
-      case vehicle:
+      case AppRoutes.vehicle:
         return _animatedRoute(const VehicleDetailPage());
-      case editKendaraan:
+      case AppRoutes.editKendaraan:
         return _animatedRoute(const EditKendaraanPage());
         
-      case orderHistory:
-        // REVISI: Mengambil ID pesanan jika ada
+      case AppRoutes.orderHistory:
         final historyArgs = settings.arguments as int?;
-        // newOrderId di-set ke historyArgs (bisa null)
         return _animatedRoute(OrderHistoryScreen(newOrderId: historyArgs));
 
-      case paymentPage:
-        // REVISI: Mengambil data pesanan (Map<String, dynamic>)
+      case AppRoutes.paymentPage:
         final args = settings.arguments as Map<String, dynamic>?; 
         if (args != null) {
-          // Panggil PaymentPage dan masukkan data ke orderInput
           return _animatedRoute(PaymentPage(orderInput: args));
         }
-        // Jika argumen tidak ada, kembali ke Home
         return _animatedRoute(const HomeScreen()); 
 
-      case search_result:
+      case AppRoutes.search_result:
         return PageRouteBuilder(
           transitionDuration: const Duration(milliseconds: 300),
           pageBuilder: (_, __, ___) =>

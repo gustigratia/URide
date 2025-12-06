@@ -1,0 +1,79 @@
+Initial commit of clean Flutter project
+
+# Conflicts:
+#	.gitignore
+#	.metadata
+#	README.md
+#	android/app/build.gradle.kts
+#	android/app/src/main/AndroidManifest.xml
+#	android/build.gradle.kts
+#	android/gradle.properties
+#	android/gradle/wrapper/gradle-wrapper.properties
+#	android/settings.gradle.kts
+#	ios/Flutter/AppFrameworkInfo.plist
+#	ios/Runner.xcodeproj/project.pbxproj
+#	ios/Runner/Info.plist
+#	lib/main.dart
+#	linux/CMakeLists.txt
+#	linux/flutter/generated_plugin_registrant.cc
+#	linux/flutter/generated_plugins.cmake
+#	linux/runner/my_application.cc
+#	linux/runner/my_application.h
+#	macos/Flutter/GeneratedPluginRegistrant.swift
+#	macos/Runner.xcodeproj/project.pbxproj
+#	macos/Runner.xcodeproj/xcshareddata/xcschemes/Runner.xcscheme
+#	macos/Runner/Configs/AppInfo.xcconfig
+#	pubspec.lock
+#	pubspec.yaml
+#	test/widget_test.dart
+#	web/index.html
+#	web/manifest.json
+#	windows/.gitignore
+#	windows/CMakeLists.txt
+#	windows/flutter/generated_plugin_registrant.cc
+#	windows/flutter/generated_plugins.cmake
+#	windows/runner/Runner.rc
+#	windows/runner/main.cpp
+
+# Please enter the commit message for your changes. Lines starting
+# with '#' will be ignored, and an empty message aborts the commit.
+#
+# Committer: f <f@fdeMacBook-Pro.local>
+#
+# interactive rebase in progress; onto 56a8e1e
+# Last command done (1 command done):
+#    pick 48401d6 # Initial commit of clean Flutter project
+# Next commands to do (2 remaining commands):
+#    pick 5f053e9 # feat(payment): Implement full PaymentPage and PaymentSelectionPage UI, fixing icon colors and layout
+#    pick 643460f # payment page awal
+# You are currently rebasing branch '10-slicing-payment-page' on '56a8e1e'.
+#
+# Changes to be committed:
+#	modified:   android/app/build.gradle.kts
+#	modified:   android/app/src/main/AndroidManifest.xml
+#	new file:   android/app/src/main/kotlin/com/example/payment_page/MainActivity.kt
+#	modified:   android/build.gradle.kts
+#	modified:   android/gradle.properties
+#	modified:   android/gradle/wrapper/gradle-wrapper.properties
+#	modified:   android/settings.gradle.kts
+#	modified:   ios/Flutter/AppFrameworkInfo.plist
+#	modified:   ios/Flutter/Debug.xcconfig
+#	modified:   ios/Flutter/Release.xcconfig
+#	new file:   ios/Podfile
+#	modified:   ios/Runner.xcodeproj/project.pbxproj
+#	modified:   ios/Runner/Info.plist
+#	modified:   lib/routes/app_routes.dart
+#	modified:   lib/screen/orderhistory_screen.dart
+#	new file:   lib/screen/payment_page.dart
+#	modified:   macos/Flutter/Flutter-Debug.xcconfig
+#	modified:   macos/Flutter/Flutter-Release.xcconfig
+#	new file:   macos/Podfile
+#	modified:   pubspec.lock
+#	modified:   windows/flutter/ephemeral/.plugin_symlinks/app_links
+#	modified:   windows/flutter/ephemeral/.plugin_symlinks/geolocator_windows
+#	modified:   windows/flutter/ephemeral/.plugin_symlinks/path_provider_windows
+#	modified:   windows/flutter/ephemeral/.plugin_symlinks/shared_preferences_windows
+#	modified:   windows/flutter/ephemeral/.plugin_symlinks/url_launcher_windows
+#	modified:   windows/runner/Runner.rc
+#	modified:   windows/runner/main.cpp
+#
