@@ -10,6 +10,7 @@ import 'package:uride/screen/ubah_kata_sandi.dart';
 import 'package:uride/screen/verifikasi_kode.dart';
 import 'package:uride/screen/buat_password_baru.dart';
 import 'package:uride/screen/vehicle_detail_page.dart';
+import 'package:uride/screen/addvehicle_screen.dart';
 import 'package:uride/screen/search_result.dart';
 import 'package:uride/screen/edit_kendaraan_page.dart';
 import 'package:uride/screen/orderhistory_screen.dart';
@@ -22,6 +23,7 @@ class AppRoutes {
   static const search = '/search';
   static const parking = '/parking';
   static const vehicle = '/vehicle';
+  static const addvehicle = '/add-vehicle';
   static const search_result = '/search-result';
   static const ubahKataSandi = '/ubah-kata-sandi';
   static const verifikasiKode = '/verifikasi-kode';
@@ -37,6 +39,7 @@ class AppRoutes {
     signin: (_) => const SignInPage(),
     signup: (_) => const SignUpPage(),
     vehicle: (_) => const VehicleDetailPage(),
+    addvehicle: (_) => const TambahKendaraanPage(),
     search: (_) => const SearchPage(),
     ubahKataSandi: (_) => const UbahKataSandiPage(),
     verifikasiKode: (_) => const VerifikasiKodePage(),
@@ -69,6 +72,8 @@ class AppRoutes {
         return _animatedRoute(const EditKendaraanPage());
       case orderHistory:
         return _animatedRoute(const OrderHistoryScreen());
+      case addvehicle:
+        return _animatedRoute(const TambahKendaraanPage());
       case search_result:
         return PageRouteBuilder(
           transitionDuration: const Duration(milliseconds: 300),

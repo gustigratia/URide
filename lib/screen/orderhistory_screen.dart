@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:uride/widgets/bottom_nav.dart';
 import 'orderdetail_screen.dart';
 
 class OrderHistoryScreen extends StatefulWidget {
@@ -50,12 +50,19 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xffF9F9F9),
+
+      bottomNavigationBar: const CustomBottomNav(
+        currentIndex: 3,
+      ),
+
       body: SafeArea(
         child: loading
             ? const Center(child: CircularProgressIndicator())
             : SingleChildScrollView(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 10,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -65,7 +72,6 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
                     _searchBar(),
                     const SizedBox(height: 25),
 
-                    // group by date
                     ..._buildOrderGroups(searchC.text),
                   ],
                 ),
@@ -165,7 +171,8 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
     return Center(
       child: Text(
         "Riwayat Pesanan",
-        style: GoogleFonts.poppins(
+        style: const TextStyle(
+          fontFamily: "Euclid",
           fontSize: 20,
           fontWeight: FontWeight.w600,
           color: Colors.black,
@@ -195,11 +202,12 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
         onChanged: (value) {
           setState(() {}); // real-time update
         },
-        style: GoogleFonts.poppins(fontSize: 13),
+        style: const TextStyle(fontFamily: "Euclid"),
         decoration: InputDecoration(
           prefixIcon: Icon(Icons.search, color: Colors.grey.shade400),
           hintText: "Search...",
-          hintStyle: GoogleFonts.poppins(
+          hintStyle: TextStyle(
+            fontFamily: "Euclid",
             color: Colors.grey.shade400,
             fontSize: 13,
           ),
@@ -245,30 +253,34 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
               children: [
                 Text(
                   formatDate(date),
-                  style: GoogleFonts.poppins(
+                  style: const TextStyle(
+                    fontFamily: "Euclid",
                     fontSize: 13,
                     fontWeight: FontWeight.w500,
                     color: Colors.black87,
                   ),
                 ),
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
                     color: statusOngoing
                         ? const Color(0xffFAD97A)
                         : statusCancelled
-                            ? const Color(0xffE57373)
-                            : const Color(0xff4CAF50),
+                        ? const Color(0xffE57373)
+                        : const Color(0xff4CAF50),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
                     statusOngoing
                         ? "Sedang Berlangsung"
                         : statusCancelled
-                            ? "Dibatalkan"
-                            : "Selesai",
-                    style: GoogleFonts.poppins(
+                        ? "Dibatalkan"
+                        : "Selesai",
+                    style: const TextStyle(
+                      fontFamily: "Euclid",
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
                     ),
@@ -285,10 +297,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: Colors.grey.shade300,
-                  width: 1,
-                ),
+                border: Border.all(color: Colors.grey.shade300, width: 1),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withOpacity(0.03),
@@ -315,7 +324,8 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
                       children: [
                         Text(
                           title,
-                          style: GoogleFonts.poppins(
+                          style: const TextStyle(
+                            fontFamily: "Euclid",
                             fontSize: 15,
                             fontWeight: FontWeight.w600,
                           ),
@@ -325,7 +335,8 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
                         const SizedBox(height: 4),
                         Text(
                           address,
-                          style: GoogleFonts.poppins(
+                          style: TextStyle(
+                            fontFamily: "Euclid",
                             fontSize: 12,
                             color: Colors.grey.shade600,
                           ),
@@ -334,7 +345,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
                         ),
                       ],
                     ),
-                  )
+                  ),
                 ],
               ),
             ),
@@ -350,7 +361,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
                 Expanded(
                   child: Text(
                     fullAddress,
-                    style: GoogleFonts.poppins(fontSize: 12),
+                    style: const TextStyle(fontFamily: "Euclid"),
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -378,11 +389,15 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
             if (statusOngoing) ...[
               Text(
                 "Mekanik sedang menuju lokasi Anda...",
-                style: GoogleFonts.poppins(fontSize: 13),
+                style: const TextStyle(fontFamily: "Euclid", fontSize: 13),
               ),
               Text(
                 "Siap-siap, bantuan segera tiba!",
-                style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey),
+                style: const TextStyle(
+                  fontFamily: "Euclid",
+                  fontSize: 12,
+                  color: Colors.grey,
+                ),
               ),
               Row(
                 mainAxisAlignment: MainAxisAlignment.end,
@@ -395,14 +410,18 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
             ] else if (statusCancelled) ...[
               Text(
                 "Pesanan ini telah dibatalkan.",
-                style: GoogleFonts.poppins(fontSize: 13, color: Colors.red),
+                style: const TextStyle(
+                  fontFamily: "Euclid",
+                  fontSize: 13,
+                  color: Colors.red,
+                ),
               ),
             ] else ...[
               Text(
                 "Pesanan anda telah terselesaikan.",
-                style: GoogleFonts.poppins(fontSize: 13),
+                style: const TextStyle(fontFamily: "Euclid", fontSize: 13),
               ),
-            ]
+            ],
           ],
         ),
       ),
@@ -415,10 +434,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
       decoration: BoxDecoration(
         color: Colors.grey.shade100,
         borderRadius: BorderRadius.circular(30),
-        border: Border.all(
-          color: Colors.grey.shade300,
-          width: 1,
-        ),
+        border: Border.all(color: Colors.grey.shade300, width: 1),
       ),
       child: Row(
         children: [
@@ -426,7 +442,8 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
           const SizedBox(width: 6),
           Text(
             text,
-            style: GoogleFonts.poppins(
+            style: const TextStyle(
+              fontFamily: "Euclid",
               fontSize: 11.5,
               fontWeight: FontWeight.w500,
               color: Colors.black87,
@@ -465,12 +482,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
         shape: BoxShape.circle,
         border: Border.all(color: Color(0xffEAEAEA)),
       ),
-      child: Image.asset(
-        assetPath,
-        width: 20,
-        height: 20,
-        fit: BoxFit.contain,
-      ),
+      child: Image.asset(assetPath, width: 20, height: 20, fit: BoxFit.contain),
     );
   }
 
@@ -490,7 +502,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
       "September",
       "Oktober",
       "November",
-      "Desember"
+      "Desember",
     ];
 
     final day = date.day;
@@ -506,9 +518,11 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
     text = text.toLowerCase();
     return text
         .split(" ")
-        .map((word) => word.isNotEmpty
-            ? "${word[0].toUpperCase()}${word.substring(1)}"
-            : "")
+        .map(
+          (word) => word.isNotEmpty
+              ? "${word[0].toUpperCase()}${word.substring(1)}"
+              : "",
+        )
         .join(" ");
   }
 }
