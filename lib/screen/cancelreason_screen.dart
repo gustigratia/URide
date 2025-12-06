@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class CancelReasonPage extends StatefulWidget {
@@ -19,7 +18,7 @@ class _CancelReasonPageState extends State<CancelReasonPage> {
     "Ajuan ganda",
     "Mekanik tidak ada respon",
     "Terlalu lama menunggu",
-    "Lainnya"
+    "Lainnya",
   ];
 
   @override
@@ -32,7 +31,8 @@ class _CancelReasonPageState extends State<CancelReasonPage> {
         centerTitle: true,
         title: Text(
           "Batalkan Pesanan",
-          style: GoogleFonts.poppins(
+          style: const TextStyle(
+            fontFamily: "Euclid",
             fontSize: 16,
             fontWeight: FontWeight.w600,
             color: Colors.black,
@@ -46,7 +46,8 @@ class _CancelReasonPageState extends State<CancelReasonPage> {
           children: [
             Text(
               "Pilih alasan pembatalan:",
-              style: GoogleFonts.poppins(
+              style: const TextStyle(
+                fontFamily: "Euclid",
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
               ),
@@ -92,7 +93,10 @@ class _CancelReasonPageState extends State<CancelReasonPage> {
                         const SizedBox(width: 12),
                         Text(
                           reason,
-                          style: GoogleFonts.poppins(fontSize: 14),
+                          style: const TextStyle(
+                            fontFamily: "Euclid",
+                            fontSize: 14,
+                          ),
                         ),
                       ],
                     ),
@@ -116,7 +120,8 @@ class _CancelReasonPageState extends State<CancelReasonPage> {
                   maxLines: 3,
                   decoration: InputDecoration(
                     hintText: "Tuliskan alasan pembatalan Anda...",
-                    hintStyle: GoogleFonts.poppins(
+                    hintStyle: const TextStyle(
+                      fontFamily: "Euclid",
                       color: Colors.grey,
                       fontSize: 13,
                     ),
@@ -141,7 +146,8 @@ class _CancelReasonPageState extends State<CancelReasonPage> {
                       onPressed: () => Navigator.pop(context),
                       child: Text(
                         "Kembali",
-                        style: GoogleFonts.poppins(
+                        style: const TextStyle(
+                          fontFamily: "Euclid",
                           fontSize: 14,
                           fontWeight: FontWeight.w500,
                           color: Colors.black87,
@@ -186,7 +192,8 @@ class _CancelReasonPageState extends State<CancelReasonPage> {
               children: [
                 Text(
                   "Pesanan Berhasil Dibatalkan",
-                  style: GoogleFonts.poppins(
+                  style: const TextStyle(
+                    fontFamily: "Euclid",
                     fontSize: 20,
                     fontWeight: FontWeight.w600,
                     color: Color(0xFFBB0A21),
@@ -196,7 +203,7 @@ class _CancelReasonPageState extends State<CancelReasonPage> {
                 const SizedBox(height: 16),
                 Text(
                   "Pesanan Anda telah dibatalkan sesuai dengan permintaan.",
-                  style: GoogleFonts.poppins(fontSize: 14),
+                  style: const TextStyle(fontFamily: "Euclid", fontSize: 14),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 26),
@@ -216,25 +223,28 @@ class _CancelReasonPageState extends State<CancelReasonPage> {
                       final idInt = int.tryParse(orderId);
 
                       if (idInt != null) {
-                        await supabase.from('orders').update(
-                            {'orderstatus': 'cancelled'}).eq('id', idInt);
+                        await supabase
+                            .from('orders')
+                            .update({'orderstatus': 'cancelled'})
+                            .eq('id', idInt);
                       }
 
                       Navigator.of(context).pushNamedAndRemoveUntil(
-                        '/order-history',
+                        '/history',
                         (route) => false,
                       );
                     },
                     child: Text(
                       "Kembali",
-                      style: GoogleFonts.poppins(
+                      style: const TextStyle(
+                        fontFamily: "Euclid",
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
                         color: Colors.white,
                       ),
                     ),
                   ),
-                )
+                ),
               ],
             ),
           ),
@@ -254,14 +264,13 @@ Widget _filledButton({
     child: TextButton(
       style: TextButton.styleFrom(
         backgroundColor: color,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(30),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
       ),
       onPressed: onTap,
       child: Text(
         text,
-        style: GoogleFonts.poppins(
+        style: const TextStyle(
+          fontFamily: "Euclid",
           fontSize: 14,
           fontWeight: FontWeight.w500,
           color: Colors.white,
