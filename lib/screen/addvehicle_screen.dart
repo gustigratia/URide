@@ -1,8 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:uride/routes/app_routes.dart';
-
 
 class TambahKendaraanPage extends StatefulWidget {
   const TambahKendaraanPage({super.key});
@@ -17,41 +14,62 @@ class _TambahKendaraanPageState extends State<TambahKendaraanPage> {
   final TextEditingController kilometerC = TextEditingController();
   final TextEditingController lastServiceDateC = TextEditingController();
 
-  bool isMotor = false;
-  bool isMobil = true;
+  String selectedType = "motor"; // default
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    final args =
+        ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>?;
+
+    if (args != null && args.containsKey("type")) {
+      selectedType = args["type"]; // motor / mobil
+    }
+  }
 
   Future<void> simpanKendaraan() async {
     final supabase = Supabase.instance.client;
 
-    // ambil user yg sedang login
-    final userId = 'ac2240e5-5bf9-4314-8892-0f925639bde8';
-
+    final user = supabase.auth.currentUser;
+    if (user == null) return;
 
     final data = {
-      "userid": userId, // <<< tambahan penting
-      "vehicletype": isMotor ? "motor" : "mobil",
+      "userid": user.id,
+      "vehicletype": selectedType,
       "vehiclename": namaKendaraanC.text,
       "vehiclenumber": nomorPlatC.text,
       "kilometer": kilometerC.text,
       "lastservicedate": lastServiceDateC.text,
     };
 
-    final response = await supabase.from('vehicles').insert(data);
+    try {
+      final response = await supabase
+          .from('vehicles')
+          .insert(data)
+          .select()
+          .single();
 
-    if (response != null && response.isNotEmpty) {
-      // Clear form setelah berhasil save
-      namaKendaraanC.clear();
-      nomorPlatC.clear();
-      kilometerC.clear();
-      lastServiceDateC.clear();
+      final vehicleId = response['id'];
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Kendaraan berhasil disimpan!")),
       );
 
-      // Direct ke halaman VehicleDetailPage()
-      Navigator.pushReplacementNamed(context, AppRoutes.vehicle);
-    } 
+      // ➜ KIRIM TYPE + ID
+      Navigator.pushNamed(
+        context,
+        '/vehicle',
+        arguments: {
+          "id": vehicleId,
+          "type": selectedType,
+        },
+      );
+
+    } catch (e) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text("Error: $e")));
+    }
   }
 
   @override
@@ -62,130 +80,33 @@ class _TambahKendaraanPageState extends State<TambahKendaraanPage> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         centerTitle: true,
-        title: Text(
+        leading: GestureDetector(
+          onTap: () => Navigator.pop(context),
+          child: const Padding(
+            padding: EdgeInsets.only(left: 10),
+            child: Icon(
+              Icons.arrow_back_ios_new,
+              color: Colors.black,
+              size: 20,
+            ),
+          ),
+        ),
+        title: const Text(
           "Tambah Kendaraan",
-          style: GoogleFonts.poppins(
+          style: TextStyle(
+            fontFamily: "Euclid",
             fontSize: 18,
             fontWeight: FontWeight.w600,
             color: Colors.black,
           ),
         ),
       ),
+
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 20),
         child: Column(
           children: [
-            // TAB MOTOR - MOBIL
-            Container(
-              padding: const EdgeInsets.all(4),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(30),
-              ),
-              child: Row(
-                mainAxisAlignment:
-                    MainAxisAlignment.center, // ← BIAR TETAP DI TENGAH
-                children: [
-                  // ---------------- MOTOR ----------------
-                  SizedBox(
-                    width: 150,
-                    child: GestureDetector(
-                      onTap: () => setState(() {
-                        isMotor = true;
-                        isMobil = false;
-                      }),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(30),
-                          gradient: isMotor
-                              ? const LinearGradient(
-                                  colors: [
-                                    Color(0xFFFED46A),
-                                    Color(0xFFFFB000),
-                                  ],
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                )
-                              : null,
-                          color: isMotor ? null : const Color(0xffE3E3E3),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Image.asset(
-                              isMotor
-                                  ? "images/motor-clicked.png"
-                                  : "images/motor-default.png",
-                              width: 22,
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              "Motor",
-                              style: GoogleFonts.poppins(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                                color: isMotor ? Colors.white : Colors.black,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(width: 20),
-
-                  // ---------------- MOBIL ----------------
-                  SizedBox(
-                    width: 150,
-                    child: GestureDetector(
-                      onTap: () => setState(() {
-                        isMotor = false;
-                        isMobil = true;
-                      }),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(30),
-                          gradient: isMobil
-                              ? const LinearGradient(
-                                  colors: [
-                                    Color(0xFFFED46A),
-                                    Color(0xFFFFB000),
-                                  ],
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                )
-                              : null,
-                          color: isMobil ? null : const Color(0xffE3E3E3),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Image.asset(
-                              isMobil
-                                  ? "images/mobil-clicked.png"
-                                  : "images/mobil-default.png",
-                              width: 22,
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              "Mobil",
-                              style: GoogleFonts.poppins(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                                color: isMobil ? Colors.white : Colors.black,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 25),
+            const SizedBox(height: 10),
 
             // FORM CARD
             Container(
@@ -198,7 +119,7 @@ class _TambahKendaraanPageState extends State<TambahKendaraanPage> {
                     color: Colors.black.withOpacity(0.05),
                     blurRadius: 12,
                     offset: const Offset(0, 4),
-                  )
+                  ),
                 ],
               ),
               child: Column(
@@ -223,46 +144,25 @@ class _TambahKendaraanPageState extends State<TambahKendaraanPage> {
                   buildField("Masukkan tanggal servis terakhir (YY-MM-DD)",
                       controller: lastServiceDateC),
 
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 30),
 
-                  Text(
-                    "Waktu berkendara",
-                    style: GoogleFonts.poppins(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    "Catatan : waktu berkendara akan mulai dihitung saat Anda memasukkan informasi kendaraan.",
-                    style: GoogleFonts.poppins(
-                      fontSize: 11,
-                      color: Colors.grey[600],
-                    ),
-                  ),
-
-                  const SizedBox(height: 25),
-
-                  // BUTTON SIMPAN
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
-                      onPressed: () {
-                        simpanKendaraan();
-                      },
+                      onPressed: simpanKendaraan,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xffFEB800),
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(30),
                         ),
-                        elevation: 0,
                       ),
-                      child: Text(
+                      child: const Text(
                         "Simpan",
-                        style: GoogleFonts.poppins(
-                          fontWeight: FontWeight.w600,
+                        style: TextStyle(
+                          fontFamily: "Euclid",
                           fontSize: 15,
+                          fontWeight: FontWeight.w600,
                           color: Colors.white,
                         ),
                       ),
@@ -270,7 +170,7 @@ class _TambahKendaraanPageState extends State<TambahKendaraanPage> {
                   ),
                 ],
               ),
-            )
+            ),
           ],
         ),
       ),
@@ -280,7 +180,8 @@ class _TambahKendaraanPageState extends State<TambahKendaraanPage> {
   Widget buildLabel(String text) {
     return Text(
       text,
-      style: GoogleFonts.poppins(
+      style: const TextStyle(
+        fontFamily: "Euclid",
         fontSize: 13,
         fontWeight: FontWeight.w600,
       ),
@@ -298,7 +199,11 @@ class _TambahKendaraanPageState extends State<TambahKendaraanPage> {
         controller: controller,
         decoration: InputDecoration(
           hintText: hint,
-          hintStyle: GoogleFonts.poppins(fontSize: 13, color: Colors.grey[600]),
+          hintStyle: TextStyle(
+            fontFamily: "Euclid",
+            fontSize: 13,
+            color: Colors.grey[600],
+          ),
           border: InputBorder.none,
           contentPadding: const EdgeInsets.symmetric(horizontal: 14),
         ),
