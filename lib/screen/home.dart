@@ -41,7 +41,10 @@ class _HomeScreenState extends State<HomeScreen> {
     });
 
     try {
-      final workshopData = await supabase.from('workshops').select().order('id');
+      final workshopData = await supabase
+          .from('workshops')
+          .select()
+          .order('id');
       final spbuData = await supabase.from('spbu').select().order('id');
 
       // Convert to List<Map<String,dynamic>>
@@ -112,7 +115,6 @@ class _HomeScreenState extends State<HomeScreen> {
         });
         print("Firstname set to state: $firstName");
       }
-
     } catch (e) {
       print("Error loading firstname: $e");
     }
@@ -120,13 +122,12 @@ class _HomeScreenState extends State<HomeScreen> {
     print("=== LOAD FIRSTNAME END ===");
   }
 
-
-
-
   Map<String, dynamic> _withDistance(Map<String, dynamic> item) {
     print("=== DEBUG ITEM ===");
     print("Item raw: $item");
-    print("User position: ${userPosition?.latitude}, ${userPosition?.longitude}");
+    print(
+      "User position: ${userPosition?.latitude}, ${userPosition?.longitude}",
+    );
 
     try {
       final lat = item['latitude'];
@@ -134,10 +135,12 @@ class _HomeScreenState extends State<HomeScreen> {
       print("Lat from DB: $lat  | Lng from DB: $lng");
 
       if (lat != null && lng != null && userPosition != null) {
-        final double latD =
-        (lat is num) ? lat.toDouble() : double.parse(lat.toString());
-        final double lngD =
-        (lng is num) ? lng.toDouble() : double.parse(lng.toString());
+        final double latD = (lat is num)
+            ? lat.toDouble()
+            : double.parse(lat.toString());
+        final double lngD = (lng is num)
+            ? lng.toDouble()
+            : double.parse(lng.toString());
 
         print("Lat parsed: $latD | Lng parsed: $lngD");
 
@@ -184,7 +187,6 @@ class _HomeScreenState extends State<HomeScreen> {
     return item;
   }
 
-
   String _formatDistance(double meters) {
     if (meters < 1000) {
       return '${meters.toStringAsFixed(0)} m';
@@ -217,7 +219,9 @@ class _HomeScreenState extends State<HomeScreen> {
         return;
       }
 
-      final pos = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
+      final pos = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+      );
       if (mounted) {
         setState(() {
           userPosition = pos;
@@ -233,9 +237,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     if (isLoading) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
     return Scaffold(
@@ -246,6 +248,16 @@ class _HomeScreenState extends State<HomeScreen> {
           // handle bottom nav tap if needed
         },
       ),
+
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          Navigator.pushNamed(context, '/chatbot');
+        },
+        backgroundColor: Colors.orange,
+        child: const Icon(Icons.chat, color: Colors.white),
+      ),
+      
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       body: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -441,7 +453,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                         ),
                       ),
-                    )
+                    ),
                   ],
                 );
               },
@@ -465,9 +477,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
         const SizedBox(width: 12),
-        Expanded(
-          child: _menuCards(context),
-        ),
+        Expanded(child: _menuCards(context)),
       ],
     );
   }
@@ -731,7 +741,11 @@ class _HomeScreenState extends State<HomeScreen> {
                         const SizedBox(height: 6),
                         Row(
                           children: [
-                            const Icon(Icons.location_on, size: 16, color: Colors.grey),
+                            const Icon(
+                              Icons.location_on,
+                              size: 16,
+                              color: Colors.grey,
+                            ),
                             const SizedBox(width: 4),
                             Flexible(
                               child: Text(
@@ -741,7 +755,11 @@ class _HomeScreenState extends State<HomeScreen> {
                               ),
                             ),
                             const SizedBox(width: 12),
-                            const Icon(Icons.star, size: 16, color: Colors.amber),
+                            const Icon(
+                              Icons.star,
+                              size: 16,
+                              color: Colors.amber,
+                            ),
                             const SizedBox(width: 4),
                             Flexible(
                               child: Text(
@@ -784,9 +802,7 @@ class _HomeScreenState extends State<HomeScreen> {
       height: 230,
       child: PageView.builder(
         clipBehavior: Clip.none,
-        controller: PageController(
-          viewportFraction: 0.85,
-        ),
+        controller: PageController(viewportFraction: 0.85),
         itemCount: workshops.length,
         itemBuilder: (context, index) {
           final item = workshops[index];
@@ -864,7 +880,11 @@ class _HomeScreenState extends State<HomeScreen> {
                         const SizedBox(height: 6),
                         Row(
                           children: [
-                            const Icon(Icons.location_on, size: 16, color: Colors.grey),
+                            const Icon(
+                              Icons.location_on,
+                              size: 16,
+                              color: Colors.grey,
+                            ),
                             const SizedBox(width: 4),
                             Flexible(
                               child: Text(
@@ -874,7 +894,11 @@ class _HomeScreenState extends State<HomeScreen> {
                               ),
                             ),
                             const SizedBox(width: 12),
-                            const Icon(Icons.star, size: 16, color: Colors.amber),
+                            const Icon(
+                              Icons.star,
+                              size: 16,
+                              color: Colors.amber,
+                            ),
                             const SizedBox(width: 4),
                             Flexible(
                               child: Text(
@@ -917,9 +941,7 @@ class _HomeScreenState extends State<HomeScreen> {
       height: 230,
       child: PageView.builder(
         clipBehavior: Clip.none,
-        controller: PageController(
-          viewportFraction: 0.85,
-        ),
+        controller: PageController(viewportFraction: 0.85),
         itemCount: spbu.length,
         itemBuilder: (context, index) {
           final item = spbu[index];
