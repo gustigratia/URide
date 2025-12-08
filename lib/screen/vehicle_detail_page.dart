@@ -80,6 +80,7 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
+        automaticallyImplyLeading: false,
         centerTitle: true,
         title: const Text(
           "Detail Kendaraan",
