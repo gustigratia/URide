@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:uride/screen/home.dart';
+import 'package:uride/screen/map_screen.dart';
 import 'package:uride/screen/sign_in.dart';
 import 'package:uride/screen/sign_up.dart';
 import 'package:uride/screen/search.dart';
@@ -32,6 +33,7 @@ class AppRoutes {
   static const editKendaraan = '/edit-kendaraan';
   static const orderHistory = '/history';
   static const chatbot = '/chatbot';
+  static const map = '/map';
 
 
   static Map<String, WidgetBuilder> routes = {
@@ -48,6 +50,7 @@ class AppRoutes {
     editKendaraan: (_) => const EditKendaraanPage(),
     orderHistory: (_) => const OrderHistoryScreen(),
     chatbot: (_) => const ChatbotPage(),
+    map: (_) => MapPage(),
   };
 
   static Route<dynamic>? generateRoute(RouteSettings settings) {
@@ -74,6 +77,8 @@ class AppRoutes {
         return _animatedRoute(const OrderHistoryScreen());
       case addvehicle:
         return _animatedRoute(const TambahKendaraanPage());
+      case map:
+        return _animatedRoute(MapPage());
       case search_result:
         return PageRouteBuilder(
           transitionDuration: const Duration(milliseconds: 300),

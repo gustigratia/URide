@@ -33,8 +33,8 @@ class MyApp extends StatelessWidget {
       ),
 
       // route awal
-      initialRoute: AppRoutes.signin,
-
+      // initialRoute: AppRoutes.signin,
+      initialRoute: AppRoutes.map,
       routes: AppRoutes.routes,
       onGenerateRoute: AppRoutes.generateRoute,
     );
