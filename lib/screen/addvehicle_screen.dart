@@ -60,15 +60,12 @@ class _TambahKendaraanPageState extends State<TambahKendaraanPage> {
       Navigator.pushNamed(
         context,
         '/vehicle',
-        arguments: {
-          "id": vehicleId,
-          "type": selectedType,
-        },
+        arguments: {"id": vehicleId, "type": selectedType},
       );
-
     } catch (e) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text("Error: $e")));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Error: $e")));
     }
   }
 
@@ -101,7 +98,6 @@ class _TambahKendaraanPageState extends State<TambahKendaraanPage> {
           ),
         ),
       ),
-
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 20),
         child: Column(
@@ -126,23 +122,31 @@ class _TambahKendaraanPageState extends State<TambahKendaraanPage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   buildLabel("Nama Kendaraan"),
-                  buildField("Masukkan nama kendaraan",
-                      controller: namaKendaraanC),
+                  buildField(
+                    "Masukkan nama kendaraan",
+                    controller: namaKendaraanC,
+                  ),
 
                   const SizedBox(height: 15),
                   buildLabel("Nomor plat"),
-                  buildField("Masukkan nomor plat kendaraan",
-                      controller: nomorPlatC),
+                  buildField(
+                    "Masukkan nomor plat kendaraan",
+                    controller: nomorPlatC,
+                  ),
 
                   const SizedBox(height: 15),
                   buildLabel("Kilometer"),
-                  buildField("Masukkan kilometer kendaraan",
-                      controller: kilometerC),
+                  buildField(
+                    "Masukkan kilometer kendaraan",
+                    controller: kilometerC,
+                  ),
 
                   const SizedBox(height: 15),
                   buildLabel("Tanggal Servis Terakhir"),
-                  buildField("Masukkan tanggal servis terakhir (YY-MM-DD)",
-                      controller: lastServiceDateC),
+                  buildField(
+                    "Masukkan tanggal servis terakhir (YY-MM-DD)",
+                    controller: lastServiceDateC,
+                  ),
 
                   const SizedBox(height: 30),
 
