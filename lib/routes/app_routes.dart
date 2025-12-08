@@ -13,6 +13,8 @@ import 'package:uride/screen/vehicle_detail_page.dart';
 import 'package:uride/screen/addvehicle_screen.dart';
 import 'package:uride/screen/search_result.dart';
 import 'package:uride/screen/edit_kendaraan_page.dart';
+import 'package:uride/screen/spbu.dart'; 
+
 import 'package:uride/screen/orderhistory_screen.dart';
 import 'package:uride/screen/chatbot.dart';
 
@@ -29,6 +31,7 @@ class AppRoutes {
   static const verifikasiKode = '/verifikasi-kode';
   static const buatPasswordBaru = '/buat-password-baru'; 
   static const laluLintas = '/lalulintas';
+  static const spbuList = '/spbu-list'; 
   static const editKendaraan = '/edit-kendaraan';
   static const orderHistory = '/history';
   static const chatbot = '/chatbot';
@@ -46,6 +49,7 @@ class AppRoutes {
     buatPasswordBaru: (_) => const BuatPasswordBaruPage(),
     laluLintas: (_)=> const LaluLintasPage(), 
     editKendaraan: (_) => const EditKendaraanPage(),
+    spbuList: (_) => const SPBUListScreen(),
     orderHistory: (_) => const OrderHistoryScreen(),
     chatbot: (_) => const ChatbotPage(),
   };
@@ -69,7 +73,9 @@ class AppRoutes {
       case vehicle:
         return _animatedRoute(const VehicleDetailPage());
       case editKendaraan:
-        return _animatedRoute(const EditKendaraanPage());
+        return _animatedRoute(const EditKendaraanPage()); 
+      case spbuList: 
+        return _animatedRoute(const SPBUListScreen());
       case orderHistory:
         return _animatedRoute(const OrderHistoryScreen());
       case addvehicle:

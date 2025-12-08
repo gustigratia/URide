@@ -654,8 +654,8 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildNearestSpbuTitle() {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: const [
-        Text(
+      children: [
+        const Text(
           "SPBU terdekat",
           style: TextStyle(
             fontSize: 17,
@@ -663,7 +663,18 @@ class _HomeScreenState extends State<HomeScreen> {
             fontWeight: FontWeight.bold,
           ),
         ),
-        Text("Lihat Semua", style: TextStyle(color: Colors.orange)),
+        GestureDetector(
+          onTap: () {
+            Navigator.pushNamed(context, '/spbu-list'); // Ganti sesuai route kamu
+          },
+          child: const Text(
+            "Lihat Semua",
+            style: TextStyle(
+              color: Colors.orange,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
       ],
     );
   }
