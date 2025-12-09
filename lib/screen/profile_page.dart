@@ -27,19 +27,15 @@ class _ProfilePageState extends State<ProfilePage> {
     loadUser();
   }
 
-  // ======================================================
-  //                    LOAD USER DATA
-  // ======================================================
+  // LOAD USER DATA
   Future<void> loadUser() async {
     final supabase = Supabase.instance.client;
 
     try {
       if (currentUser == null) return;
 
-      // Email dari auth
       emailC.text = currentUser!.email ?? "";
 
-      // Ambil data dari public.users
       final data = await supabase
           .from("users")
           .select()
@@ -49,29 +45,23 @@ class _ProfilePageState extends State<ProfilePage> {
       if (data != null) {
         firstname = data["firstname"] ?? "";
         lastname = data["lastname"] ?? "";
-
         nameC.text = "$firstname $lastname".trim();
         phoneC.text = data["phone"] ?? "";
       }
 
       setState(() {});
-      print("LOAD SUCCESS: $data");
-
     } catch (e) {
       print("ERROR LOAD USER: $e");
     }
   }
 
-  // ======================================================
-  //                    SAVE PROFILE
-  // ======================================================
+  // SAVE PROFILE
   Future<void> saveProfile() async {
     final supabase = Supabase.instance.client;
 
     try {
-      // Pisahkan nama menjadi firstname & lastname
       List<String> parts = nameC.text.trim().split(" ");
-      firstname = parts.isNotEmpty ? parts.first : "";
+      firstname = parts.first;
       lastname = parts.length > 1 ? parts.sublist(1).join(" ") : "";
 
       await supabase.from("users").update({
@@ -80,42 +70,37 @@ class _ProfilePageState extends State<ProfilePage> {
         "phone": phoneC.text,
       }).eq("id", currentUser!.id);
 
-      print("UPDATE SUCCESS");
-
-      await loadUser(); // refresh UI
-
+      await loadUser();
     } catch (e) {
       print("ERROR UPDATE: $e");
     }
   }
 
-  // ======================================================
-  //                        UI
-  // ======================================================
+  // UI
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xfff5f5f5),
+      backgroundColor: const Color(0xffF5F5F5),
       appBar: AppBar(
         elevation: 0,
         backgroundColor: Colors.transparent,
         centerTitle: true,
         title: const Text(
           "Profil",
-          style: TextStyle(color: Colors.black, fontWeight: FontWeight.w600),
+          style: TextStyle(
+            color: Colors.black,
+            fontWeight: FontWeight.w600,
+          ),
         ),
       ),
-
-      bottomNavigationBar: _bottomNavBar(),
 
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
-
-            // ======================================================
-            // HEADER PROFILE
-            // ======================================================
+            // ===========================
+            // HEADER SECTION
+            // ===========================
             Container(
               padding: const EdgeInsets.all(18),
               decoration: BoxDecoration(
@@ -127,7 +112,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // PHOTO
                   Container(
@@ -137,41 +122,82 @@ class _ProfilePageState extends State<ProfilePage> {
                       color: Colors.white,
                     ),
                     child: const CircleAvatar(
-                      radius: 35,
+                      radius: 28,
                       backgroundImage: AssetImage("assets/profile.jpg"),
                     ),
                   ),
 
-                  const SizedBox(width: 16),
+                  const SizedBox(width: 20),
 
-                  // NAME FIELD
+                  // NAME + BUTTON
                   Expanded(
-                    child: isEditing
-                        ? TextField(
-                            controller: nameC,
-                            style: const TextStyle(
-                                fontSize: 19,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white),
-                            cursorColor: Colors.white,
-                            decoration: const InputDecoration(
-                              isDense: true,
-                              enabledBorder: UnderlineInputBorder(
-                                borderSide: BorderSide(color: Colors.white, width: 1.5),
-                              ),
-                              focusedBorder: UnderlineInputBorder(
-                                borderSide: BorderSide(color: Colors.white, width: 2),
-                              ),
-                            ),
-                          )
-                        : Text(
-                            nameC.text,
-                            style: const TextStyle(
-                              fontSize: 19,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // NAME — WITH UNDERLINE WHEN EDITING
+                        SizedBox(
+                          height: 24,
+                          child: isEditing
+                              ? TextField(
+                                  controller: nameC,
+                                  style: const TextStyle(
+                                    fontSize: 18,
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                  decoration: const InputDecoration(
+                                    isDense: true,
+                                    border: UnderlineInputBorder(
+                                      borderSide: BorderSide(
+                                        color: Colors.white,
+                                        width: 1.2,
+                                      ),
+                                    ),
+                                    enabledBorder: UnderlineInputBorder(
+                                      borderSide: BorderSide(
+                                        color: Colors.white,
+                                        width: 1.2,
+                                      ),
+                                    ),
+                                    focusedBorder: UnderlineInputBorder(
+                                      borderSide: BorderSide(
+                                        color: Colors.white,
+                                        width: 1.6,
+                                      ),
+                                    ),
+                                  ),
+                                )
+                              : Text(
+                                  nameC.text,
+                                  style: const TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                        ),
+
+                        const SizedBox(height: 8),
+
+                        // BUTTON DAFTARKAN BENGKEL
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 5),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Text(
+                            "Gabung Jadi Mitra",
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.black87,
                             ),
                           ),
+                        )
+                      ],
+                    ),
                   ),
 
                   const SizedBox(width: 12),
@@ -200,26 +226,27 @@ class _ProfilePageState extends State<ProfilePage> {
               ),
             ),
 
-            const SizedBox(height: 16),
+            const SizedBox(height: 18),
 
-            // EMAIL FIELD (read-only)
-            _valueCard(
+            // EMAIL
+            _profileCard(
               icon: Icons.email_outlined,
               title: "Email",
               controller: emailC,
+              readOnly: false,
               isEditing: isEditing,
-              readOnly: true,
             ),
 
-            // PHONE FIELD
-            _valueCard(
+            // PHONE (UNDERLINE WHEN EDITING)
+            _profileCard(
               icon: Icons.phone_outlined,
               title: "Phone",
               controller: phoneC,
-              isEditing: isEditing,
               readOnly: false,
+              isEditing: isEditing,
             ),
 
+            // LOGOUT
             _logoutCard(),
           ],
         ),
@@ -227,34 +254,41 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  // ======================================================
-  //                     CARD FIELD
-  // ======================================================
-  Widget _valueCard({
+  // ===========================
+  // PROFILE CARD (WITH UNDERLINE)
+  // ===========================
+  Widget _profileCard({
     required IconData icon,
     required String title,
     required TextEditingController controller,
+    required bool readOnly,
     required bool isEditing,
-    bool readOnly = false,
   }) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 8,
+          )
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // LABEL ROW
           Row(
             children: [
-              Icon(icon, color: Colors.black87),
-              const SizedBox(width: 14),
+              Icon(icon, color: Colors.black54),
+              const SizedBox(width: 12),
               Text(
                 title,
                 style: const TextStyle(
-                  fontSize: 13,
+                  fontSize: 14,
                   fontWeight: FontWeight.bold,
                   color: Colors.grey,
                 ),
@@ -264,51 +298,64 @@ class _ProfilePageState extends State<ProfilePage> {
 
           const SizedBox(height: 6),
 
-          isEditing
-              ? TextField(
-                  controller: controller,
-                  readOnly: readOnly,
-                  decoration: const InputDecoration(
-                    isDense: true,
-                    border: UnderlineInputBorder(),
-                    focusedBorder: UnderlineInputBorder(
-                      borderSide: BorderSide(color: Colors.black, width: 1.5),
+          // TEXT AREA WITH UNDERLINE WHEN EDITING
+          Container(
+            height: 22,
+            padding: const EdgeInsets.only(left: 40),
+            alignment: Alignment.centerLeft,
+            child: isEditing
+                ? TextField(
+                    controller: controller,
+                    readOnly: readOnly,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
                     ),
-                  ),
-                )
-              : Padding(
-                  padding: const EdgeInsets.only(left: 40),
-                  child: Text(
+                    decoration: const InputDecoration(
+                      isDense: true,
+                      border: UnderlineInputBorder(
+                        borderSide: BorderSide(color: Colors.black54, width: 1),
+                      ),
+                      enabledBorder: UnderlineInputBorder(
+                        borderSide: BorderSide(color: Colors.black54, width: 1),
+                      ),
+                      focusedBorder: UnderlineInputBorder(
+                        borderSide: BorderSide(color: Colors.black, width: 1.4),
+                      ),
+                    ),
+                  )
+                : Text(
                     controller.text,
                     style: const TextStyle(
-                      fontSize: 15,
+                      fontSize: 14,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
-                )
+          ),
         ],
       ),
     );
   }
 
-  // ======================================================
-  //                      LOGOUT
-  // ======================================================
+  // ===========================
+  // LOGOUT CARD
+  // ===========================
   Widget _logoutCard() {
     return Container(
       padding: const EdgeInsets.all(4),
+      margin: const EdgeInsets.only(top: 8),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(18),
       ),
       child: ListTile(
         leading: const Icon(Icons.logout, color: Colors.red),
         title: const Text(
-          "Logout",
+          "Log Out",
           style: TextStyle(
             color: Colors.red,
             fontSize: 15,
-            fontWeight: FontWeight.w500,
+            fontWeight: FontWeight.w600,
           ),
         ),
         onTap: () async {
@@ -318,36 +365,6 @@ class _ProfilePageState extends State<ProfilePage> {
           }
         },
       ),
-    );
-  }
-
-  // ======================================================
-  //                   BOTTOM NAVIGATION BAR
-  // ======================================================
-  Widget _bottomNavBar() {
-    return BottomNavigationBar(
-      currentIndex: 2,
-      onTap: (i) {
-        if (i == 0) Navigator.pushNamed(context, "/home");
-        if (i == 1) Navigator.pushNamed(context, "/vehicle");
-        if (i == 2) Navigator.pushNamed(context, "/profile");
-      },
-      selectedItemColor: Colors.orange,
-      unselectedItemColor: Colors.grey,
-      items: const [
-        BottomNavigationBarItem(
-          icon: Icon(Icons.home_outlined),
-          label: "Home",
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.motorcycle_outlined),
-          label: "Kendaraan",
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.person_outline),
-          label: "Profil",
-        ),
-      ],
     );
   }
 }

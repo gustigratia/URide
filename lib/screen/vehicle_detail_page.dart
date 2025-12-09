@@ -151,8 +151,10 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    _navArrow(() => setState(() => selectedIndex--),
-                        Icons.chevron_left),
+                    _navArrow(
+                      () => setState(() => selectedIndex--),
+                      Icons.chevron_left,
+                    ),
                     Expanded(
                       child: Text(
                         v?['vehiclename'] ?? "-",
@@ -164,8 +166,10 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
                         ),
                       ),
                     ),
-                    _navArrow(() => setState(() => selectedIndex++),
-                        Icons.chevron_right),
+                    _navArrow(
+                      () => setState(() => selectedIndex++),
+                      Icons.chevron_right,
+                    ),
                   ],
                 ),
 
@@ -184,10 +188,7 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
 
                       return SlideTransition(
                         position: slide,
-                        child: FadeTransition(
-                          opacity: animation,
-                          child: child,
-                        ),
+                        child: FadeTransition(opacity: animation, child: child),
                       );
                     },
                     child: Image.asset(
@@ -351,8 +352,18 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
   String _monthName(int m) {
     const arr = [
       "",
-      "Jan","Feb","Mar","Apr","Mei","Jun",
-      "Jul","Agu","Sep","Okt","Nov","Des",
+      "Jan",
+      "Feb",
+      "Mar",
+      "Apr",
+      "Mei",
+      "Jun",
+      "Jul",
+      "Agu",
+      "Sep",
+      "Okt",
+      "Nov",
+      "Des",
     ];
     return arr[m];
   }
@@ -500,8 +511,8 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
                 value < 0.33
                     ? Colors.green
                     : value < 0.66
-                        ? Colors.orange
-                        : Colors.red,
+                    ? Colors.orange
+                    : Colors.red,
               ),
             ),
           ),
