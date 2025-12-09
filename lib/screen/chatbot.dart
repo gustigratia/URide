@@ -191,7 +191,7 @@ class _ChatbotPageState extends State<ChatbotPage> {
 
               // TITLE (white)
               Text(
-                "URide Assistant",
+                "UR Assistant",
                 style: TextStyle(
                   color: Colors.white,
                   fontSize: 18,
