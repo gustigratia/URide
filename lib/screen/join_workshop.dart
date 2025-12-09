@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:path/path.dart' as p;
 
 class GabungMitraPage extends StatefulWidget {
   const GabungMitraPage({super.key});
@@ -70,7 +71,7 @@ class _GabungMitraPageState extends State<GabungMitraPage> {
       context: context,
       initialTime: TimeOfDay.now(),
       initialEntryMode: TimePickerEntryMode.input, // KEYBOARD MODE
-      builder: (context, child) {
+      builder: (BuildContext context, Widget? child) {
         return Theme(
           data: Theme.of(context).copyWith(
             colorScheme: const ColorScheme.light(primary: Color(0xFFFDC000)),
@@ -286,31 +287,53 @@ class _GabungMitraPageState extends State<GabungMitraPage> {
     try {
       String? imageUrl;
 
-      if (workshopImage != null) {
+      // UPLOAD WORKSHOP IMAGE
+      if (!kIsWeb && workshopImage != null) {
         final fileName =
-            "workshop_${DateTime.now().millisecondsSinceEpoch}.jpg";
-        final filePath = "workshops/$fileName";
-        String? result;
+            "${DateTime.now().millisecondsSinceEpoch}_${p.basename(workshopImage!.path)}";
 
-        if (kIsWeb) {
-          result = await supabase.storage
-              .from("images")
-              .uploadBinary(
-                filePath,
-                _webImageBytes!, // sekarang ini benar-benar foto terbaru
-                fileOptions: const FileOptions(upsert: false),
-              );
-        } else {
-          result = await supabase.storage
-              .from("images")
-              .upload(
-                filePath,
-                workshopImage!,
-                fileOptions: const FileOptions(upsert: false),
-              );
+        final storagePath = "workshops/$fileName";
+
+        // 1. Upload file ke Supabase
+        final result = await supabase.storage
+            .from("images")
+            .upload(
+              storagePath,
+              workshopImage!,
+              fileOptions: const FileOptions(upsert: false),
+            );
+
+        if (result == null) {
+          throw Exception("Upload gagal! File tidak masuk ke storage.");
         }
 
-        imageUrl = supabase.storage.from("images").getPublicUrl(filePath);
+        // 2. Ambil URL
+        final publicUrl = supabase.storage.from("images").getPublicUrl(result);
+
+        if (publicUrl.isEmpty) {
+          throw Exception("Public URL gagal dibuat. Cek bucket.");
+        }
+
+        imageUrl = publicUrl;
+      }
+
+      // ----------- WEB VERSION --------------
+      if (kIsWeb && _webImageBytes != null) {
+        final fileName = "${DateTime.now().millisecondsSinceEpoch}.jpg";
+
+        final storagePath = "workshops/$fileName";
+
+        final result = await supabase.storage
+            .from("images")
+            .uploadBinary(
+              storagePath,
+              _webImageBytes!,
+              fileOptions: const FileOptions(upsert: false),
+            );
+
+        final publicUrl = supabase.storage.from("images").getPublicUrl(result);
+
+        imageUrl = publicUrl;
       }
 
       final position = await getCurrentLocation();
@@ -341,6 +364,8 @@ class _GabungMitraPageState extends State<GabungMitraPage> {
                 int.tryParse(priceC.text.replaceAll(RegExp(r'[^0-9]'), '')) ??
                 0,
             "is_open": isOpen,
+            "latitude": latitude,
+            "longitude": longitude,
             "save": false,
 
             "bank": bankC.text.trim(),
@@ -438,7 +463,7 @@ class _GabungMitraPageState extends State<GabungMitraPage> {
       ),
 
       body: LayoutBuilder(
-        builder: (context, constraints) {
+        builder: (BuildContext context, BoxConstraints constraints) {
           return SingleChildScrollView(
             // Hanya scroll jika overflow
             physics: const BouncingScrollPhysics(),
