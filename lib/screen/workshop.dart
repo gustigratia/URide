@@ -99,7 +99,13 @@ class _BengkelListScreenState extends State<BengkelListScreen> {
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.black),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () {
+            Navigator.pushAndRemoveUntil(
+              context,
+              MaterialPageRoute(builder: (context) => const BengkelListScreen()),
+              (route) => false, // hapus semua route sebelumnya agar langsung ke BengkelListScreen
+            );
+          },
         ),
         title: const Text(
           'Bengkel',
@@ -298,7 +304,7 @@ class BengkelCard extends StatelessWidget {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 12),
 
                   // Layanan
                   if (services.isNotEmpty)

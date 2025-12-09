@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:uride/routes/app_routes.dart';
+import 'package:uride/widgets/bottom_nav.dart';
 
 class VehicleDetailPage extends StatefulWidget {
   const VehicleDetailPage({super.key});
@@ -9,11 +11,22 @@ class VehicleDetailPage extends StatefulWidget {
 }
 
 class _VehicleDetailPageState extends State<VehicleDetailPage> {
-  String selectedType = "motor"; // motor | mobil
+  String selectedType = "motor";
   int selectedIndex = 0;
 
   List<dynamic> vehiclesMotor = [];
   List<dynamic> vehiclesMobil = [];
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    final args = ModalRoute.of(context)!.settings.arguments as Map?;
+
+    if (args != null && args.containsKey("type")) {
+      selectedType = args["type"]; // <-- SET TAB SESUAI YG DITAMBAH
+    }
+  }
 
   @override
   void initState() {
@@ -23,18 +36,22 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
 
   Future<void> fetchVehicles() async {
     final supabase = Supabase.instance.client;
+    final user = supabase.auth.currentUser;
+    if (user == null) return;
 
     final motorData = await supabase
         .from('vehicles')
         .select()
         .eq("vehicletype", "motor")
-        .eq("userid", "ac2240e5-5bf9-4314-8892-0f925639bde8");
+        .eq("userid", user.id)
+        .order("id", ascending: true);
 
     final mobilData = await supabase
         .from('vehicles')
         .select()
         .eq("vehicletype", "mobil")
-        .eq("userid", "ac2240e5-5bf9-4314-8892-0f925639bde8");
+        .eq("userid", user.id)
+        .order("id", ascending: true);
 
     setState(() {
       vehiclesMotor = motorData;
@@ -51,174 +68,232 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
   @override
   Widget build(BuildContext context) {
     final width = MediaQuery.of(context).size.width;
+    final list = selectedType == "motor" ? vehiclesMotor : vehiclesMobil;
+    final hasVehicle = list.isNotEmpty;
     final v = currentVehicle;
 
     return Scaffold(
       backgroundColor: Colors.white,
-
+      bottomNavigationBar: CustomBottomNav(
+        currentIndex: 1,
+      ),
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
+        automaticallyImplyLeading: false,
         centerTitle: true,
         title: const Text(
           "Detail Kendaraan",
           style: TextStyle(
+            fontFamily: 'Euclid',
             fontSize: 18,
             fontWeight: FontWeight.w600,
             color: Colors.black,
           ),
         ),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
-          onPressed: () => Navigator.pop(context),
-        ),
       ),
 
       body: SafeArea(
-        top: false,
-        child: GestureDetector(
-          onHorizontalDragEnd: (details) {
-            if (details.primaryVelocity! < 0) {
-              setState(() => selectedIndex++);
-            } else if (details.primaryVelocity! > 0) {
-              setState(() => selectedIndex--);
-            }
-          },
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                const SizedBox(height: 10),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Column(
+            children: [
+              const SizedBox(height: 10),
 
-                // TOP TAB
-                Row(
+              // TAB MOTOR / MOBIL
+              Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(30),
+                ),
+                child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    _vehicleTab(
-                      title: "Motor",
-                      icon: selectedType == "motor"
-                          ? "motor(active).png"
-                          : "motor(inactive).png",
-                      active: selectedType == "motor",
-                      onTap: () {
-                        setState(() {
-                          selectedType = "motor";
-                          selectedIndex = 0;
-                        });
-                      },
-                    ),
-
-                    const SizedBox(width: 10),
-                    _vehicleTab(
-                      title: "Mobil",
-                      icon: selectedType == "mobil"
-                          ? "mobil(active).png"
-                          : "mobil(inactive).jpg",
-                      active: selectedType == "mobil",
-                      onTap: () {
-                        setState(() {
-                          selectedType = "mobil";
-                          selectedIndex = 0;
-                        });
-                      },
-                    ),
+                    _tabButton("motor", "images/motor(active).png",
+                        "images/motor(inactive).png"),
+                    const SizedBox(width: 20),
+                    _tabButton("mobil", "images/mobil(active).png",
+                        "images/mobil(inactive).jpg"),
                   ],
                 ),
+              ),
 
+              const SizedBox(height: 25),
+
+              if (!hasVehicle) ...[
+                const SizedBox(height: 40),
+                const Text(
+                  "Belum ada kendaraan",
+                  style: TextStyle(
+                    fontFamily: 'Euclid',
+                    fontSize: 17,
+                    color: Colors.grey,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
                 const SizedBox(height: 20),
+                _fullButton(
+                  icon: "images/edit.jpg",
+                  title: "Tambah Kendaraan",
+                  onTap: () {
+                    Navigator.pushNamed(
+                      context,
+                      '/add-vehicle',
+                      arguments: {"type": selectedType},
+                    );
+                  },
+                ),
+                const SizedBox(height: 40),
+              ],
 
+              if (hasVehicle) ...[
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    GestureDetector(
-                      onTap: () {
-                        setState(() {
-                          selectedIndex--;
-                        });
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.all(6),
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.grey.shade200,
-                        ),
-                        child: const Icon(Icons.chevron_left, size: 22),
-                      ),
-                    ),
-
-                    const SizedBox(width: 12),
-
+                    _navArrow(() => setState(() => selectedIndex--),
+                        Icons.chevron_left),
                     Expanded(
                       child: Text(
                         v?['vehiclename'] ?? "-",
                         textAlign: TextAlign.center,
                         style: const TextStyle(
+                          fontFamily: 'Euclid',
                           fontSize: 20,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
                     ),
-
-                    const SizedBox(width: 12),
-
-                    GestureDetector(
-                      onTap: () {
-                        setState(() {
-                          selectedIndex++;
-                        });
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.all(6),
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.grey.shade200,
-                        ),
-                        child: const Icon(Icons.chevron_right, size: 22),
-                      ),
-                    ),
+                    _navArrow(() => setState(() => selectedIndex++),
+                        Icons.chevron_right),
                   ],
                 ),
 
-                const SizedBox(height: 5),
+                const SizedBox(height: 15),
 
-                Image.asset(
-                  "nmax.jpg",
+                SizedBox(
+                  height: 200,
                   width: width * 0.75,
-                  fit: BoxFit.contain,
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 300),
+                    transitionBuilder: (child, animation) {
+                      final slide = Tween<Offset>(
+                        begin: const Offset(0.1, 0),
+                        end: Offset.zero,
+                      ).animate(animation);
+
+                      return SlideTransition(
+                        position: slide,
+                        child: FadeTransition(opacity: animation, child: child),
+                      );
+                    },
+                    child: Image.asset(
+                      v != null && v['img'] != null && v['img'] != ""
+                          ? "images/${v['img']}"
+                          : "images/nmax.jpg",
+                      key: ValueKey("img-${v?['id']}"),
+                      fit: BoxFit.contain,
+                    ),
+                  ),
                 ),
 
-                const SizedBox(height: 5),
-
+                const SizedBox(height: 10),
                 Text(
                   v?['vehiclenumber'] ?? "-",
                   style: const TextStyle(
+                    fontFamily: 'Euclid',
                     fontSize: 18,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
 
-                const SizedBox(height: 20),
+                const SizedBox(height: 15),
+
+                // CARD PERJALANAN
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  margin: const EdgeInsets.only(bottom: 15),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.12),
+                        blurRadius: 20,
+                        offset: const Offset(0, 6),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFFD233).withOpacity(0.25),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Image.asset(
+                          "images/routing.jpg",
+                          width: 22,
+                          height: 22,
+                        ),
+                      ),
+                      const SizedBox(width: 20),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            "${v['kilometer']} Kilometer",
+                            style: const TextStyle(
+                              fontFamily: 'Euclid',
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const Text(
+                            "Total perjalanan",
+                            style: TextStyle(
+                              fontFamily: 'Euclid',
+                              fontSize: 13,
+                              color: Colors.grey,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+
                 _fullButton(
-                  icon: "edit.jpg",
+                  icon: "images/edit.jpg",
                   title: "Edit Informasi Kendaraan",
                   onTap: () async {
                     final result = await Navigator.pushNamed(
                       context,
-                      '/edit-kendaraan',
-                      arguments: {"id": v?['id'].toString()},
+                      AppRoutes.editKendaraan,
+                      arguments: {
+                        "id": v?['id'],
+                        "index": selectedIndex,
+                      },
                     );
 
-                    if (result == true) {
-                      fetchVehicles();
-                      setState(() {});
+                    if (result is Map && result["updated"] == true) {
+                      await fetchVehicles();
+                      setState(() {
+                        selectedIndex = result["index"] ?? 0;
+                      });
                     }
                   },
                 ),
 
                 const SizedBox(height: 10),
-
-                _fullButton(icon: "edit.jpg", title: "Tambah Kendaraan"),
+                _fullButton(
+                  icon: "images/edit.jpg",
+                  title: "Tambah Kendaraan",
+                  onTap: () {
+                    Navigator.pushNamed(context, '/add-vehicle',
+                        arguments: {"type": selectedType});
+                  },
+                ),
 
                 const SizedBox(height: 20),
 
@@ -226,92 +301,96 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
                   children: [
                     Expanded(
                       child: _statusBox(
-                        icon: "oli.jpg",
-                        title: "${v?['kilometer'] ?? 0} Km",
+                        icon: "images/oli.jpg",
+                        title: "${(v?['kilometer'] ?? 0) % 5000} Km",
                         subtitle: "Ganti Oli",
-                        barColor: const Color(0xFFFFD233),
-                        value: ((v?['distance_oil'] ?? 0) / 5000)
-                            .clamp(0.0, 1.0)
-                            .toDouble(),
+                        value: ((v?['kilometer'] ?? 0) % 5000) / 5000,
                       ),
                     ),
                     const SizedBox(width: 15),
                     Expanded(
                       child: _statusBox(
-                        icon: "wrench.jpg",
-                        title: "${v?['lastservicedate'] ?? 0} Hari Lagi",
+                        icon: "images/wrench.jpg",
+                        title: _nextServiceDate(v),
                         subtitle: "Servis Rutin",
-                        barColor: const Color(0xFFE53935),
-                        value: ((v?['service_percent'] ?? 0) / 100)
-                            .clamp(0.0, 1.0)
-                            .toDouble(),
+                        value: _serviceProgress(v),
                       ),
                     ),
                   ],
                 ),
 
-                const SizedBox(height: 25),
-
-                const Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    "Rincian",
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-
-                const SizedBox(height: 10),
-
-                _infoCard(v),
-
-                const SizedBox(height: 20),
-
-                _oilCard(context, v),
-
-                const SizedBox(height: 40),
+                const SizedBox(height: 50),
               ],
-            ),
+            ],
           ),
         ),
       ),
     );
   }
 
-  // =======================================================================
-  // COMPONENTS
-  // =======================================================================
+  // -----------------------------------------------------
+  // TAB COMPONENT
+  // -----------------------------------------------------
+  Widget _tabButton(String type, String activeIcon, String inactiveIcon) {
+    final bool active = selectedType == type;
 
-  Widget _vehicleTab({
-    required String title,
-    required String icon,
-    required bool active,
-    required VoidCallback onTap,
-  }) {
+    return SizedBox(
+      width: 150,
+      child: GestureDetector(
+        onTap: () {
+          setState(() {
+            selectedType = type;
+            selectedIndex = 0;
+          });
+        },
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(30),
+            gradient: active
+                ? const LinearGradient(
+                    colors: [
+                      Color(0xFFFED46A),
+                      Color(0xFFFFB000),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  )
+                : null,
+            color: active ? null : const Color(0xffE3E3E3),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Image.asset(active ? activeIcon : inactiveIcon, width: 22),
+              const SizedBox(width: 8),
+              Text(
+                type == "motor" ? "Motor" : "Mobil",
+                style: TextStyle(
+                  fontFamily: "Euclid",
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: active ? Colors.white : Colors.black,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+
+  Widget _navArrow(VoidCallback onTap, IconData icon) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 10),
+        padding: const EdgeInsets.all(6),
         decoration: BoxDecoration(
-          color: active ? const Color(0xFFFFD233) : Colors.grey.shade200,
-          borderRadius: BorderRadius.circular(30),
+          shape: BoxShape.circle,
+          color: Colors.grey.shade200,
         ),
-        child: Row(
-          children: [
-            Image.asset(icon, width: 20),
-            const SizedBox(width: 8),
-            Text(
-              title,
-              style: TextStyle(
-                fontSize: 16,
-                color: active ? Colors.white : Colors.grey.shade600,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        ),
+        child: Icon(icon, size: 22),
       ),
     );
   }
@@ -319,7 +398,7 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
   Widget _fullButton({
     required String icon,
     required String title,
-    VoidCallback? onTap,
+    required VoidCallback onTap,
   }) {
     return GestureDetector(
       onTap: onTap,
@@ -337,6 +416,7 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
               child: Text(
                 title,
                 style: const TextStyle(
+                  fontFamily: 'Euclid',
                   fontSize: 15,
                   fontWeight: FontWeight.w500,
                 ),
@@ -352,7 +432,6 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
     required String icon,
     required String title,
     required String subtitle,
-    required Color barColor,
     required double value,
   }) {
     return Container(
@@ -362,39 +441,58 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
         borderRadius: BorderRadius.circular(18),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.08),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+            color: Colors.black.withOpacity(0.15),
+            blurRadius: 22,
+            offset: const Offset(0, 6),
           ),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Image.asset(icon, width: 30),
-          const SizedBox(height: 10),
-          Text(
-            title,
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
+          Row(
+            children: [
+              Image.asset(icon, width: 32, height: 32),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontFamily: 'Euclid',
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Text(
+                      subtitle,
+                      style: const TextStyle(
+                        fontFamily: 'Euclid',
+                        fontSize: 12,
+                        color: Colors.grey,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-          Text(
-            subtitle,
-            style: const TextStyle(
-              fontSize: 14,
-              color: Colors.grey,
-            ),
-          ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 12),
           ClipRRect(
             borderRadius: BorderRadius.circular(10),
             child: LinearProgressIndicator(
               minHeight: 7,
               value: value,
               backgroundColor: Colors.grey.shade200,
-              color: barColor,
+              valueColor: AlwaysStoppedAnimation(
+                value < 0.33
+                    ? Colors.green
+                    : value < 0.66
+                        ? Colors.orange
+                        : Colors.red,
+              ),
             ),
           ),
         ],
@@ -402,197 +500,38 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
     );
   }
 
-  Widget _infoCard(v) {
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(18),
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.07),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            "Informasi Kendaraan",
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 15),
-
-          Row(
-            children: [
-              Image.asset("odometer.jpg", width: 28),
-              const SizedBox(width: 15),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    "${v?['kilometer_total'] ?? 0} Kilometer",
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const Text(
-                    "Total perjalanan",
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 25),
-
-          Row(
-            children: [
-              Image.asset("clock.jpg", width: 28),
-              const SizedBox(width: 15),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    "${v?['total_minutes'] ?? 0} menit",
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const Text(
-                    "Waktu berkendara",
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 25),
-
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(vertical: 12),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: Colors.grey.shade300),
-            ),
-            child: const Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                ImageIcon(AssetImage("routing.jpg"), size: 18),
-                SizedBox(width: 8),
-                Text(
-                  "Log Perjalanan",
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
+  String _nextServiceDate(dynamic v) {
+    if (v == null || v['lastservicedate'] == null) return "-";
+    final raw = DateTime.tryParse(v['lastservicedate'].toString());
+    if (raw == null) return "-";
+    final next = raw.add(const Duration(days: 90));
+    return "${next.day} ${_monthName(next.month)} ${next.year}";
   }
 
-  Widget _oilCard(BuildContext context, v) {
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(18),
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.07),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            "Oli Mesin Kendaraan",
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
+  double _serviceProgress(dynamic v) {
+    if (v == null || v['lastservicedate'] == null) return 0;
+    final raw = DateTime.tryParse(v['lastservicedate'].toString());
+    if (raw == null) return 0;
+    final elapsed = DateTime.now().difference(raw).inDays;
+    return (elapsed / 90).clamp(0.0, 1.0);
+  }
 
-          const SizedBox(height: 20),
-
-          Text(
-            "${v?['kilometer_last_oil'] ?? 0} Kilometer",
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const Text(
-            "Terakhir ganti oli",
-            style: TextStyle(fontSize: 14, color: Colors.grey),
-          ),
-
-          const SizedBox(height: 20),
-
-          Text(
-            "${v?['distance_oil'] ?? 0}/${v?['kilometer_oil_target'] ?? 5000} Kilometer",
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const Text(
-            "Ganti oli",
-            style: TextStyle(fontSize: 14, color: Colors.grey),
-          ),
-
-          const SizedBox(height: 20),
-
-          GestureDetector(
-            onTap: () => Navigator.pushNamed(context, '/atur-jadwal'),
-            child: Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: Colors.grey.shade300),
-              ),
-              child: const Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  ImageIcon(AssetImage("calender.jpg"), size: 18),
-                  SizedBox(width: 8),
-                  Text(
-                    "Atur Jadwal",
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
+  String _monthName(int m) {
+    const arr = [
+      "",
+      "Jan",
+      "Feb",
+      "Mar",
+      "Apr",
+      "Mei",
+      "Jun",
+      "Jul",
+      "Agu",
+      "Sep",
+      "Okt",
+      "Nov",
+      "Des",
+    ];
+    return arr[m];
   }
 }

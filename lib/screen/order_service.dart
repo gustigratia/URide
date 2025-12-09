@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:flutter_map/flutter_map.dart';
-import 'package:latlong2/latlong.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:uride/routes/app_routes.dart';
 
@@ -24,12 +23,12 @@ class AjukanLayananScreen extends StatefulWidget {
 }
 
 class _AjukanLayananScreenState extends State<AjukanLayananScreen> {
-  final MapController mapController = MapController();
+  GoogleMapController? mapController;
   LatLng? currentLocation;
   bool isLoading = true;
   StreamSubscription<Position>? positionStream;
 
-  String selectedVehicle = 'sepeda';
+  String selectedVehicle = 'motor';
   String selectedType = 'normal';
   final TextEditingController addressController = TextEditingController();
   final bool isOnLocation = true;
@@ -57,73 +56,30 @@ class _AjukanLayananScreenState extends State<AjukanLayananScreen> {
     }
 
     try {
-      final pos = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high,
-      );
-
+      final pos = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
       setState(() {
         currentLocation = LatLng(pos.latitude, pos.longitude);
         isLoading = false;
       });
 
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted && currentLocation != null) {
-          mapController.move(currentLocation!, 16);
-        }
-      });
-
       positionStream = Geolocator.getPositionStream().listen((pos) {
         final newPos = LatLng(pos.latitude, pos.longitude);
-
-        setState(() {
-          currentLocation = newPos;
-        });
-
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) {
-            mapController.move(newPos, mapController.camera.zoom);
-          }
-        });
+        setState(() => currentLocation = newPos);
+        mapController?.animateCamera(CameraUpdate.newLatLng(newPos));
       });
     } catch (e) {
       if (mounted) {
-        setState(() {
-          isLoading = false;
-        });
+        setState(() => isLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: $e'),
-            backgroundColor: Colors.red,
-          ),
+          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
         );
       }
     }
   }
 
-  Future<void> _setPinToCurrentLocation() async {
-    try {
-      final pos = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high,
-      );
-
-      setState(() {
-        currentLocation = LatLng(pos.latitude, pos.longitude);
-      });
-
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted && currentLocation != null) {
-          mapController.move(currentLocation!, 16);
-        }
-      });
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
+  void _setPinToCurrentLocation() {
+    if (currentLocation != null) {
+      mapController?.animateCamera(CameraUpdate.newLatLng(currentLocation!));
     }
   }
 
@@ -166,19 +122,20 @@ class _AjukanLayananScreenState extends State<AjukanLayananScreen> {
                         ? const Center(child: Text('Lokasi tidak tersedia'))
                         : Stack(
                             children: [
-                              FlutterMap(
-                                mapController: mapController,
-                                options: MapOptions(
-                                  initialCenter: currentLocation!,
-                                  initialZoom: 16,
+                              GoogleMap(
+                                initialCameraPosition: CameraPosition(
+                                  target: currentLocation!,
+                                  zoom: 16,
                                 ),
-                                children: [
-                                  TileLayer(
-                                    urlTemplate:
-                                        "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
-                                    userAgentPackageName: "com.example.uride",
+                                myLocationEnabled: true,
+                                myLocationButtonEnabled: false,
+                                onMapCreated: (controller) => mapController = controller,
+                                markers: {
+                                  Marker(
+                                    markerId: const MarkerId('userLocation'),
+                                    position: currentLocation!,
                                   ),
-                                ],
+                                },
                               ),
                               Center(
                                 child: Icon(
@@ -228,6 +185,7 @@ class _AjukanLayananScreenState extends State<AjukanLayananScreen> {
                       hintText: 'Tuliskan detail lokasi Anda...',
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide(color: Colors.grey[300]!),
                       ),
                       contentPadding: const EdgeInsets.all(12),
                     ),
@@ -252,8 +210,6 @@ class _AjukanLayananScreenState extends State<AjukanLayananScreen> {
                     ),
                   ),
                   const SizedBox(height: 12),
-                  _buildVehicleOption(icon: Icons.pedal_bike, label: 'Sepeda', value: 'sepeda'),
-                  const SizedBox(height: 8),
                   _buildVehicleOption(icon: Icons.two_wheeler, label: 'Motor', value: 'motor'),
                   const SizedBox(height: 8),
                   _buildVehicleOption(icon: Icons.directions_car, label: 'Mobil', value: 'mobil'),
@@ -292,31 +248,30 @@ class _AjukanLayananScreenState extends State<AjukanLayananScreen> {
       ),
 
       bottomSheet: Container(
-      color: Colors.white,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-      child: SizedBox(
-        width: double.infinity,
-        child: ElevatedButton(
-          onPressed: _submitLayanan,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.amber,
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(50),
+        color: Colors.white,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        child: SizedBox(
+          width: double.infinity,
+          child: ElevatedButton(
+            onPressed: _submitLayanan,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.amber,
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(50),
+              ),
             ),
-          ),
-          child: const Text(
-            'Ajukan Layanan',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: Colors.white,
+            child: const Text(
+              'Ajukan Layanan',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: Colors.white,
+              ),
             ),
           ),
         ),
       ),
-    ),
-
     );
   }
 

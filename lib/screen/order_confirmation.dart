@@ -1,9 +1,11 @@
-// File: lib/screen/konfirmasi_ajuan.dart
-
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:uride/midtrans_service.dart';
+import 'package:uride/screen/invoice.dart';
 
 class KonfirmasiAjuanScreen extends StatefulWidget {
+  final int workshopId;
   final String workshopName;
   final String workshopAddress;
   final String userAddress;
@@ -14,6 +16,7 @@ class KonfirmasiAjuanScreen extends StatefulWidget {
 
   const KonfirmasiAjuanScreen({
     Key? key,
+    required this.workshopId,
     required this.workshopName,
     required this.workshopAddress,
     required this.userAddress,
@@ -28,20 +31,20 @@ class KonfirmasiAjuanScreen extends StatefulWidget {
 }
 
 class _KonfirmasiAjuanScreenState extends State<KonfirmasiAjuanScreen> {
-  String selectedPayment = 'dana';
-  // travelFee sekarang mengikuti price dari halaman sebelumnya
+  String selectedPayment = 'cash'; 
+  
   int get travelFee => widget.price;
 
   int get totalFee =>  travelFee;
 
-  String _getVehicleIcon() {
+  IconData _getVehicleIcon() {
     switch (widget.vehicleType.toLowerCase()) {
       case 'motor':
-        return '🏍️';
+        return Icons.motorcycle;
       case 'mobil':
-        return '🚗';
+        return Icons.directions_car;
       default:
-        return '🚲';
+        return Icons.directions_bike;
     }
   }
 
@@ -56,22 +59,27 @@ class _KonfirmasiAjuanScreenState extends State<KonfirmasiAjuanScreen> {
     }
   }
 
-  Future<void> submitToSupabase() async {
+  Future<int?> submitToSupabase() async {
     try {
       final user = Supabase.instance.client.auth.currentUser;
 
-      await Supabase.instance.client.from('orders').insert({
-        'user_id': user?.id,
-        'workshop_name': widget.workshopName,
-        'workshop_address': widget.workshopAddress,
-        'user_address': widget.userAddress,
-        'vehicle_type': widget.vehicleType,
-        'request_type': widget.requestType,
-        'is_on_location': widget.isOnLocation,
-        'payment_method': selectedPayment,
-        'total_fee': totalFee,
-        'created_at': DateTime.now().toIso8601String(),
-      });
+      final response = await Supabase.instance.client
+          .from('orders')
+          .insert({
+            'userid': user?.id,
+            'bengkelid': widget.workshopId,
+            'addressdetail': widget.userAddress,
+            'vehicletype': widget.vehicleType,
+            'ordertype': widget.requestType,
+            'paymentmethod': selectedPayment,
+            'price': totalFee,
+            'orderdate': DateTime.now().toIso8601String(),
+            'paymentstatus': 'pending',
+          })
+          .select('id') // ambil ID yang baru dibuat
+          .single(); // ambil satu record
+
+      final orderId = response['id'] as int;
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -79,6 +87,8 @@ class _KonfirmasiAjuanScreenState extends State<KonfirmasiAjuanScreen> {
           backgroundColor: Colors.green,
         ),
       );
+
+      return orderId;
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -86,6 +96,7 @@ class _KonfirmasiAjuanScreenState extends State<KonfirmasiAjuanScreen> {
           backgroundColor: Colors.red,
         ),
       );
+      return null;
     }
   }
 
@@ -257,7 +268,7 @@ class _KonfirmasiAjuanScreenState extends State<KonfirmasiAjuanScreen> {
                   Row(
                     children: [
                       _buildTag(
-                        icon: Icons.directions_car,
+                        icon: _getVehicleIcon(),
                         label: widget.vehicleType,
                         color: Colors.amber,
                       ),
@@ -355,11 +366,9 @@ class _KonfirmasiAjuanScreenState extends State<KonfirmasiAjuanScreen> {
                     ),
                   ),
                   const SizedBox(height: 12),
-                  _buildPaymentOption('dana', 'Dana', '💳'),
+                  _buildPaymentOption('cash', 'Cash', '💳'),
                   const SizedBox(height: 8),
-                  _buildPaymentOption('gopay', 'Gopay', '💳'),
-                  const SizedBox(height: 8),
-                  _buildPaymentOption('livin', 'Livin by Mandiri', '💳'),
+                  _buildPaymentOption('transfer', 'Transfer', '💳'),
                 ],
               ),
             ),
@@ -405,28 +414,106 @@ class _KonfirmasiAjuanScreenState extends State<KonfirmasiAjuanScreen> {
             ),
             const SizedBox(height: 16),
             SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () async {
-                  await submitToSupabase();
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.amber,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: () async {
+              try {
+                final user = Supabase.instance.client.auth.currentUser;
+                if (user == null) throw 'User belum login';
+
+                // CASH
+                if (selectedPayment == 'cash') {
+                  final response = await Supabase.instance.client
+                      .from('orders')
+                      .insert({
+                        'userid': user.id,
+                        'bengkelid': widget.workshopId,
+                        'addressdetail': widget.userAddress,
+                        'vehicletype': widget.vehicleType,
+                        'ordertype': widget.requestType,
+                        'paymentmethod': 'cash',
+                        'price': totalFee,
+                        'orderdate': DateTime.now().toIso8601String(),
+                        'paymentstatus': 'paid',
+                      })
+                      .select('id')
+                      .single();
+
+                  final orderId = response['id'] as int;
+
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => InvoiceScreen(
+                        orderId: orderId,
+                        workshopName: widget.workshopName,
+                        workshopAddress: widget.workshopAddress,
+                        userAddress: widget.userAddress,
+                        vehicleType: widget.vehicleType,
+                        requestType: widget.requestType,
+                        isOnLocation: widget.isOnLocation,
+                        price: totalFee,
+                      ),
+                    ),
+                  );
+                  return;
+                }
+
+                // TRANSFER
+                final orderId = await submitToSupabase(); // status pending
+                if (orderId == null) return;
+
+                final redirectUrl = await createMidtransTransaction(totalFee, orderId);
+
+                // Buka Midtrans
+                if (await canLaunchUrl(Uri.parse(redirectUrl))) {
+                  await launchUrl(
+                    Uri.parse(redirectUrl),
+                    mode: LaunchMode.externalApplication,
+                  );
+                }
+
+                // Setelah membuka Midtrans, tetap redirect ke invoice
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => InvoiceScreen(
+                      orderId: orderId,
+                      workshopName: widget.workshopName,
+                      workshopAddress: widget.workshopAddress,
+                      userAddress: widget.userAddress,
+                      vehicleType: widget.vehicleType,
+                      requestType: widget.requestType,
+                      isOnLocation: widget.isOnLocation,
+                      price: totalFee,
+                    ),
                   ),
+                );
+
+              } catch (e) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Terjadi kesalahan: $e')),
+                );
+              }
+            },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.amber,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Text(
-                  'Bayar Sekarang',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
+              ),
+              child: const Text(
+                'Bayar Sekarang',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ),
+          ),
+
           ],
         ),
       ),
@@ -434,33 +521,33 @@ class _KonfirmasiAjuanScreenState extends State<KonfirmasiAjuanScreen> {
   }
 
   Widget _buildTag({
-    required IconData icon,
     required String label,
     required Color color,
+    IconData? icon,
   }) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withOpacity(0.3)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 14, color: color),
-          const SizedBox(width: 6),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 12,
-              color: color,
-              fontWeight: FontWeight.w500,
-            ),
+    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+    decoration: BoxDecoration(
+      color: color.withOpacity(0.1),
+      borderRadius: BorderRadius.circular(20),
+      border: Border.all(color: color.withOpacity(0.3)),
+    ),
+    child: Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (icon != null) Icon(icon, size: 16, color: color),
+        if (icon != null) const SizedBox(width: 6),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            color: color,
+            fontWeight: FontWeight.w500,
           ),
-        ],
-      ),
-    );
+        ),
+      ],
+    ),
+  );
   }
 
   Widget _buildCostRow(String label, int amount, {bool isBold = false}) {
