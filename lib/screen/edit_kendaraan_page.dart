@@ -141,7 +141,6 @@ class _EditKendaraanPageState extends State<EditKendaraanPage> {
                     ),
                   ],
                 ),
-
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
