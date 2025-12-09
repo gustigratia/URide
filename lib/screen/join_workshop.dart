@@ -2,6 +2,9 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'dart:typed_data';
+import 'package:flutter/foundation.dart';
+import 'package:geolocator/geolocator.dart';
 
 class GabungMitraPage extends StatefulWidget {
   const GabungMitraPage({super.key});
@@ -18,11 +21,15 @@ class _GabungMitraPageState extends State<GabungMitraPage> {
   final TextEditingController descC = TextEditingController();
   final TextEditingController contactC = TextEditingController();
   final TextEditingController priceC = TextEditingController();
+  final TextEditingController bankC = TextEditingController();
+  final TextEditingController rekC = TextEditingController();
+  final TextEditingController addressC = TextEditingController();
 
   TimeOfDay? openTime;
   TimeOfDay? closeTime;
 
   File? workshopImage;
+  Uint8List? _webImageBytes; // UNTUK WEB
 
   final List<String> days = ["Sen", "Sel", "Rab", "Kam", "Jum", "Sab", "Ming"];
   final Set<String> selectedDays = {};
@@ -40,11 +47,18 @@ class _GabungMitraPageState extends State<GabungMitraPage> {
   // Pick Image
   // ------------------------
   Future<void> pickImage() async {
-    final ImagePicker picker = ImagePicker();
+    final picker = ImagePicker();
     final file = await picker.pickImage(source: ImageSource.gallery);
 
-    if (file != null) {
-      setState(() => workshopImage = File(file.path));
+    if (file == null) return;
+
+    if (kIsWeb) {
+      _webImageBytes = await file.readAsBytes();
+      setState(() {});
+    } else {
+      setState(() {
+        workshopImage = File(file.path);
+      });
     }
   }
 
@@ -211,6 +225,35 @@ class _GabungMitraPageState extends State<GabungMitraPage> {
     );
   }
 
+  Future<Position?> getCurrentLocation() async {
+    bool serviceEnabled;
+    LocationPermission permission;
+
+    // Service aktif?
+    serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      return null;
+    }
+
+    // Izin lokasi
+    permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied) {
+        return null;
+      }
+    }
+
+    if (permission == LocationPermission.deniedForever) {
+      return null;
+    }
+
+    // Ambil lokasi device sekarang
+    return await Geolocator.getCurrentPosition(
+      desiredAccuracy: LocationAccuracy.high,
+    );
+  }
+
   // ------------------------
   // SAVE
   // ------------------------
@@ -243,40 +286,72 @@ class _GabungMitraPageState extends State<GabungMitraPage> {
     try {
       String? imageUrl;
 
-      // Upload foto
       if (workshopImage != null) {
         final fileName =
             "workshop_${DateTime.now().millisecondsSinceEpoch}.jpg";
+        final filePath = "workshops/$fileName";
+        String? result;
 
-        await supabase.storage
-            .from("workshop-images")
-            .upload(fileName, workshopImage!);
+        if (kIsWeb) {
+          result = await supabase.storage
+              .from("images")
+              .uploadBinary(
+                filePath,
+                _webImageBytes!, // sekarang ini benar-benar foto terbaru
+                fileOptions: const FileOptions(upsert: false),
+              );
+        } else {
+          result = await supabase.storage
+              .from("images")
+              .upload(
+                filePath,
+                workshopImage!,
+                fileOptions: const FileOptions(upsert: false),
+              );
+        }
 
-        imageUrl = supabase.storage
-            .from("workshop-images")
-            .getPublicUrl(fileName);
+        imageUrl = supabase.storage.from("images").getPublicUrl(filePath);
+      }
+
+      final position = await getCurrentLocation();
+
+      double? latitude;
+      double? longitude;
+
+      if (position != null) {
+        latitude = position.latitude;
+        longitude = position.longitude;
+      } else {
+        latitude = null;
+        longitude = null;
       }
 
       final isOpen = calculateIsOpen();
+      final user = Supabase.instance.client.auth.currentUser;
 
-      // Insert workshop
       final inserted = await supabase
           .from("workshops")
           .insert({
             "bengkelname": nameC.text.trim(),
+            "address": addressC.text.trim(),
             "description": descC.text.trim(),
             "contact": contactC.text.trim(),
             "image": imageUrl ?? "",
-            "price": priceC.text.trim(),
-            "is_open": isOpen, // AUTO OPEN/CLOSE LOGIC
+            "price":
+                int.tryParse(priceC.text.replaceAll(RegExp(r'[^0-9]'), '')) ??
+                0,
+            "is_open": isOpen,
             "save": false,
+
+            "bank": bankC.text.trim(),
+            "nomor_rekening": int.tryParse(rekC.text.trim()) ?? 0,
+            "userid": user?.id,
           })
           .select()
           .single();
 
       final workshopId = inserted["id"];
 
-      // Insert service
       List<String> services = [];
       if (tambalBan) services.add("Tambal Ban");
       if (gantiOli) services.add("Ganti Oli");
@@ -394,7 +469,24 @@ class _GabungMitraPageState extends State<GabungMitraPage> {
                       ),
                     ),
 
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 20),
+
+                    const Text(
+                      "Alamat Bengkel",
+                      style: TextStyle(
+                        fontFamily: "Euclid",
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    TextField(
+                      controller: addressC,
+                      decoration: _inputDecoration(
+                        "Tuliskan Alamat Lengkap Bengkel Anda",
+                      ),
+                    ),
+                    const SizedBox(height: 20),
                     const Text(
                       "Foto Bengkel",
                       style: TextStyle(
@@ -413,26 +505,29 @@ class _GabungMitraPageState extends State<GabungMitraPage> {
                           border: Border.all(color: Colors.grey.shade300),
                           color: const Color(0xFFF8F8F8),
                         ),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(16),
-                          child: workshopImage == null
-                              ? const Center(
-                                  child: Icon(
-                                    Icons.camera_alt_outlined,
-                                    color: Colors.grey,
-                                    size: 32,
-                                  ),
-                                )
-                              : Image.file(
-                                  workshopImage!,
-                                  fit: BoxFit.cover,
-                                  width: double.infinity,
+                        child: _webImageBytes != null
+                            ? Image.memory(
+                                _webImageBytes!,
+                                fit: BoxFit.cover,
+                                width: double.infinity,
+                              )
+                            : workshopImage != null
+                            ? Image.file(
+                                workshopImage!,
+                                fit: BoxFit.cover,
+                                width: double.infinity,
+                              )
+                            : const Center(
+                                child: Icon(
+                                  Icons.camera_alt_outlined,
+                                  color: Colors.grey,
+                                  size: 32,
                                 ),
-                        ),
+                              ),
                       ),
                     ),
 
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 20),
                     const Text(
                       "Deskripsi Bengkel",
                       style: TextStyle(
@@ -450,7 +545,7 @@ class _GabungMitraPageState extends State<GabungMitraPage> {
                       ),
                     ),
 
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 20),
                     const Text(
                       "Kontak Bengkel",
                       style: TextStyle(
@@ -466,7 +561,7 @@ class _GabungMitraPageState extends State<GabungMitraPage> {
                       decoration: _inputDecoration("+62 ....."),
                     ),
 
-                    const SizedBox(height: 18),
+                    const SizedBox(height: 20),
                     const Text(
                       "Hari Operasional",
                       style: TextStyle(
@@ -667,7 +762,7 @@ class _GabungMitraPageState extends State<GabungMitraPage> {
                     ),
                     const SizedBox(height: 6),
                     TextField(
-                      controller: priceC,
+                      controller: bankC,
                       keyboardType: TextInputType.number,
                       decoration: _inputDecoration("Nama Bank Anda"),
                     ),
@@ -683,7 +778,7 @@ class _GabungMitraPageState extends State<GabungMitraPage> {
                     ),
                     const SizedBox(height: 6),
                     TextField(
-                      controller: priceC,
+                      controller: rekC,
                       keyboardType: TextInputType.number,
                       decoration: _inputDecoration(
                         "Tuliskan Nomor Rekening Anda",
