@@ -48,8 +48,8 @@ class _HomeScreenState extends State<HomeScreen> {
       final spbuData = await supabase.from('spbu').select().order('id');
 
       // Convert to List<Map<String,dynamic>>
-      final w = List<Map<String, dynamic>>.from(workshopData ?? []);
-      final s = List<Map<String, dynamic>>.from(spbuData ?? []);
+      final w = List<Map<String, dynamic>>.from(workshopData);
+      final s = List<Map<String, dynamic>>.from(spbuData);
 
       // Compute distance string for each item (if we have userPosition)
       final updatedW = w.map((e) => _withDistance(e)).toList();
