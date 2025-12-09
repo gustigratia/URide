@@ -18,12 +18,9 @@ import 'package:uride/screen/edit_kendaraan_page.dart';
 import 'package:uride/screen/spbu.dart'; 
 
 import 'package:uride/screen/orderhistory_screen.dart';
-<<<<<<< HEAD
 import 'package:uride/screen/payment_page.dart';
 import 'package:uride/screen/splash_screen.dart'; // <-- Import SplashScreen
-=======
 import 'package:uride/screen/chatbot.dart';
->>>>>>> 2d529be3e59b2d8c7d0c2387d5e2bd22413976cf
 
 class AppRoutes {
   static const splash = '/'; // <-- SET SEBAGAI ROOT PATH
@@ -42,13 +39,10 @@ class AppRoutes {
   static const spbuList = '/spbu-list'; 
   static const editKendaraan = '/edit-kendaraan';
   static const orderHistory = '/history';
-<<<<<<< HEAD
   static const paymentPage = '/payment';
-=======
   static const chatbot = '/chatbot';
 
 
->>>>>>> 2d529be3e59b2d8c7d0c2387d5e2bd22413976cf
 
 
   static Map<String, WidgetBuilder> routes = {
@@ -65,28 +59,19 @@ class AppRoutes {
     laluLintas: (_)=> const LaluLintasPage(), 
     parking: (_) => const LokasiParkirPage(),
     editKendaraan: (_) => const EditKendaraanPage(),
-<<<<<<< HEAD
     orderHistory: (_) => const OrderHistoryScreen(newOrderId: null), 
-=======
     spbuList: (_) => const SPBUListScreen(),
     orderHistory: (_) => const OrderHistoryScreen(),
     chatbot: (_) => const ChatbotPage(),
->>>>>>> 2d529be3e59b2d8c7d0c2387d5e2bd22413976cf
   };
 
   static Route<dynamic>? generateRoute(RouteSettings settings) {
     switch (settings.name) {
       case AppRoutes.search:
         return _animatedRoute(const SearchPage());
-<<<<<<< HEAD
       case AppRoutes.parking:
-        return _animatedRoute(const LokasiParkir());
-      case AppRoutes.ubahKataSandi:
-=======
-      case parking:
         return _animatedRoute(const LokasiParkirPage());
-      case ubahKataSandi:
->>>>>>> 2d529be3e59b2d8c7d0c2387d5e2bd22413976cf
+      case AppRoutes.ubahKataSandi:
         return _animatedRoute(const UbahKataSandiPage());
       case AppRoutes.verifikasiKode:
         return _animatedRoute(const VerifikasiKodePage());
@@ -94,7 +79,6 @@ class AppRoutes {
         return _animatedRoute(const BuatPasswordBaruPage());
       case AppRoutes.laluLintas:
         return _animatedRoute(const LaluLintasPage());
-<<<<<<< HEAD
       case AppRoutes.vehicle:
         return _animatedRoute(const VehicleDetailPage());
       case AppRoutes.editKendaraan:
@@ -112,7 +96,6 @@ class AppRoutes {
         return _animatedRoute(const HomeScreen()); 
 
       case AppRoutes.search_result:
-=======
       case chatbot:
         return _animatedRoute(const ChatbotPage());
       case vehicle:
@@ -126,7 +109,6 @@ class AppRoutes {
       case addvehicle:
         return _animatedRoute(const TambahKendaraanPage());
       case search_result:
->>>>>>> 2d529be3e59b2d8c7d0c2387d5e2bd22413976cf
         return PageRouteBuilder(
           transitionDuration: const Duration(milliseconds: 300),
           pageBuilder: (_, __, ___) =>
