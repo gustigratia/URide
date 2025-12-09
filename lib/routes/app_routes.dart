@@ -37,6 +37,8 @@ class AppRoutes {
   static const chatbot = '/chatbot';
 
 
+
+
   static Map<String, WidgetBuilder> routes = {
     home: (_) => const HomeScreen(),
     signin: (_) => const SignInPage(),
@@ -48,6 +50,7 @@ class AppRoutes {
     verifikasiKode: (_) => const VerifikasiKodePage(),
     buatPasswordBaru: (_) => const BuatPasswordBaruPage(),
     laluLintas: (_)=> const LaluLintasPage(), 
+    parking: (_) => const LokasiParkirPage(),
     editKendaraan: (_) => const EditKendaraanPage(),
     spbuList: (_) => const SPBUListScreen(),
     orderHistory: (_) => const OrderHistoryScreen(),
@@ -59,7 +62,7 @@ class AppRoutes {
       case search:
         return _animatedRoute(const SearchPage());
       case parking:
-        return _animatedRoute(const LokasiParkir());
+        return _animatedRoute(const LokasiParkirPage());
       case ubahKataSandi:
         return _animatedRoute(const UbahKataSandiPage());
       case verifikasiKode:
