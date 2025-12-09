@@ -34,7 +34,7 @@ class MyApp extends StatelessWidget {
       ),
 
       // route awal
-      initialRoute: AppRoutes.signin,
+      initialRoute: AppRoutes.parking,
 
       routes: AppRoutes.routes,
       onGenerateRoute: AppRoutes.generateRoute,
