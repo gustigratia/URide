@@ -308,7 +308,6 @@ class _GabungMitraPageState extends State<GabungMitraPage> {
   // BUILD UI
   // ------------------------
   @override
-  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFFDC000),
@@ -334,7 +333,7 @@ class _GabungMitraPageState extends State<GabungMitraPage> {
 
       bottomNavigationBar: Container(
         color: Colors.white,
-        padding: const EdgeInsets.fromLTRB(24, 10, 24, 20),
+        padding: const EdgeInsets.fromLTRB(24, 10, 24, 18),
         child: SizedBox(
           height: 48,
           child: ElevatedButton(
@@ -351,7 +350,7 @@ class _GabungMitraPageState extends State<GabungMitraPage> {
                     child: CircularProgressIndicator(color: Colors.white),
                   )
                 : const Text(
-                    "Lanjutkan",
+                    "Simpan Bengkel",
                     style: TextStyle(
                       fontFamily: "Euclid",
                       color: Colors.white,
@@ -363,442 +362,453 @@ class _GabungMitraPageState extends State<GabungMitraPage> {
         ),
       ),
 
-      // -------------------------
-      // PERBAIKAN DI SINI
-      // FULL SCROLL VIEW
-      // -------------------------
-      body: SingleChildScrollView(
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.fromLTRB(24, 20, 24, 120),
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-          ),
-
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // =======================
-              // Nama Bengkel
-              // =======================
-              const Text(
-                "Nama Bengkel",
-                style: TextStyle(
-                  fontFamily: "Euclid",
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          return SingleChildScrollView(
+            // Hanya scroll jika overflow
+            physics: const BouncingScrollPhysics(),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minHeight: constraints.maxHeight),
+              child: Container(
+                padding: const EdgeInsets.fromLTRB(24, 20, 24, 20),
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
                 ),
-              ),
-              const SizedBox(height: 6),
-              TextField(
-                controller: nameC,
-                decoration: _inputDecoration("Bengkel Jaya Makmur"),
-              ),
-
-              const SizedBox(height: 16),
-
-              // =======================
-              // Foto Bengkel
-              // =======================
-              const Text(
-                "Foto Bengkel",
-                style: TextStyle(
-                  fontFamily: "Euclid",
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              const SizedBox(height: 6),
-              GestureDetector(
-                onTap: pickImage,
-                child: Container(
-                  height: 140,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Colors.grey.shade300),
-                    color: const Color(0xFFF8F8F8),
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(16),
-                    child: workshopImage == null
-                        ? const Center(
-                            child: Icon(
-                              Icons.camera_alt_outlined,
-                              color: Colors.grey,
-                              size: 32,
-                            ),
-                          )
-                        : Image.file(
-                            workshopImage!,
-                            fit: BoxFit.cover,
-                            width: double.infinity,
-                          ),
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 16),
-
-              // =======================
-              // Deskripsi Bengkel
-              // =======================
-              const Text(
-                "Deskripsi Bengkel",
-                style: TextStyle(
-                  fontFamily: "Euclid",
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              const SizedBox(height: 6),
-              TextField(
-                controller: descC,
-                maxLines: 3,
-                decoration: _inputDecoration(
-                  "Menyediakan service dan tambal ban panggilan...",
-                ),
-              ),
-
-              const SizedBox(height: 16),
-
-              // =======================
-              // Kontak
-              // =======================
-              const Text(
-                "Kontak Bengkel",
-                style: TextStyle(
-                  fontFamily: "Euclid",
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              const SizedBox(height: 6),
-              TextField(
-                controller: contactC,
-                keyboardType: TextInputType.phone,
-                decoration: _inputDecoration("+62 811234567"),
-              ),
-
-              const SizedBox(height: 20),
-
-              // =======================
-              // Hari operasional
-              // =======================
-              const Text(
-                "Hari Operasional",
-                style: TextStyle(
-                  fontFamily: "Euclid",
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-
-              const SizedBox(height: 8),
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  children: days
-                      .map(
-                        (d) => Padding(
-                          padding: const EdgeInsets.only(right: 2),
-                          child: _dayChip(d),
-                        ),
-                      )
-                      .toList(),
-                ),
-              ),
-
-              const SizedBox(height: 20),
-
-              // =======================
-              // Jam Buka / Tutup
-              // =======================
-              Row(
-                children: const [
-                  Expanded(
-                    child: Text(
-                      "Jam Buka",
-                      style: TextStyle(fontFamily: "Euclid", fontSize: 13),
-                    ),
-                  ),
-                  SizedBox(width: 16),
-                  Expanded(
-                    child: Text(
-                      "Jam Tutup",
-                      style: TextStyle(fontFamily: "Euclid", fontSize: 13),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 6),
-
-              Row(
-                children: [
-                  Expanded(
-                    child: GestureDetector(
-                      onTap: () => pickTime(true),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 14,
-                          vertical: 12,
-                        ),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFF8F8F8),
-                          borderRadius: BorderRadius.circular(14),
-                          border: Border.all(color: Colors.grey.shade300),
-                        ),
-                        child: Text(
-                          openTime == null
-                              ? "09:00"
-                              : openTime!.format(context),
-                          style: const TextStyle(fontFamily: "Euclid"),
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: GestureDetector(
-                      onTap: () => pickTime(false),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 14,
-                          vertical: 12,
-                        ),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFF8F8F8),
-                          borderRadius: BorderRadius.circular(14),
-                          border: Border.all(color: Colors.grey.shade300),
-                        ),
-                        child: Text(
-                          closeTime == null
-                              ? "17:00"
-                              : closeTime!.format(context),
-                          style: const TextStyle(fontFamily: "Euclid"),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 20),
-
-              // =======================
-              // Layanan yang tersedia
-              // =======================
-              const Text(
-                "Layanan yang Tersedia",
-                style: TextStyle(
-                  fontFamily: "Euclid",
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              const SizedBox(height: 6),
-              Container(
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: Colors.grey.shade300),
-                ),
-                child: Row(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(
-                      child: Column(
-                        children: [
-                          _serviceItem(
-                            "Tambal Ban",
-                            tambalBan,
-                            (v) => setState(() => tambalBan = v),
-                          ),
-                          const SizedBox(height: 8),
-                          _serviceItem(
-                            "Ganti Oli",
-                            gantiOli,
-                            (v) => setState(() => gantiOli = v),
-                          ),
-                          const SizedBox(height: 8),
-                          _serviceItem(
-                            "Service Motor",
-                            serviceMotor,
-                            (v) => setState(() => serviceMotor = v),
-                          ),
-                        ],
+                    const Text(
+                      "Nama Bengkel",
+                      style: TextStyle(
+                        fontFamily: "Euclid",
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
-                    Expanded(
-                      child: Column(
-                        children: [
-                          _serviceItem(
-                            "Service Mobil",
-                            serviceMobil,
-                            (v) => setState(() => serviceMobil = v),
-                          ),
-                          const SizedBox(height: 8),
-                          _serviceItem(
-                            "Derek Kendaraan",
-                            derek,
-                            (v) => setState(() => derek = v),
-                          ),
-                        ],
+                    const SizedBox(height: 6),
+                    TextField(
+                      controller: nameC,
+                      decoration: _inputDecoration(
+                        "Tuliskan Nama Bengkel Anda",
                       ),
                     ),
-                  ],
-                ),
-              ),
 
-              const SizedBox(height: 20),
-
-              // =======================
-              // Harga
-              // =======================
-              const Text(
-                "Harga Jasa Layanan",
-                style: TextStyle(
-                  fontFamily: "Euclid",
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              const SizedBox(height: 6),
-              TextField(
-                controller: priceC,
-                keyboardType: TextInputType.number,
-                decoration: _inputDecoration("Rp 50.000"),
-              ),
-
-              const SizedBox(height: 16),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Checkbox(
-                    value: agree,
-                    activeColor: const Color(0xFFFDC000),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(4),
+                    const SizedBox(height: 16),
+                    const Text(
+                      "Foto Bengkel",
+                      style: TextStyle(
+                        fontFamily: "Euclid",
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
-                    onChanged: (v) => setState(() => agree = v!),
-                  ),
-
-                  const SizedBox(width: 6),
-
-                  // ================================
-                  // AGREEMENT UI (PERSIS FIGMA)
-                  // ================================
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Checkbox(
-                        value: agree,
-                        onChanged: (v) => setState(() => agree = v!),
-                        activeColor: const Color(0xFFFDC000),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(6),
+                    const SizedBox(height: 6),
+                    GestureDetector(
+                      onTap: pickImage,
+                      child: Container(
+                        height: 140,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: Colors.grey.shade300),
+                          color: const Color(0xFFF8F8F8),
                         ),
-                      ),
-
-                      Expanded(
-                        child: RichText(
-                          text: TextSpan(
-                            style: const TextStyle(
-                              fontFamily: "Euclid",
-                              fontSize: 16,
-                              color: Colors.black87,
-                              height: 1.3,
-                            ),
-                            children: [
-                              const TextSpan(text: "Saya setuju dengan "),
-                              TextSpan(
-                                text: "syarat & ketentuan",
-                                style: const TextStyle(
-                                  color: Color(0xFF007AFF),
-                                  decoration: TextDecoration.underline,
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(16),
+                          child: workshopImage == null
+                              ? const Center(
+                                  child: Icon(
+                                    Icons.camera_alt_outlined,
+                                    color: Colors.grey,
+                                    size: 32,
+                                  ),
+                                )
+                              : Image.file(
+                                  workshopImage!,
+                                  fit: BoxFit.cover,
+                                  width: double.infinity,
                                 ),
-                              ),
-                              const TextSpan(text: " yang berlaku"),
-                            ],
-                          ),
                         ),
                       ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 20),
-
-                  // ================================
-                  // GRAY SECTION (PERNYATAAN)
-                  // ================================
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 18,
-                      vertical: 16,
                     ),
-                    decoration: BoxDecoration(
-                      color: const Color(
-                        0xFFF5F5F5,
-                      ), // persis warna abu-abu figma
-                      borderRadius: BorderRadius.circular(10),
+
+                    const SizedBox(height: 16),
+                    const Text(
+                      "Deskripsi Bengkel",
+                      style: TextStyle(
+                        fontFamily: "Euclid",
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
-                    child: const Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          "Dengan mengisi formulir ini, Saya menyatakan bahwa:",
-                          style: TextStyle(
-                            fontFamily: "Euclid",
-                            fontSize: 15,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.black87,
+                    const SizedBox(height: 6),
+                    TextField(
+                      controller: descC,
+                      maxLines: 3,
+                      decoration: _inputDecoration(
+                        "Deskripsikan bengkel Anda secara singkat...",
+                      ),
+                    ),
+
+                    const SizedBox(height: 16),
+                    const Text(
+                      "Kontak Bengkel",
+                      style: TextStyle(
+                        fontFamily: "Euclid",
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    TextField(
+                      controller: contactC,
+                      keyboardType: TextInputType.phone,
+                      decoration: _inputDecoration("+62 ....."),
+                    ),
+
+                    const SizedBox(height: 18),
+                    const Text(
+                      "Hari Operasional",
+                      style: TextStyle(
+                        fontFamily: "Euclid",
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: days
+                            .map(
+                              (d) => Padding(
+                                padding: const EdgeInsets.only(right: 2),
+                                child: _dayChip(d),
+                              ),
+                            )
+                            .toList(),
+                      ),
+                    ),
+
+                    const SizedBox(height: 20),
+                    Row(
+                      children: const [
+                        Expanded(
+                          child: Text(
+                            "Jam Buka",
+                            style: TextStyle(
+                              fontFamily: "Euclid",
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                            ),
                           ),
                         ),
-
-                        SizedBox(height: 12),
-
-                        // BULLET LIST
-                        Text(
-                          "1. Seluruh informasi yang diberikan kepada URide adalah akurat, sah, dan terbaru.",
-                          style: TextStyle(
-                            fontFamily: "Euclid",
-                            fontSize: 14,
-                            height: 1.6,
-                            color: Colors.black87,
-                          ),
-                        ),
-
-                        SizedBox(height: 6),
-
-                        Text(
-                          "2. Saya memiliki hak serta kewenangan hukum penuh untuk menawarkan seluruh layanan di URide.",
-                          style: TextStyle(
-                            fontFamily: "Euclid",
-                            fontSize: 14,
-                            height: 1.6,
-                            color: Colors.black87,
-                          ),
-                        ),
-
-                        SizedBox(height: 6),
-
-                        Text(
-                          "3. Seluruh tindakan yang Saya lakukan adalah sah dan merupakan perjanjian yang mengikat dengan URide.",
-                          style: TextStyle(
-                            fontFamily: "Euclid",
-                            fontSize: 14,
-                            height: 1.6,
-                            color: Colors.black87,
+                        SizedBox(width: 16),
+                        Expanded(
+                          child: Text(
+                            "Jam Tutup",
+                            style: TextStyle(
+                              fontFamily: "Euclid",
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                            ),
                           ),
                         ),
                       ],
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () => pickTime(true),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 14,
+                                vertical: 12,
+                              ),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFF8F8F8),
+                                borderRadius: BorderRadius.circular(14),
+                                border: Border.all(color: Colors.grey.shade300),
+                              ),
+                              child: Text(
+                                openTime == null
+                                    ? "09:00"
+                                    : openTime!.format(context),
+                                style: const TextStyle(
+                                  fontFamily: "Euclid",
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () => pickTime(false),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 14,
+                                vertical: 12,
+                              ),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFF8F8F8),
+                                borderRadius: BorderRadius.circular(14),
+                                border: Border.all(color: Colors.grey.shade300),
+                              ),
+                              child: Text(
+                                closeTime == null
+                                    ? "17:00"
+                                    : closeTime!.format(context),
+                                style: const TextStyle(
+                                  fontFamily: "Euclid",
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 20),
+                    const Text(
+                      "Layanan yang Tersedia",
+                      style: TextStyle(
+                        fontFamily: "Euclid",
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 12,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: Colors.grey.shade300),
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              children: [
+                                _serviceItem(
+                                  "Tambal Ban",
+                                  tambalBan,
+                                  (v) => setState(() => tambalBan = v),
+                                ),
+                                const SizedBox(height: 10),
+                                _serviceItem(
+                                  "Ganti Oli",
+                                  gantiOli,
+                                  (v) => setState(() => gantiOli = v),
+                                ),
+                                const SizedBox(height: 10),
+                                _serviceItem(
+                                  "Service Motor",
+                                  serviceMotor,
+                                  (v) => setState(() => serviceMotor = v),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Expanded(
+                            child: Column(
+                              children: [
+                                _serviceItem(
+                                  "Service Mobil",
+                                  serviceMobil,
+                                  (v) => setState(() => serviceMobil = v),
+                                ),
+                                const SizedBox(height: 10),
+                                _serviceItem(
+                                  "Derek Kendaraan",
+                                  derek,
+                                  (v) => setState(() => derek = v),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 20),
+
+                    const Text(
+                      "Harga Jasa Layanan",
+                      style: TextStyle(
+                        fontFamily: "Euclid",
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    TextField(
+                      controller: priceC,
+                      keyboardType: TextInputType.number,
+                      decoration: _inputDecoration("Rp ....."),
+                    ),
+                    const SizedBox(height: 18),
+
+                    const Text(
+                      "Bank Account",
+                      style: TextStyle(
+                        fontFamily: "Euclid",
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    TextField(
+                      controller: priceC,
+                      keyboardType: TextInputType.number,
+                      decoration: _inputDecoration("Nama Bank Anda"),
+                    ),
+                    const SizedBox(height: 18),
+
+                    const Text(
+                      "Nomor Rekening",
+                      style: TextStyle(
+                        fontFamily: "Euclid",
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    TextField(
+                      controller: priceC,
+                      keyboardType: TextInputType.number,
+                      decoration: _inputDecoration(
+                        "Tuliskan Nomor Rekening Anda",
+                      ),
+                    ),
+                    const SizedBox(height: 30),
+
+                    // ================= AGREEMENT =================
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Checkbox(
+                          value: agree,
+                          activeColor: const Color(0xFFFDC000),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          onChanged: (v) => setState(() => agree = v!),
+                        ),
+
+                        const SizedBox(width: 6),
+
+                        // Text "Saya setuju ..."
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text.rich(
+                                TextSpan(
+                                  text: "Saya setuju dengan ",
+                                  style: const TextStyle(
+                                    fontFamily: "Euclid",
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w500,
+                                    color: Colors.black,
+                                  ),
+                                  children: [
+                                    TextSpan(
+                                      text: "syarat & ketentuan",
+                                      style: const TextStyle(
+                                        fontFamily: "Euclid",
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w500,
+                                        color: Color(0xFF007AFF),
+                                        decoration: TextDecoration.underline,
+                                      ),
+                                    ),
+                                    const TextSpan(text: " yang berlaku"),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    // ================= GRAY BOX — diposisikan sejajar checkbox =================
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 18,
+                        vertical: 16,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF5F5F5),
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: const Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            "Dengan mengisi formulir ini, Saya menyatakan bahwa:",
+                            style: TextStyle(
+                              fontFamily: "Euclid",
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+
+                          SizedBox(height: 12),
+
+                          Text(
+                            "1. Seluruh informasi yang diberikan kepada URide adalah akurat, sah, dan terbaru.",
+                            style: TextStyle(
+                              fontFamily: "Euclid",
+                              fontSize: 12,
+                              height: 1.6,
+                            ),
+                          ),
+
+                          SizedBox(height: 6),
+
+                          Text(
+                            "2. Saya memiliki hak serta kewenangan hukum penuh untuk menawarkan seluruh layanan di URide.",
+                            style: TextStyle(
+                              fontFamily: "Euclid",
+                              fontSize: 12,
+                              height: 1.6,
+                            ),
+                          ),
+
+                          SizedBox(height: 6),
+
+                          Text(
+                            "3. Seluruh tindakan yang saya lakukan adalah sah dan merupakan perjanjian yang mengikat dengan URide.",
+                            style: TextStyle(
+                              fontFamily: "Euclid",
+                              fontSize: 12,
+                              height: 1.6,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 20),
+                  ],
+                ),
               ),
-            ],
-          ),
-        ),
+            ),
+          );
+        },
       ),
     );
   }
