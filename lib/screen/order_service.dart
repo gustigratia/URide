@@ -3,6 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:uride/routes/app_routes.dart';
+import 'package:geocoding/geocoding.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class AjukanLayananScreen extends StatefulWidget {
   final int workshopId;
@@ -77,6 +81,39 @@ class _AjukanLayananScreenState extends State<AjukanLayananScreen> {
     }
   }
 
+  Future<String> reverseGeocode(double lat, double lng) async {
+    final apiKey = dotenv.env['MAPS_API_KEY'];
+
+    if (apiKey == null || apiKey.isEmpty) {
+      print("MAPS_API_KEY kosong dari .env");
+      return "Alamat tidak ditemukan";
+    }
+
+    final url = Uri.parse(
+      "https://maps.googleapis.com/maps/api/geocode/json?latlng=$lat,$lng&key=$apiKey",
+    );
+
+    try {
+      final res = await http.get(url);
+
+      if (res.statusCode == 200) {
+        final jsonData = jsonDecode(res.body);
+
+        if (jsonData["status"] == "OK" &&
+            jsonData["results"] != null &&
+            jsonData["results"].isNotEmpty) {
+          return jsonData["results"][0]["formatted_address"];
+        }
+      }
+    } catch (e) {
+      print("reverseGeocode error: $e");
+    }
+
+    return "Alamat tidak ditemukan";
+  }
+
+
+
   void _setPinToCurrentLocation() {
     if (currentLocation != null) {
       mapController?.animateCamera(CameraUpdate.newLatLng(currentLocation!));
@@ -137,19 +174,32 @@ class _AjukanLayananScreenState extends State<AjukanLayananScreen> {
                                   ),
                                 },
                               ),
-                              Center(
-                                child: Icon(
-                                  Icons.location_on,
-                                  color: Colors.red,
-                                  size: 50,
-                                ),
-                              ),
+                              // Center(
+                              //   child: Icon(
+                              //     Icons.location_on,
+                              //     color: Colors.red,
+                              //     size: 50,
+                              //   ),
+                              // ),
                               Positioned(
-                                bottom: 12,
-                                right: 12,
+                                top: 8,
+                                right: 8,
                                 child: FloatingActionButton(
                                   mini: true,
-                                  onPressed: _setPinToCurrentLocation,
+                                    onPressed: () async {
+                                      _setPinToCurrentLocation();
+
+                                      if (currentLocation != null) {
+                                        final address = await reverseGeocode(
+                                          currentLocation!.latitude,
+                                          currentLocation!.longitude,
+                                        );
+
+                                        setState(() {
+                                          addressController.text = address;
+                                        });
+                                      }
+                                    },
                                   child: const Icon(Icons.my_location),
                                 ),
                               ),
