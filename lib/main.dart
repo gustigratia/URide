@@ -9,6 +9,7 @@ final supabase = Supabase.instance.client;
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+
   await Supabase.initialize(
     url: Env.supabaseUrl,
     anonKey: Env.supabaseAnonKey,
@@ -33,7 +34,7 @@ class MyApp extends StatelessWidget {
       ),
 
       // route awal
-      initialRoute: AppRoutes.signin,
+      initialRoute: AppRoutes.parking,
 
       routes: AppRoutes.routes,
       onGenerateRoute: AppRoutes.generateRoute,
