@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uride/routes/app_routes.dart';
-import 'env.dart';
+import 'package:uride/env.dart';
 
 // Global Supabase instance
 final supabase = Supabase.instance.client;
