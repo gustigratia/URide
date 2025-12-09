@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'cancelreason_screen.dart';
 
@@ -91,7 +90,8 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                   const SizedBox(width: 12),
                   Text(
                     "Detail Pesanan",
-                    style: GoogleFonts.poppins(
+                    style: const TextStyle(
+                      fontFamily: "Euclid",
                       fontSize: 18,
                       fontWeight: FontWeight.w600,
                     ),
@@ -120,29 +120,33 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                       children: [
                         Text(
                           date != null ? formatDate(date!) : "-",
-                          style: GoogleFonts.poppins(
+                          style: const TextStyle(
+                            fontFamily: "Euclid",
                             fontSize: 13,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
                         Container(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 16, vertical: 6),
+                            horizontal: 16,
+                            vertical: 6,
+                          ),
                           decoration: BoxDecoration(
                             color: isOngoing
                                 ? const Color(0xffFAD97A)
                                 : isCancelled
-                                    ? const Color(0xffBB0A21)
-                                    : const Color(0xff4CAF50),
+                                ? const Color(0xffBB0A21)
+                                : const Color(0xff4CAF50),
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: Text(
                             isOngoing
                                 ? "Sedang Berlangsung"
                                 : isCancelled
-                                    ? "Dibatalkan"
-                                    : "Selesai",
-                            style: GoogleFonts.poppins(
+                                ? "Dibatalkan"
+                                : "Selesai",
+                            style: TextStyle(
+                              fontFamily: "Euclid",
                               fontSize: 12,
                               fontWeight: FontWeight.w600,
                               color: isOngoing ? Colors.black : Colors.white,
@@ -157,8 +161,10 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(16),
-                        border:
-                            Border.all(color: Colors.grey.shade300, width: 1),
+                        border: Border.all(
+                          color: Colors.grey.shade300,
+                          width: 1,
+                        ),
                         boxShadow: [
                           BoxShadow(
                             color: Colors.black.withOpacity(0.03),
@@ -185,7 +191,8 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                               children: [
                                 Text(
                                   cleanText(title),
-                                  style: GoogleFonts.poppins(
+                                  style: const TextStyle(
+                                    fontFamily: "Euclid",
                                     fontSize: 15,
                                     fontWeight: FontWeight.w600,
                                   ),
@@ -194,14 +201,15 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                                   cleanText(address),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
-                                  style: GoogleFonts.poppins(
+                                  style: TextStyle(
+                                    fontFamily: "Euclid",
                                     fontSize: 12,
                                     color: Colors.grey.shade600,
                                   ),
                                 ),
                               ],
                             ),
-                          )
+                          ),
                         ],
                       ),
                     ),
@@ -209,13 +217,19 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Icon(Icons.location_on,
-                            size: 20, color: Colors.amber),
+                        const Icon(
+                          Icons.location_on,
+                          size: 20,
+                          color: Colors.amber,
+                        ),
                         const SizedBox(width: 6),
                         Expanded(
                           child: Text(
                             cleanText(fullAddress),
-                            style: GoogleFonts.poppins(fontSize: 12),
+                            style: const TextStyle(
+                              fontFamily: "Euclid",
+                              fontSize: 12,
+                            ),
                           ),
                         ),
                         const SizedBox(width: 8),
@@ -237,11 +251,15 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                     if (isOngoing) ...[
                       Text(
                         "Mekanik sedang menuju lokasi Anda...",
-                        style: GoogleFonts.poppins(fontSize: 13),
+                        style: const TextStyle(
+                          fontFamily: "Euclid",
+                          fontSize: 13,
+                        ),
                       ),
                       Text(
                         "Siap-siap, bantuan segera tiba!",
-                        style: GoogleFonts.poppins(
+                        style: TextStyle(
+                          fontFamily: "Euclid",
                           fontSize: 12,
                           color: Colors.grey.shade600,
                         ),
@@ -258,12 +276,18 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                     ] else if (isCancelled) ...[
                       Text(
                         "Pesanan anda telah dibatalkan.",
-                        style: GoogleFonts.poppins(fontSize: 13),
+                        style: const TextStyle(
+                          fontFamily: "Euclid",
+                          fontSize: 13,
+                        ),
                       ),
                     ] else ...[
                       Text(
                         "Pesanan anda telah terselesaikan.",
-                        style: GoogleFonts.poppins(fontSize: 13),
+                        style: const TextStyle(
+                          fontFamily: "Euclid",
+                          fontSize: 13,
+                        ),
                       ),
                     ],
                     const SizedBox(height: 20),
@@ -317,7 +341,8 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                             ),
                             child: Text(
                               "Batalkan",
-                              style: GoogleFonts.poppins(
+                              style: const TextStyle(
+                                fontFamily: "Euclid",
                                 color: Colors.white,
                                 fontWeight: FontWeight.w600,
                               ),
@@ -339,7 +364,8 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                             ),
                             child: Text(
                               "Selesaikan",
-                              style: GoogleFonts.poppins(
+                              style: const TextStyle(
+                                fontFamily: "Euclid",
                                 color: Colors.white,
                                 fontWeight: FontWeight.w600,
                               ),
@@ -365,10 +391,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
       decoration: BoxDecoration(
         color: Colors.grey.shade100,
         borderRadius: BorderRadius.circular(30),
-        border: Border.all(
-          color: Colors.grey.shade300,
-          width: 1,
-        ),
+        border: Border.all(color: Colors.grey.shade300, width: 1),
       ),
       child: Row(
         children: [
@@ -376,7 +399,8 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
           const SizedBox(width: 6),
           Text(
             cleanText(text),
-            style: GoogleFonts.poppins(
+            style: const TextStyle(
+              fontFamily: "Euclid",
               fontSize: 11.5,
               fontWeight: FontWeight.w500,
               color: Colors.black87,
@@ -411,11 +435,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
         shape: BoxShape.circle,
         border: Border.all(color: const Color(0xffEAEAEA)),
       ),
-      child: Image.asset(
-        assetPath,
-        width: 20,
-        height: 20,
-      ),
+      child: Image.asset(assetPath, width: 20, height: 20),
     );
   }
 
@@ -435,7 +455,8 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
             children: [
               Text(
                 "Selesaikan Pesanan",
-                style: GoogleFonts.poppins(
+                style: const TextStyle(
+                  fontFamily: "Euclid",
                   fontSize: 20,
                   fontWeight: FontWeight.w600,
                   color: Color(0xFFE3B007),
@@ -445,13 +466,14 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
               const SizedBox(height: 20),
               Text(
                 "Apakah Anda yakin ingin menyelesaikan \npesanan Anda?",
-                style: GoogleFonts.poppins(fontSize: 14),
+                style: const TextStyle(fontFamily: "Euclid", fontSize: 14),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 20),
               Text(
                 "Pastikan layanan benar-benar selesai. Dana akan diberikan kepada penyedia layanan.",
-                style: GoogleFonts.poppins(
+                style: const TextStyle(
+                  fontFamily: "Euclid",
                   fontSize: 13,
                   color: Colors.black54,
                 ),
@@ -476,8 +498,10 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
 
                         final supabase = Supabase.instance.client;
 
-                        await supabase.from('orders').update(
-                            {'orderstatus': 'completed'}).eq('id', orderId);
+                        await supabase
+                            .from('orders')
+                            .update({'orderstatus': 'completed'})
+                            .eq('id', orderId);
 
                         setState(() {
                           orderStatus = "completed";
@@ -513,7 +537,8 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
             children: [
               Text(
                 "Batalkan Pesanan",
-                style: GoogleFonts.poppins(
+                style: const TextStyle(
+                  fontFamily: "Euclid",
                   fontSize: 20,
                   fontWeight: FontWeight.w600,
                   color: Color(0xFFBB0A21),
@@ -523,13 +548,14 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
               const SizedBox(height: 20),
               Text(
                 "Apakah Anda yakin ingin membatalkan pesanan?",
-                style: GoogleFonts.poppins(fontSize: 14),
+                style: const TextStyle(fontFamily: "Euclid", fontSize: 14),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 12),
               Text(
                 "Harap tinjau kebijakan pembatalan sebelum melanjutkan.",
-                style: GoogleFonts.poppins(
+                style: const TextStyle(
+                  fontFamily: "Euclid",
                   fontSize: 13,
                   color: Colors.black54,
                 ),
@@ -552,18 +578,15 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                       onTap: () {
                         Navigator.pop(context);
 
-                        Future.delayed(
-                          const Duration(milliseconds: 100),
-                          () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) =>
-                                    CancelReasonPage(orderId: orderId),
-                              ),
-                            );
-                          },
-                        );
+                        Future.delayed(const Duration(milliseconds: 100), () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) =>
+                                  CancelReasonPage(orderId: orderId),
+                            ),
+                          );
+                        });
                       },
                     ),
                   ),
@@ -577,10 +600,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     );
   }
 
-  Widget _outlinedButton({
-    required String text,
-    required VoidCallback onTap,
-  }) {
+  Widget _outlinedButton({required String text, required VoidCallback onTap}) {
     return Container(
       height: 48,
       decoration: BoxDecoration(
@@ -591,7 +611,8 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
         onPressed: onTap,
         child: Text(
           text,
-          style: GoogleFonts.poppins(
+          style: const TextStyle(
+            fontFamily: "Euclid",
             fontSize: 14,
             fontWeight: FontWeight.w500,
             color: Colors.black87,
@@ -616,7 +637,8 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
         onPressed: onTap,
         child: Text(
           text,
-          style: GoogleFonts.poppins(
+          style: const TextStyle(
+            fontFamily: "Euclid",
             fontSize: 14,
             fontWeight: FontWeight.w600,
             color: Colors.white,
@@ -635,8 +657,11 @@ String cleanText(String text) {
 
   return text
       .split(" ")
-      .map((word) =>
-          word.isNotEmpty ? "${word[0].toUpperCase()}${word.substring(1)}" : "")
+      .map(
+        (word) => word.isNotEmpty
+            ? "${word[0].toUpperCase()}${word.substring(1)}"
+            : "",
+      )
       .join(" ");
 }
 
@@ -656,7 +681,7 @@ String formatDate(String rawDate) {
     "September",
     "Oktober",
     "November",
-    "Desember"
+    "Desember",
   ];
 
   return "${date.day} ${monthNames[date.month]} ${date.year}";
@@ -668,9 +693,7 @@ void _showSuccessDialog(BuildContext context) {
     barrierDismissible: false,
     builder: (context) {
       return Dialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         child: Padding(
           padding: const EdgeInsets.all(24),
           child: Column(
@@ -678,7 +701,8 @@ void _showSuccessDialog(BuildContext context) {
             children: [
               Text(
                 "Pesanan Berhasil Diselesaikan",
-                style: GoogleFonts.poppins(
+                style: const TextStyle(
+                  fontFamily: "Euclid",
                   fontSize: 20,
                   fontWeight: FontWeight.w600,
                   color: Color(0xFFE3B007),
@@ -688,9 +712,7 @@ void _showSuccessDialog(BuildContext context) {
               const SizedBox(height: 16),
               Text(
                 "Pesanan Anda telah diselesaikan sesuai dengan permintaan. Terima kasih telah memilih layanan kami.",
-                style: GoogleFonts.poppins(
-                  fontSize: 14,
-                ),
+                style: const TextStyle(fontFamily: "Euclid", fontSize: 14),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 26),
@@ -725,7 +747,8 @@ Widget _filledButton({
       onPressed: onTap,
       child: Text(
         text,
-        style: GoogleFonts.poppins(
+        style: const TextStyle(
+          fontFamily: "Euclid",
           fontSize: 14,
           fontWeight: FontWeight.w600,
           color: Colors.white,
