@@ -164,7 +164,7 @@ class _ChatbotPageState extends State<ChatbotPage> {
             children: [
               // BACK BUTTON
               IconButton(
-                icon: Icon(Icons.arrow_back, color: Colors.black),
+                icon: Icon(Icons.arrow_back, color: const Color.fromARGB(255, 255, 255, 255)),
                 onPressed: () => Navigator.pop(context),
               ),
 
