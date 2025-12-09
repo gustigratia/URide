@@ -172,21 +172,21 @@ class _ChatbotPageState extends State<ChatbotPage> {
               Container(
                 width: 38,
                 height: 38,
-                decoration: BoxDecoration(
+                decoration: const BoxDecoration(
                   color: Colors.white,
                   shape: BoxShape.circle,
                 ),
-                child: Center(
-                  child: Text(
-                    "UR", // ganti sesuai logo text kamu
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black, // biar tetap terlihat
-                      fontSize: 14,
-                    ),
+                child: Padding(
+                  padding: EdgeInsets.all(
+                    5,
+                  ), 
+                  child: Image.asset(
+                    "assets/images/uride.png",
+                    fit: BoxFit.contain, // menjaga proporsi gambar
                   ),
                 ),
               ),
+
               SizedBox(width: 12),
 
               // TITLE (white)
