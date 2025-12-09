@@ -14,7 +14,7 @@ import 'package:uride/screen/addvehicle_screen.dart';
 import 'package:uride/screen/search_result.dart';
 import 'package:uride/screen/edit_kendaraan_page.dart';
 import 'package:uride/screen/spbu.dart'; 
-
+import 'package:uride/screen/weather_screen.dart';
 import 'package:uride/screen/orderhistory_screen.dart';
 import 'package:uride/screen/chatbot.dart';
 
@@ -35,6 +35,7 @@ class AppRoutes {
   static const editKendaraan = '/edit-kendaraan';
   static const orderHistory = '/history';
   static const chatbot = '/chatbot';
+  static const weather = '/weather';
 
 
 
@@ -55,6 +56,7 @@ class AppRoutes {
     spbuList: (_) => const SPBUListScreen(),
     orderHistory: (_) => const OrderHistoryScreen(),
     chatbot: (_) => const ChatbotPage(),
+    weather: (_) => const WeatherScreen(),
   };
 
   static Route<dynamic>? generateRoute(RouteSettings settings) {
@@ -83,6 +85,8 @@ class AppRoutes {
         return _animatedRoute(const OrderHistoryScreen());
       case addvehicle:
         return _animatedRoute(const TambahKendaraanPage());
+      case weather:
+        return _animatedRoute(const WeatherScreen());
       case search_result:
         return PageRouteBuilder(
           transitionDuration: const Duration(milliseconds: 300),
