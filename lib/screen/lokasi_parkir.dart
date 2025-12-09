@@ -1,5 +1,3 @@
-// === START OF FILE ===
-
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -198,7 +196,6 @@ class _LokasiParkirPageState extends State<LokasiParkirPage> {
     final url = Uri.parse("google.navigation:q=$lat,$lng&mode=d");
 
     if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
-      // fallback kalau tidak bisa pakai intent
       final fallback = Uri.parse(
         "https://www.google.com/maps/dir/?api=1&destination=$lat,$lng&travelmode=driving",
       );
@@ -251,9 +248,7 @@ class _LokasiParkirPageState extends State<LokasiParkirPage> {
     return _matchSearch(m) && _matchFilter(m);
   }
 
-  // ===========================
-  // UI: SEARCH BAR (FIXED)
-  // ===========================
+  // UI: SEARCH BAR 
   Widget buildSearchBar() {
     return Container(
       margin: const EdgeInsets.fromLTRB(22, 12, 22, 10),
@@ -278,7 +273,6 @@ class _LokasiParkirPageState extends State<LokasiParkirPage> {
             ),
           ),
 
-          // === FIX AREA HERE ===
           Material(
             color: Colors.transparent,
             child: InkWell(
@@ -301,7 +295,6 @@ class _LokasiParkirPageState extends State<LokasiParkirPage> {
     );
   }
 
-  // FILTER MODAL
   void _openFilterSheet() {
     showModalBottomSheet(
       context: context,
@@ -337,10 +330,6 @@ class _LokasiParkirPageState extends State<LokasiParkirPage> {
       },
     );
   }
-
-  // ===========================
-  // UI Lain tetap sama
-  // ===========================
 
   Widget buildMapPreview() {
     if (previewLat == null || previewLng == null) {
@@ -721,5 +710,3 @@ class _LokasiParkirPageState extends State<LokasiParkirPage> {
     );
   }
 }
-
-// === END OF FILE ===
