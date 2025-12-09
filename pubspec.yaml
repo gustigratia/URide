@@ -38,6 +38,7 @@ flutter:
   assets:
     - assets/images/
     - assets/icons/
+    - .env
 
   fonts:
     - family: Euclid

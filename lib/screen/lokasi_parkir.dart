@@ -6,6 +6,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'dart:async';
 
 class LokasiParkirPage extends StatefulWidget {
   const LokasiParkirPage({super.key});
@@ -15,11 +16,12 @@ class LokasiParkirPage extends StatefulWidget {
 }
 
 class _LokasiParkirPageState extends State<LokasiParkirPage> {
+  final supabase = Supabase.instance.client;
   Map<String, dynamic>? activeParking;
   List<Map<String, dynamic>> history = [];
   bool loading = true;
 
-  GoogleMapController? mapController;
+  final Completer<GoogleMapController> _controller = Completer();
 
   final TextEditingController namaParkirController = TextEditingController();
   final TextEditingController searchController = TextEditingController();
@@ -113,6 +115,7 @@ class _LokasiParkirPageState extends State<LokasiParkirPage> {
     }
 
     try {
+      await Future.delayed(const Duration(milliseconds: 1000));
       final user = Supabase.instance.client.auth.currentUser;
       if (user == null) {
         ScaffoldMessenger.of(context)
@@ -287,7 +290,11 @@ class _LokasiParkirPageState extends State<LokasiParkirPage> {
       child: SizedBox(
         height: 200,
         child: GoogleMap(
-          onMapCreated: (controller) => mapController = controller,
+          onMapCreated: (controller) {
+            if (!_controller.isCompleted) {
+              _controller.complete(controller);
+            }
+          },
           initialCameraPosition: CameraPosition(
             target: LatLng(previewLat!, previewLng!),
             zoom: 17,
