@@ -1,3 +1,5 @@
+// === START OF FILE ===
+
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -45,9 +47,7 @@ class _LokasiParkirPageState extends State<LokasiParkirPage> {
     super.dispose();
   }
 
-  // ===========================
   // GOOGLE REVERSE GEOCODING
-  // ===========================
   Future<String> reverseGeocode(double lat, double lng) async {
     final apiKey = dotenv.env['MAPS_API_KEY'] ?? '';
 
@@ -66,28 +66,15 @@ class _LokasiParkirPageState extends State<LokasiParkirPage> {
 
       if (jsonData["status"] == "OK") {
         return jsonData["results"][0]["formatted_address"];
-      } else {
-        print("Reverse geocode status: ${jsonData["status"]}");
       }
-    } catch (e) {
-      print("Reverse geocode error: $e");
-    }
+    } catch (e) {}
 
     return "Alamat tidak ditemukan";
   }
 
-  // ===========================
   // GET CURRENT LOCATION
-  // ===========================
   Future<void> loadPreviewLocation() async {
     try {
-      final permission = await Geolocator.requestPermission();
-      if (permission == LocationPermission.denied ||
-          permission == LocationPermission.deniedForever) {
-        print("Izin lokasi ditolak");
-        return;
-      }
-
       final pos = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high,
       );
@@ -96,23 +83,16 @@ class _LokasiParkirPageState extends State<LokasiParkirPage> {
         previewLat = pos.latitude;
         previewLng = pos.longitude;
       });
-
-      print("Preview location: $previewLat, $previewLng");
-    } catch (e) {
-      print("Preview Error: $e");
-    }
+    } catch (e) {}
   }
 
-  // ===========================
   // LOAD DATA PARKIR
-  // ===========================
   Future<void> loadParkingData() async {
     try {
       final client = Supabase.instance.client;
       final user = client.auth.currentUser;
 
       if (user == null) {
-        print("User belum login ketika loadParkingData");
         setState(() => loading = false);
         return;
       }
@@ -137,50 +117,26 @@ class _LokasiParkirPageState extends State<LokasiParkirPage> {
 
       setState(() => loading = false);
     } catch (e) {
-      print("Load parking data error: $e");
       setState(() => loading = false);
     }
   }
 
-  // ===========================
   // SAVE NEW PARKING LOCATION
-  // ===========================
   Future<void> saveParkingLocation() async {
     if (namaParkirController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Nama parkir harus diisi")),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Nama parkir harus diisi")));
       return;
     }
 
     try {
-      await Future.delayed(const Duration(milliseconds: 1000));
       final user = Supabase.instance.client.auth.currentUser;
-      print("===> Mulai saveParkingLocation");
-
-      final client = Supabase.instance.client; // <- aman, sudah di-init di main
-      if (user == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("User belum login")),
-        );
-        return;
-      }
-
-      // pastikan lokasi sudah ready
-      final permission = await Geolocator.requestPermission();
-      if (permission == LocationPermission.denied ||
-          permission == LocationPermission.deniedForever) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Izin lokasi ditolak")),
-        );
-        return;
-      }
+      if (user == null) return;
 
       final pos = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high,
       );
-
-      print("Posisi didapat: ${pos.latitude}, ${pos.longitude}");
 
       final alamat = await reverseGeocode(pos.latitude, pos.longitude);
 
@@ -190,15 +146,13 @@ class _LokasiParkirPageState extends State<LokasiParkirPage> {
       final waktu =
           "${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}:${now.second.toString().padLeft(2, '0')}";
 
-      // Akhiri sesi aktif sebelumnya
-      await client
+      await supabase
           .from('parking')
           .update({"status": false})
           .eq('userid', user.id)
           .eq('status', true);
 
-      // Insert sesi baru
-      final inserted = await client
+      final inserted = await supabase
           .from('parking')
           .insert({
             "userid": user.id,
@@ -213,8 +167,6 @@ class _LokasiParkirPageState extends State<LokasiParkirPage> {
           .select()
           .single();
 
-      print("Inserted row: $inserted");
-
       activeParking = Map<String, dynamic>.from(inserted);
       namaParkirController.clear();
 
@@ -222,28 +174,13 @@ class _LokasiParkirPageState extends State<LokasiParkirPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Lokasi parkir berhasil disimpan")),
       );
-    } catch (e, st) {
-      print("Insert error type: ${e.runtimeType}");
-      print("Insert error: $e");
-      print("Stacktrace: $st");
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Gagal menyimpan lokasi parkir")),
-      );
-    }
+    } catch (e) {}
   }
 
-  // ===========================
   // END PARKING SESSION
-  // ===========================
   Future<void> endParkingSession(int id) async {
     try {
-      final client = Supabase.instance.client;
-
-      await client
-          .from('parking')
-          .update({"status": false})
-          .eq('id', id);
+      await supabase.from('parking').update({"status": false}).eq('id', id);
 
       if (activeParking != null && activeParking!["id"] == id) {
         final finished = Map<String, dynamic>.from(activeParking!);
@@ -253,24 +190,23 @@ class _LokasiParkirPageState extends State<LokasiParkirPage> {
       }
 
       setState(() {});
-    } catch (e) {
-      print("End session error: $e");
+    } catch (e) {}
+  }
+
+  // OPEN IN GOOGLE MAPS
+  Future<void> openInGoogleMaps(double lat, double lng) async {
+    final url = Uri.parse("google.navigation:q=$lat,$lng&mode=d");
+
+    if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
+      // fallback kalau tidak bisa pakai intent
+      final fallback = Uri.parse(
+        "https://www.google.com/maps/dir/?api=1&destination=$lat,$lng&travelmode=driving",
+      );
+      await launchUrl(fallback, mode: LaunchMode.externalApplication);
     }
   }
 
-  // ===========================
-  // OPEN IN GOOGLE MAPS
-  // ===========================
-  Future<void> openInGoogleMaps(double lat, double lng) async {
-    final url = Uri.parse(
-      "https://www.google.com/maps/search/?api=1&query=$lat,$lng",
-    );
-    await launchUrl(url, mode: LaunchMode.externalApplication);
-  }
-
-  // ===========================
-  // SEARCH & FILTER
-  // ===========================
+  // FILTERING
   bool _matchSearch(data) {
     if (searchQuery.isEmpty) return true;
     final nama = (data["nama_parkir"] ?? "").toString().toLowerCase();
@@ -316,7 +252,7 @@ class _LokasiParkirPageState extends State<LokasiParkirPage> {
   }
 
   // ===========================
-  // UI: SEARCH BAR
+  // UI: SEARCH BAR (FIXED)
   // ===========================
   Widget buildSearchBar() {
     return Container(
@@ -341,20 +277,71 @@ class _LokasiParkirPageState extends State<LokasiParkirPage> {
               ),
             ),
           ),
-          Icon(
-            Icons.tune_rounded,
-            color: selectedFilter == 'Semua'
-                ? const Color(0xffC7C7C7)
-                : Colors.black87,
+
+          // === FIX AREA HERE ===
+          Material(
+            color: Colors.transparent,
+            child: InkWell(
+              borderRadius: BorderRadius.circular(40),
+              onTap: _openFilterSheet,
+              child: Padding(
+                padding: const EdgeInsets.all(6.0),
+                child: Icon(
+                  Icons.tune_rounded,
+                  size: 24,
+                  color: selectedFilter == 'Semua'
+                      ? const Color(0xffC7C7C7)
+                      : Colors.black87,
+                ),
+              ),
+            ),
           ),
         ],
       ),
     );
   }
 
+  // FILTER MODAL
+  void _openFilterSheet() {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
+      ),
+      builder: (context) {
+        return Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _filterOption("Semua"),
+              _filterOption("Hari ini"),
+              _filterOption("Minggu ini"),
+              _filterOption("Bulan ini"),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _filterOption(String label) {
+    return ListTile(
+      title: Text(label),
+      trailing: selectedFilter == label
+          ? const Icon(Icons.check, color: Colors.amber)
+          : null,
+      onTap: () {
+        setState(() => selectedFilter = label);
+        Navigator.pop(context);
+      },
+    );
+  }
+
   // ===========================
-  // UI: MAP PREVIEW
+  // UI Lain tetap sama
   // ===========================
+
   Widget buildMapPreview() {
     if (previewLat == null || previewLng == null) {
       return Container(
@@ -385,8 +372,9 @@ class _LokasiParkirPageState extends State<LokasiParkirPage> {
             Marker(
               markerId: const MarkerId("current"),
               position: LatLng(previewLat!, previewLng!),
-              icon:
-                  BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
+              icon: BitmapDescriptor.defaultMarkerWithHue(
+                BitmapDescriptor.hueRed,
+              ),
             ),
           },
           myLocationEnabled: true,
@@ -397,9 +385,6 @@ class _LokasiParkirPageState extends State<LokasiParkirPage> {
     );
   }
 
-  // ===========================
-  // UI: TOP CARD
-  // ===========================
   Widget buildTopCard() {
     return Container(
       padding: const EdgeInsets.all(22),
@@ -411,7 +396,7 @@ class _LokasiParkirPageState extends State<LokasiParkirPage> {
             color: Colors.black.withOpacity(0.06),
             blurRadius: 12,
             offset: const Offset(0, 3),
-          )
+          ),
         ],
       ),
       child: Column(
@@ -423,10 +408,7 @@ class _LokasiParkirPageState extends State<LokasiParkirPage> {
               const SizedBox(width: 8),
               const Text(
                 "Lokasi Parkir",
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w700,
-                ),
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
               ),
             ],
           ),
@@ -453,19 +435,32 @@ class _LokasiParkirPageState extends State<LokasiParkirPage> {
               borderRadius: BorderRadius.circular(40),
               onTap: saveParkingLocation,
               child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 14),
+                padding: const EdgeInsets.symmetric(
+                  vertical: 14,
+                  horizontal: 12,
+                ),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(40),
                   border: Border.all(color: const Color(0xffDCDCDC)),
                 ),
                 alignment: Alignment.center,
-                child: const Text(
-                  "Simpan Lokasi Parkir",
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.black,
-                  ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Flexible(
+                      child: Text(
+                        "Simpan Lokasi Parkir",
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.black,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Image.asset("assets/icons/flag.png", height: 18),
+                  ],
                 ),
               ),
             ),
@@ -475,9 +470,6 @@ class _LokasiParkirPageState extends State<LokasiParkirPage> {
     );
   }
 
-  // ===========================
-  // UI: ACTIVE CARD
-  // ===========================
   Widget buildActiveCard() {
     final lat = (activeParking!["latitude"] as num).toDouble();
     final lng = (activeParking!["longitude"] as num).toDouble();
@@ -493,7 +485,7 @@ class _LokasiParkirPageState extends State<LokasiParkirPage> {
             color: Colors.black.withOpacity(0.06),
             blurRadius: 12,
             offset: const Offset(0, 3),
-          )
+          ),
         ],
       ),
       child: Column(
@@ -513,10 +505,7 @@ class _LokasiParkirPageState extends State<LokasiParkirPage> {
                     ),
                   ),
                   const SizedBox(height: 6),
-                  const Text(
-                    "Active",
-                    style: TextStyle(color: Colors.green),
-                  ),
+                  const Text("Active", style: TextStyle(color: Colors.green)),
                 ],
               ),
               Column(
@@ -553,53 +542,78 @@ class _LokasiParkirPageState extends State<LokasiParkirPage> {
                 child: InkWell(
                   onTap: () => openInGoogleMaps(lat, lng),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 12,
+                      horizontal: 10,
+                    ),
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(40),
                       border: Border.all(color: const Color(0xffDCDCDC)),
                     ),
                     alignment: Alignment.center,
-                    child: const Text(
-                      "Tuju Lokasi Parkir",
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                      ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Flexible(
+                          child: Text(
+                            "Tuju Lokasi",
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Image.asset("assets/icons/arrow.png", height: 16),
+                      ],
                     ),
                   ),
                 ),
               ),
-              const SizedBox(width: 12),
+
+              const SizedBox(width: 10),
+
               Expanded(
                 child: InkWell(
                   onTap: () => endParkingSession(activeParking!["id"]),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 12,
+                      horizontal: 10,
+                    ),
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(40),
                       border: Border.all(color: const Color(0xffDCDCDC)),
                     ),
                     alignment: Alignment.center,
-                    child: const Text(
-                      "Akhiri Sesi Parkir",
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                      ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Flexible(
+                          child: Text(
+                            "Akhiri Sesi",
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Image.asset("assets/icons/timer.png", height: 16),
+                      ],
                     ),
                   ),
                 ),
               ),
             ],
-          )
+          ),
         ],
       ),
     );
   }
 
-  // ===========================
-  // UI: HISTORY CARD
-  // ===========================
   Widget buildHistoryCard(Map<String, dynamic> data) {
     return Container(
       padding: const EdgeInsets.all(22),
@@ -612,7 +626,7 @@ class _LokasiParkirPageState extends State<LokasiParkirPage> {
             color: Colors.black.withOpacity(0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
-          )
+          ),
         ],
       ),
       child: Column(
@@ -620,18 +634,12 @@ class _LokasiParkirPageState extends State<LokasiParkirPage> {
         children: [
           Text(
             data["nama_parkir"] ?? "-",
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w700,
-            ),
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: 8),
           Text(
             data["alamat"] ?? "Alamat tidak ditemukan",
-            style: const TextStyle(
-              fontSize: 14,
-              color: Colors.black54,
-            ),
+            style: const TextStyle(fontSize: 14, color: Colors.black54),
           ),
           const SizedBox(height: 12),
           Row(
@@ -644,7 +652,7 @@ class _LokasiParkirPageState extends State<LokasiParkirPage> {
               const SizedBox(width: 6),
               const Icon(Icons.calendar_today, size: 18),
             ],
-          )
+          ),
         ],
       ),
     );
@@ -713,3 +721,5 @@ class _LokasiParkirPageState extends State<LokasiParkirPage> {
     );
   }
 }
+
+// === END OF FILE ===

@@ -4,9 +4,6 @@ import 'package:uride/routes/app_routes.dart';
 import 'env.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
-// Global Supabase instance
-
-
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: ".env");
@@ -34,7 +31,7 @@ class MyApp extends StatelessWidget {
       ),
 
       // route awal
-      initialRoute: AppRoutes.parking,
+      initialRoute: AppRoutes.signin,
 
       routes: AppRoutes.routes,
       onGenerateRoute: AppRoutes.generateRoute,
