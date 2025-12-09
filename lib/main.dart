@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uride/routes/app_routes.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:uride/services/gemini_service.dart';
 import 'env.dart';
 
 // Global Supabase instance
@@ -9,11 +11,14 @@ final supabase = Supabase.instance.client;
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  await dotenv.load();
+  await GeminiService.initialize();
+
   await Supabase.initialize(
     url: Env.supabaseUrl,
     anonKey: Env.supabaseAnonKey,
   );
-
+  
   runApp(const MyApp());
 }
 

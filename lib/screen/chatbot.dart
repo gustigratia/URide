@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:uride/services/gemini_service.dart';
 
 class ChatbotPage extends StatefulWidget {
   const ChatbotPage({super.key});
@@ -21,37 +22,27 @@ class _ChatbotPageState extends State<ChatbotPage> {
 
   bool isTyping = false;
 
-  LinearGradient homeGradient() {
-    return const LinearGradient(
-      begin: Alignment.topLeft,
-      end: Alignment.bottomRight,
-      colors: [Color(0xFFFFD93D), Color(0xFFFF8400)],
-    );
-  }
-
-  void sendMessage() {
-    final text = _controller.text.trim();
-    if (text.isEmpty) return;
+  void sendMessage() async {
+    final userInput = _controller.text.trim();
+    if (userInput.isEmpty) return;
 
     setState(() {
-      messages.add({"sender": "user", "text": text});
+      messages.add({"sender": "user", "text": userInput});
       isTyping = true;
     });
 
     _controller.clear();
     _scrollToBottom();
 
-    Future.delayed(const Duration(milliseconds: 800), () {
-      setState(() {
-        messages.add({
-          "sender": "bot",
-          "text":
-              "Ini jawaban untuk: \"$text\".\n(Sudah siap saya kembangkan jadi AI beneran kalau kamu mau 😄)",
-        });
-        isTyping = false;
-      });
-      _scrollToBottom();
+    // KIRIM KE GEMINI (automatic initialize jika belum)
+    final reply = await GeminiService.chat(userInput);
+
+    setState(() {
+      messages.add({"sender": "bot", "text": reply});
+      isTyping = false;
     });
+
+    _scrollToBottom();
   }
 
   void _scrollToBottom() {
@@ -151,9 +142,7 @@ class _ChatbotPageState extends State<ChatbotPage> {
           flexibleSpace: Container(
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [
-                  Color(0xFFFFD93D), Color(0xFFFF8400)
-                ],
+                colors: [Color(0xFFFFD93D), Color(0xFFFF8400)],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
