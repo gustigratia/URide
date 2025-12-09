@@ -1,17 +1,18 @@
-// lib/main.dart
-
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uride/routes/app_routes.dart';
-import 'env.dart'; 
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:uride/services/gemini_service.dart';
+import 'env.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
-// Global Supabase instance
 final supabase = Supabase.instance.client;
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Inisialisasi Supabase
+  await dotenv.load(fileName: ".env");
+  await GeminiService.initialize();
   await Supabase.initialize(
     url: Env.supabaseUrl,
     anonKey: Env.supabaseAnonKey,
@@ -30,13 +31,13 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: 'URide',
       theme: ThemeData(
-        fontFamily: "Euclid", // Theme font yang sudah Anda definisikan
+        fontFamily: "Euclid",
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.amber),
         useMaterial3: true,
       ),
 
-      // route awal diubah dari signin ke splash screen
-      initialRoute: AppRoutes.splash, 
+      // route awal
+      initialRoute: AppRoutes.signin,
 
       routes: AppRoutes.routes,
       onGenerateRoute: AppRoutes.generateRoute,

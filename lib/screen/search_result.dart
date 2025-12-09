@@ -267,4 +267,3 @@ class SearchResultPage extends StatelessWidget {
     );
   }
 }
-
