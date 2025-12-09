@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:uride/services/gemini_service.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
 
 class ChatbotPage extends StatefulWidget {
   const ChatbotPage({super.key});
@@ -80,12 +81,15 @@ class _ChatbotPageState extends State<ChatbotPage> {
             ),
           ],
         ),
-        child: Text(
-          text,
-          style: TextStyle(
-            color: isUser ? Colors.white : Colors.black87,
-            fontSize: 15,
-            height: 1.35,
+        child: MarkdownBody(
+          data: text,
+          softLineBreak: true,
+          styleSheet: MarkdownStyleSheet(
+            p: TextStyle(
+              color: isUser ? Colors.white : Colors.black87,
+              fontSize: 15,
+              height: 1.35,
+            ),
           ),
         ),
       ),
