@@ -45,11 +45,13 @@ class AppRoutes {
   static const invoice = '/invoice';
 
 
+
+
   static Map<String, WidgetBuilder> routes = {
     home: (_) => const HomeScreen(),
     signin: (_) => const SignInPage(),
     search: (_) => const SearchPage(),
-    parking: (_) => const LokasiParkir(),
+    parking: (_) => const LokasiParkirPage(),
     listbengkel: (_) => const BengkelListScreen(),
     signup: (_) => const SignUpPage(),
     vehicle: (_) => const VehicleDetailPage(),
@@ -59,6 +61,7 @@ class AppRoutes {
     verifikasiKode: (_) => const VerifikasiKodePage(),
     buatPasswordBaru: (_) => const BuatPasswordBaruPage(),
     laluLintas: (_)=> const LaluLintasPage(), 
+    parking: (_) => const LokasiParkirPage(),
     editKendaraan: (_) => const EditKendaraanPage(),
     spbuList: (_) => const SPBUListScreen(),
     orderHistory: (_) => const OrderHistoryScreen(),
@@ -118,7 +121,7 @@ class AppRoutes {
       case search:
         return _animatedRoute(const SearchPage());
       case parking:
-        return _animatedRoute(const LokasiParkir());
+        return _animatedRoute(const LokasiParkirPage());
       case ubahKataSandi:
         return _animatedRoute(const UbahKataSandiPage());
       case verifikasiKode:
