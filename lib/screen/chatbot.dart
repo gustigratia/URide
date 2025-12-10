@@ -17,7 +17,7 @@ class _ChatbotPageState extends State<ChatbotPage> {
     {
       "sender": "bot",
       "text":
-          "Hai! Selamat datang di URide Assistant 🚗✨\nAda yang bisa saya bantu hari ini?",
+          "Hai! Selamat datang di URide Assistant \nAda yang bisa saya bantu hari ini?",
     },
   ];
 
