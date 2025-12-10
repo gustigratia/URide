@@ -295,7 +295,7 @@ class BengkelDetailScreen extends StatelessWidget {
 // Save Button
 class _SaveButton extends StatefulWidget {
   final int workshopId;
-  const _SaveButton({super.key, required this.workshopId});
+  const _SaveButton({required this.workshopId});
   @override
   State<_SaveButton> createState() => _SaveButtonState();
 }

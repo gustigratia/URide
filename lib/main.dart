@@ -4,7 +4,6 @@ import 'package:uride/routes/app_routes.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:uride/services/gemini_service.dart';
 import 'env.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 final supabase = Supabase.instance.client;
 
