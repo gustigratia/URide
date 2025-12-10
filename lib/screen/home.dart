@@ -321,10 +321,17 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
               Row(
-                children: const [
-                  Icon(Icons.person, color: Colors.white),
-                  SizedBox(width: 15),
-                  Icon(Icons.settings, color: Colors.white),
+                children: [
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.pushNamed(context, '/profile');
+                    },
+                    child: Icon(
+                      Icons.person,
+                      color: Colors.white,
+                      size: 30,
+                    ),
+                  ),
                 ],
               ),
             ],
@@ -622,12 +629,14 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Image.asset(iconPath, width: 26, height: 26),
           ),
           const SizedBox(height: 6),
-          Text(
+          AutoSizeText(
             title,
             textAlign: TextAlign.center,
-            softWrap: false,
+            softWrap: true,
             overflow: TextOverflow.fade,
-            style: const TextStyle(fontSize: 11),
+            style: const TextStyle(fontSize: 9),
+            maxLines: 2,
+            minFontSize: 8,
           ),
         ],
       ),
@@ -691,14 +700,16 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Stack(
         clipBehavior: Clip.none,
         children: [
-          // Gambar
           Container(
             height: 200,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(18),
               image: DecorationImage(
-                image: AssetImage(image),
+                image: NetworkImage(image),
                 fit: BoxFit.cover,
+                onError: (exception, stackTrace) {
+                  debugPrint('Image error: $exception');
+                },
               ),
             ),
           ),
@@ -839,8 +850,11 @@ class _HomeScreenState extends State<HomeScreen> {
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(18),
               image: DecorationImage(
-                image: AssetImage(image),
+                image: NetworkImage(image),
                 fit: BoxFit.cover,
+                onError: (exception, stackTrace) {
+                  debugPrint('Image error: $exception');
+                },
               ),
             ),
           ),
@@ -951,7 +965,7 @@ class _HomeScreenState extends State<HomeScreen> {
               name: item["name"] ?? 'Unnamed',
               distance: item["distance"] ?? '--',
               rating: item["rating"]?.toString() ?? '0.0',
-              image: item["image"] ?? 'assets/images/spbu.png',
+              image: item["image_url"] ?? 'assets/images/spbu.png',
               status: (item["is_open"] == true) ? 'Buka' : 'Tutup',
             ),
           );

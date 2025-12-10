@@ -1,8 +1,5 @@
-// lib/screens/splash_screen.dart
-
 import 'package:flutter/material.dart';
-import 'dart:async'; 
-// Import yang sudah diperbaiki
+import 'dart:async';
 import 'package:uride/routes/app_routes.dart'; 
 
 class SplashScreen extends StatefulWidget {
@@ -49,14 +46,21 @@ class _SplashScreenState extends State<SplashScreen> {
     Navigator.of(context).pushReplacementNamed(AppRoutes.signup); 
   }
 
-  
+
   @override
   Widget build(BuildContext context) {
-    if (_currentPageIndex == 0) {
-      return _buildSplashPage1(context);
-    } else {
-      return _buildSplashPage2(context);
-    }
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 800),
+      transitionBuilder: (widget, animation) {
+        return FadeTransition(
+          opacity: animation,
+          child: widget,
+        );
+      },
+      child: _currentPageIndex == 0
+          ? _buildSplashPage1(context)
+          : _buildSplashPage2(context),
+    );
   }
 
   // --- WIDGET LOGO (Asset Gambar Gabungan) ---
@@ -104,38 +108,39 @@ class _SplashScreenState extends State<SplashScreen> {
     );
   }
 
-  // =========================================================
-  // --- TAMPILAN 1: SPLASH SCREEN (WAVE DI BAWAH) ---
-  // =========================================================
+
   Widget _buildSplashPage1(BuildContext context) {
     final screenHeight = MediaQuery.of(context).size.height;
     final screenWidth = MediaQuery.of(context).size.width;
     
-    return Scaffold(
-      backgroundColor: Colors.white, 
-      body: Stack(
-        children: [
-          // 1. Logo Content (Menggunakan uride.png)
-          _buildLogoContent(
-            sloganColor: '0xFF616161', 
-            // Asset untuk Screen 1
-            logoAsset: 'assets/images/uride.png', 
-            screenWidth: screenWidth,
-            screenHeight: screenHeight,
-            topSpacingFactor: 0.28, 
-          ),
-
-          // 2. Gambar Wave di Bawah
-          Align(
-            alignment: Alignment.bottomCenter,
-            child: Image.asset(
-              'assets/images/wave.png', 
-              width: double.infinity, 
-              height: screenHeight * 0.45, 
-              fit: BoxFit.fill, 
+    return KeyedSubtree(
+      key: const ValueKey('SplashPage1'),
+      child: Scaffold(
+        backgroundColor: Colors.white,
+        body: Stack(
+          children: [
+            // 1. Logo Content (Menggunakan uride.png)
+            _buildLogoContent(
+              sloganColor: '0xFF616161',
+              // Asset untuk Screen 1
+              logoAsset: 'assets/images/uride.png',
+              screenWidth: screenWidth,
+              screenHeight: screenHeight,
+              topSpacingFactor: 0.28,
             ),
-          ),
-        ],
+
+            // 2. Gambar Wave di Bawah
+            Align(
+              alignment: Alignment.bottomCenter,
+              child: Image.asset(
+                'assets/images/wave.png',
+                width: double.infinity,
+                height: screenHeight * 0.45,
+                fit: BoxFit.fill,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -148,109 +153,116 @@ class _SplashScreenState extends State<SplashScreen> {
     final screenWidth = MediaQuery.of(context).size.width;
     const double horizontalPadding = 80.0;
 
-    return Scaffold(
-      backgroundColor: Colors.white, 
-      body: Stack(
-        children: [
-          // 1. Gambar Wave Kuning di ATAS
-          Positioned(
-            top: screenHeight * -0.05, 
-            left: 0,
-            right: 0,
-            child: Image.asset(
-              'assets/images/wave 2.png', 
-              width: double.infinity, 
-              height: screenHeight * 0.45, 
-              fit: BoxFit.fill,
+    return KeyedSubtree(
+      key: const ValueKey('SplashPage2'),
+      child: Scaffold(
+        backgroundColor: Colors.white,
+        body: Stack(
+          children: [
+            AnimatedPositioned(
+              duration: Duration(milliseconds: 800),
+              curve: Curves.easeOut,
+              top: _currentPageIndex == 0
+                  ? screenHeight   // start invisible below
+                  : screenHeight * -0.05, // slide upward
+              left: 0,
+              right: 0,
+              child: Image.asset(
+                'assets/images/wave 2.png',
+                width: double.infinity,
+                height: screenHeight * 0.45,
+                fit: BoxFit.fill,
+              ),
             ),
-          ),
 
-          // 2. Konten Utama
-          SizedBox(
-            height: screenHeight, 
-            child: Column(
-              children: [
-                // Logo dan Teks
-                Padding(
-                  padding: EdgeInsets.only(top: screenHeight * 0.12),
-                  child: _buildLogoContent(
-                    sloganColor: '0xFFFFFFFF', 
-                    // Asset untuk Screen 2
-                    logoAsset: 'assets/images/uride white.png', 
-                    screenWidth: screenWidth,
-                    screenHeight: screenHeight,
-                    topSpacingFactor: 0.0, 
+            // 2. Konten Utama
+            SizedBox(
+              height: screenHeight,
+              child: Column(
+                children: [
+                  // Logo dan Teks
+                  Padding(
+                    padding: EdgeInsets.only(top: screenHeight * 0.12),
+                    child: _buildLogoContent(
+                      sloganColor: '0xFFFFFFFF',
+                      // Asset untuk Screen 2
+                      logoAsset: 'assets/images/uride white.png',
+                      screenWidth: screenWidth,
+                      screenHeight: screenHeight,
+                      topSpacingFactor: 0.0,
+                    ),
                   ),
-                ),
 
-                const Spacer(), 
+                  const Spacer(),
 
-                // 4. Area Tombol MASUK dan Daftar
-                Padding(
-                  padding: EdgeInsets.only(
-                    bottom: screenHeight * 0.25,
-                    left: horizontalPadding,
-                    right: horizontalPadding
-                  ),
-                  child: Column(
-                    children: [
-                      // Tombol "Masuk"
-                      Container(
-                        width: double.infinity, 
-                        height: 50,
-                        child: ElevatedButton(
-                          onPressed: _navigateToSignIn,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: kPrimaryButtonBalancedOrange, 
-                            shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(25),
-                            ),
-                            elevation: 0,
-                          ),
-                          child: const Text(
-                            'Masuk',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                              fontFamily: 'Euclid', 
-                              fontSize: 16,
-                            ),
-                          ),
-                        ),
-                      ),
-                      SizedBox(height: screenHeight * 0.02),
-                      
-                      // Teks "Belum mempunyai akun? Daftar"
-                      GestureDetector( 
-                        onTap: _navigateToSignUp,
-                        child: Text.rich(
-                          TextSpan(
-                            text: 'Belum mempunyai akun? ',
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontFamily: 'Euclid', 
-                              color: Colors.grey[600],
-                            ),
-                            children: const [
-                              TextSpan(
-                                text: 'Daftar',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontFamily: 'Euclid', 
-                                  color: kPrimaryButtonBalancedOrange, 
-                                ),
+                  // 4. Area Tombol MASUK dan Daftar
+                  Padding(
+                    padding: EdgeInsets.only(
+                      bottom: screenHeight * 0.25,
+                      left: horizontalPadding,
+                      right: horizontalPadding
+                    ),
+                    child: Column(
+                      children: [
+                        // Tombol "Masuk"
+                        Container(
+                          width: double.infinity,
+                          height: 50,
+                          child: ElevatedButton(
+                            onPressed: _navigateToSignIn,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: kPrimaryButtonBalancedOrange,
+                              shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(25),
                               ),
-                            ],
+                              elevation: 0,
+                            ),
+                            child: const Text(
+                              'Masuk',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontFamily: 'Euclid',
+                                fontSize: 16,
+                              ),
+
+                            ),
                           ),
                         ),
-                      ),
-                    ],
+                        SizedBox(height: screenHeight * 0.02),
+
+                        // Teks "Belum mempunyai akun? Daftar"
+                        GestureDetector(
+                          onTap: _navigateToSignUp,
+                          child: Text.rich(
+                            TextSpan(
+                              text: 'Belum mempunyai akun? ',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontFamily: 'Euclid',
+                                color: Colors.grey[600],
+                              ),
+                              children: const [
+                                TextSpan(
+                                  text: 'Daftar',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontFamily: 'Euclid',
+                                    color: kPrimaryButtonBalancedOrange,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

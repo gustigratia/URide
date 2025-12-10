@@ -205,9 +205,14 @@ class SPBUCard extends StatelessWidget {
                 height: 200,
                 width: double.infinity,
                 color: Colors.grey[300],
-                child: Image.asset(
+                child: Image.network(
                   spbu.imageUrl,
                   fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) => const Icon(Icons.error),
+                  loadingBuilder: (context, child, loadingProgress) {
+                    if (loadingProgress == null) return child;
+                    return const Center(child: CircularProgressIndicator());
+                  },
                 ),
               ),
             ),
