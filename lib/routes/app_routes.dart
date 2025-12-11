@@ -24,6 +24,7 @@ import 'package:uride/screen/invoice.dart';
 import 'package:uride/screen/splash_screen.dart';
 import 'package:uride/screen/profile_page.dart';
 import 'package:uride/screen/dashboard_workshop.dart';
+import 'package:uride/screen/join_workshop.dart';
 
 class AppRoutes {
   static const home = '/home';
@@ -51,7 +52,7 @@ class AppRoutes {
   static const weather = '/weather';
   static const profilePage = '/profile';
   static const dashboardWorkshop = '/dashboard-workshop';
-  
+  static const joinWorkshop = '/join-workshop';
 
 
 
@@ -79,6 +80,7 @@ class AppRoutes {
     splash: (_) => const SplashScreen(),
     profilePage: (_) => const ProfilePage(),
     dashboardWorkshop: (_) => const DashboardWorkshop(),
+    joinWorkshop: (_) => const GabungMitraPage(),
   };
 
   static Route<dynamic>? generateRoute(RouteSettings settings) {
@@ -161,6 +163,8 @@ class AppRoutes {
         return _animatedRoute(const ProfilePage());
       case dashboardWorkshop:
         return _animatedRoute(const DashboardWorkshop());
+      case joinWorkshop:
+        return _animatedRoute(const GabungMitraPage());
       case search_result:
         return PageRouteBuilder(
           transitionDuration: const Duration(milliseconds: 300),
