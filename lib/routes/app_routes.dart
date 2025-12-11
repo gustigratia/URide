@@ -17,6 +17,7 @@ import 'package:uride/screen/addvehicle_screen.dart';
 import 'package:uride/screen/search_result.dart';
 import 'package:uride/screen/edit_kendaraan_page.dart';
 import 'package:uride/screen/spbu.dart'; 
+import 'package:uride/screen/weather_screen.dart';
 import 'package:uride/screen/orderhistory_screen.dart';
 import 'package:uride/screen/chatbot.dart';
 import 'package:uride/screen/invoice.dart';
@@ -32,11 +33,11 @@ class AppRoutes {
   static const ajukanLayanan = '/order_service';
   static const konfirmasiAjuan = '/order_confirmation';
   static const listbengkel = '/workshop';
-  static const String verifikasiKode = '/verifikasi-kode';
   static const vehicle = '/vehicle';
   static const addvehicle = '/add-vehicle';
   static const search_result = '/search-result';
   static const ubahKataSandi = '/ubah-kata-sandi';
+  static const verifikasiKode = '/verifikasi-kode';
   static const buatPasswordBaru = '/buat-password-baru'; 
   static const laluLintas = '/lalulintas';
   static const spbuList = '/spbu-list'; 
@@ -45,6 +46,7 @@ class AppRoutes {
   static const chatbot = '/chatbot';
   static const invoice = '/invoice';
   static const splash = '/splash';
+  static const weather = '/weather';
 
 
 
@@ -68,6 +70,7 @@ class AppRoutes {
     spbuList: (_) => const SPBUListScreen(),
     orderHistory: (_) => const OrderHistoryScreen(),
     chatbot: (_) => const ChatbotPage(),
+    weather: (_) => const WeatherScreen(),
     splash: (_) => const SplashScreen(),
   };
 
@@ -145,6 +148,8 @@ class AppRoutes {
         return _animatedRoute(const OrderHistoryScreen());
       case addvehicle:
         return _animatedRoute(const TambahKendaraanPage());
+      case weather:
+        return _animatedRoute(const WeatherScreen());
       case search_result:
         return PageRouteBuilder(
           transitionDuration: const Duration(milliseconds: 300),

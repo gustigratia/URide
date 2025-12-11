@@ -24,10 +24,12 @@ dependencies:
   google_fonts: ^6.2.1
   google_maps_flutter: ^2.6.0
   flutter_dotenv: ^5.1.0
+  geocoding: ^2.1.1
   google_generative_ai: ^0.4.4
   flutter_markdown: ^0.6.17
   midtrans_sdk: ^1.2.0
-  geocoding: ^2.1.0
+
+
 
 dev_dependencies:
   flutter_test:
