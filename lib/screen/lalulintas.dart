@@ -373,7 +373,7 @@ class _LaluLintasPageState extends State<LaluLintasPage> {
                               ),
                               const SizedBox(height: 12),
                               const Text(
-                                "Radius 1km ke semua arah (bundar)",
+                                "Radius 1km ke semua arah",
                                 style: TextStyle(
                                   fontSize: 12,
                                   color: Colors.black45,
@@ -412,16 +412,17 @@ class _LaluLintasPageState extends State<LaluLintasPage> {
                           width: double.infinity,
                           child: ElevatedButton.icon(
                             onPressed: _openGoogleMaps,
-                            icon: const Icon(Icons.directions),
+                            icon: const Icon(Icons.directions, color: Colors.white),
                             label: const Text(
                               "Buka Google Maps",
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w600,
+                                color: Colors.white,
                               ),
                             ),
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.blue,
+                              backgroundColor: const Color(0xFFFF9800),
                               padding: const EdgeInsets.symmetric(vertical: 14),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(10),
