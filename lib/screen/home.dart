@@ -248,6 +248,16 @@ class _HomeScreenState extends State<HomeScreen> {
           // handle bottom nav tap if needed
         },
       ),
+
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          Navigator.pushNamed(context, '/chatbot');
+        },
+        backgroundColor: Colors.orange,
+        child: const Icon(Icons.chat, color: Colors.white),
+      ),
+      
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       body: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -651,8 +661,8 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildNearestSpbuTitle() {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: const [
-        Text(
+      children: [
+        const Text(
           "SPBU terdekat",
           style: TextStyle(
             fontSize: 17,
@@ -660,7 +670,18 @@ class _HomeScreenState extends State<HomeScreen> {
             fontWeight: FontWeight.bold,
           ),
         ),
-        Text("Lihat Semua", style: TextStyle(color: Colors.orange)),
+        GestureDetector(
+          onTap: () {
+            Navigator.pushNamed(context, '/spbu-list'); // Ganti sesuai route kamu
+          },
+          child: const Text(
+            "Lihat Semua",
+            style: TextStyle(
+              color: Colors.orange,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
       ],
     );
   }

@@ -64,11 +64,14 @@ class _ProfilePageState extends State<ProfilePage> {
       firstname = parts.first;
       lastname = parts.length > 1 ? parts.sublist(1).join(" ") : "";
 
-      await supabase.from("users").update({
-        "firstname": firstname,
-        "lastname": lastname,
-        "phone": phoneC.text,
-      }).eq("id", currentUser!.id);
+      await supabase
+          .from("users")
+          .update({
+            "firstname": firstname,
+            "lastname": lastname,
+            "phone": phoneC.text,
+          })
+          .eq("id", currentUser!.id);
 
       await loadUser();
     } catch (e) {
@@ -87,10 +90,7 @@ class _ProfilePageState extends State<ProfilePage> {
         centerTitle: true,
         title: const Text(
           "Profil",
-          style: TextStyle(
-            color: Colors.black,
-            fontWeight: FontWeight.w600,
-          ),
+          style: TextStyle(color: Colors.black, fontWeight: FontWeight.w600),
         ),
       ),
 
@@ -122,7 +122,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       color: Colors.white,
                     ),
                     child: const CircleAvatar(
-                      radius: 28,
+                      radius: 32,
                       backgroundImage: AssetImage("assets/profile.jpg"),
                     ),
                   ),
@@ -136,7 +136,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       children: [
                         // NAME — WITH UNDERLINE WHEN EDITING
                         SizedBox(
-                          height: 24,
+                          height: 26,
                           child: isEditing
                               ? TextField(
                                   controller: nameC,
@@ -180,22 +180,29 @@ class _ProfilePageState extends State<ProfilePage> {
                         const SizedBox(height: 8),
 
                         // BUTTON DAFTARKAN BENGKEL
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 10, vertical: 5),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: const Text(
-                            "Gabung Jadi Mitra",
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.black87,
+                        GestureDetector(
+                          onTap: () {
+                            Navigator.pushNamed(context, '/workshop-dashboard');
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 5,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Text(
+                              "Gabung Jadi Mitra",
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                                color: Colors.black87,
+                              ),
                             ),
                           ),
-                        )
+                        ),
                       ],
                     ),
                   ),
@@ -221,7 +228,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         color: Colors.black,
                       ),
                     ),
-                  )
+                  ),
                 ],
               ),
             ),
@@ -271,10 +278,7 @@ class _ProfilePageState extends State<ProfilePage> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(18),
         boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 8,
-          )
+          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8),
         ],
       ),
       child: Column(
@@ -359,9 +363,18 @@ class _ProfilePageState extends State<ProfilePage> {
           ),
         ),
         onTap: () async {
-          await Supabase.instance.client.auth.signOut();
+          final supabase = Supabase.instance.client;
+
+          // 1. Sign out dari Supabase (hapus session & tokens)
+          await supabase.auth.signOut();
+
+          // 2. Pastikan semua halaman sebelumnya dibuang
           if (mounted) {
-            Navigator.pushReplacementNamed(context, "/sign-in");
+            Navigator.pushNamedAndRemoveUntil(
+              context,
+              '/signin',
+              (route) => false, // hapus semua route, reset navigation stack
+            );
           }
         },
       ),

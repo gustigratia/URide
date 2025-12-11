@@ -27,7 +27,7 @@ class CustomBottomNav extends StatelessWidget {
             Navigator.pushNamed(context, "/workshop");
             break;
           case 3:
-            Navigator.pushNamed(context, "/profile");
+            Navigator.pushNamed(context, "/history");
             break;
         }
       },

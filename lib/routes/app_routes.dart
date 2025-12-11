@@ -10,9 +10,15 @@ import 'package:uride/screen/ubah_kata_sandi.dart';
 import 'package:uride/screen/verifikasi_kode.dart';
 import 'package:uride/screen/buat_password_baru.dart';
 import 'package:uride/screen/vehicle_detail_page.dart';
+import 'package:uride/screen/addvehicle_screen.dart';
 import 'package:uride/screen/search_result.dart';
 import 'package:uride/screen/edit_kendaraan_page.dart';
+import 'package:uride/screen/spbu.dart'; 
 import 'package:uride/screen/profile_page.dart';
+import 'package:uride/screen/orderhistory_screen.dart';
+import 'package:uride/screen/chatbot.dart';
+import 'package:uride/screen/dashboard_workshop.dart';
+
 
 class AppRoutes {
   static const home = '/home';
@@ -21,13 +27,18 @@ class AppRoutes {
   static const search = '/search';
   static const parking = '/parking';
   static const vehicle = '/vehicle';
+  static const addvehicle = '/add-vehicle';
   static const search_result = '/search-result';
   static const ubahKataSandi = '/ubah-kata-sandi';
   static const verifikasiKode = '/verifikasi-kode';
   static const buatPasswordBaru = '/buat-password-baru'; 
   static const laluLintas = '/lalulintas';
-  static const editKendaraan = '/edit-kendaraan'; 
-  static const profile = '/profile';
+  static const spbuList = '/spbu-list'; 
+  static const editKendaraan = '/edit-kendaraan';
+  static const orderHistory = '/history';
+  static const chatbot = '/chatbot';
+  static const profile = '/profile';  
+  static const workshopDashboard = '/workshop-dashboard';
 
 
 
@@ -36,13 +47,19 @@ class AppRoutes {
     signin: (_) => const SignInPage(),
     signup: (_) => const SignUpPage(),
     vehicle: (_) => const VehicleDetailPage(),
+    addvehicle: (_) => const TambahKendaraanPage(),
     search: (_) => const SearchPage(),
     ubahKataSandi: (_) => const UbahKataSandiPage(),
     verifikasiKode: (_) => const VerifikasiKodePage(),
     buatPasswordBaru: (_) => const BuatPasswordBaruPage(),
     laluLintas: (_)=> const LaluLintasPage(), 
+    parking: (_) => const LokasiParkirPage(),
     editKendaraan: (_) => const EditKendaraanPage(),
-    profile: (_)=> const ProfilePage(),
+    spbuList: (_) => const SPBUListScreen(),
+    orderHistory: (_) => const OrderHistoryScreen(),
+    chatbot: (_) => const ChatbotPage(),
+    profile: (_) => const ProfilePage(),
+    workshopDashboard: (_) => const DashboardWorkshop(),
   };
 
   static Route<dynamic>? generateRoute(RouteSettings settings) {
@@ -50,7 +67,7 @@ class AppRoutes {
       case search:
         return _animatedRoute(const SearchPage());
       case parking:
-        return _animatedRoute(const LokasiParkir());
+        return _animatedRoute(const LokasiParkirPage());
       case ubahKataSandi:
         return _animatedRoute(const UbahKataSandiPage());
       case verifikasiKode:
@@ -59,10 +76,20 @@ class AppRoutes {
         return _animatedRoute(const BuatPasswordBaruPage());
       case laluLintas:
         return _animatedRoute(const LaluLintasPage());
+      case chatbot:
+        return _animatedRoute(const ChatbotPage());
       case vehicle:
         return _animatedRoute(const VehicleDetailPage());
       case editKendaraan:
         return _animatedRoute(const EditKendaraanPage()); 
+      case spbuList: 
+        return _animatedRoute(const SPBUListScreen());
+      case orderHistory:
+        return _animatedRoute(const OrderHistoryScreen());
+      case addvehicle:
+        return _animatedRoute(const TambahKendaraanPage());
+      case profile:
+        return _animatedRoute(const ProfilePage());
       case search_result:
         return PageRouteBuilder(
           transitionDuration: const Duration(milliseconds: 300),
