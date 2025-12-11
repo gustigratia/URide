@@ -722,7 +722,7 @@ class _HomeScreenState extends State<HomeScreen> {
             percent: precipPercent ?? 0,
             subtitle: conditionText,
             title: "Presipitasi",
-            icon: Icon(conditionIcon, size: 36),
+            icon: Icon(conditionIcon, size: 36, color: Colors.white,),
             isActive: true,
             context: context,
           ),
