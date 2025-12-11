@@ -274,7 +274,7 @@ class _LaluLintasPageState extends State<LaluLintasPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF6F6F6),
+      backgroundColor: const Color(0xFFF5F5F5),
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
@@ -294,14 +294,25 @@ class _LaluLintasPageState extends State<LaluLintasPage> {
       ),
       body: loading
           ? const Center(
-              child: CircularProgressIndicator(),
+              child: CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFFF9800)),
+              ),
             )
           : SingleChildScrollView(
               child: Column(
                 children: [
                   // GOOGLE MAPS - LOKASI SAAT INI DENGAN TRAFFIC
-                  SizedBox(
+                  Container(
                     height: 350,
+                    decoration: BoxDecoration(
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.1),
+                          blurRadius: 10,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
                     child: GoogleMap(
                       onMapCreated: (controller) {
                         if (!_mapController.isCompleted) {
@@ -315,69 +326,175 @@ class _LaluLintasPageState extends State<LaluLintasPage> {
                       myLocationEnabled: true,
                       myLocationButtonEnabled: true,
                       zoomControlsEnabled: true,
-                      trafficEnabled: true, // ✅ TRAFFIC ENABLED
+                      trafficEnabled: true,
                       markers: markers,
                     ),
                   ),
 
                   // CONTENT BELOW MAP
                   Padding(
-                    padding: const EdgeInsets.all(20),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // TRAFFIC STATUS CARD
+                        // TRAFFIC STATUS CARD - PREMIUM DESIGN
                         Container(
-                          padding: const EdgeInsets.all(16),
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(20),
                           decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(12),
+                            gradient: LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [
+                                trafficColor.withOpacity(0.1),
+                                trafficColor.withOpacity(0.05),
+                              ],
+                            ),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: trafficColor.withOpacity(0.3),
+                              width: 1.5,
+                            ),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.08),
-                                blurRadius: 8,
+                                color: trafficColor.withOpacity(0.15),
+                                blurRadius: 12,
+                                offset: const Offset(0, 4),
                               ),
                             ],
                           ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text(
-                                "Kondisi Lalu Lintas",
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.black54,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
                               Row(
                                 children: [
                                   Container(
-                                    width: 12,
-                                    height: 12,
+                                    width: 14,
+                                    height: 14,
                                     decoration: BoxDecoration(
                                       color: trafficColor,
                                       shape: BoxShape.circle,
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: trafficColor.withOpacity(0.5),
+                                          blurRadius: 8,
+                                          spreadRadius: 2,
+                                        ),
+                                      ],
                                     ),
                                   ),
-                                  const SizedBox(width: 10),
-                                  Text(
-                                    trafficStatus,
+                                  const SizedBox(width: 12),
+                                  const Text(
+                                    "Kondisi Lalu Lintas",
                                     style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w600,
-                                      color: trafficColor,
+                                      fontSize: 12,
+                                      color: Colors.black54,
+                                      fontWeight: FontWeight.w500,
                                     ),
                                   ),
                                 ],
                               ),
                               const SizedBox(height: 12),
-                              const Text(
-                                "Radius 1km ke semua arah",
+                              Text(
+                                trafficStatus,
                                 style: TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.black45,
-                                  fontStyle: FontStyle.italic,
+                                  fontSize: 28,
+                                  fontWeight: FontWeight.w800,
+                                  color: trafficColor,
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 6,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: trafficColor.withOpacity(0.15),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Text(
+                                  "Radius 1km ke semua arah",
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: trafficColor,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        const SizedBox(height: 28),
+
+                        // LOCATION INFO SECTION
+                        const Text(
+                          "Lokasi Anda",
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.black87,
+                          ),
+                        ),
+
+                        const SizedBox(height: 12),
+
+                        // LOCATION CARD
+                        _buildPremiumLocationCard(
+                          icon: Icons.location_on_rounded,
+                          color: const Color(0xFF2196F3),
+                          address: currentAddress,
+                        ),
+
+                        const SizedBox(height: 28),
+
+                        // ACTION BUTTONS
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: Colors.grey.shade200,
+                            ),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                "Navigasi Cepat",
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w700,
+                                  color: Colors.black87,
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              SizedBox(
+                                width: double.infinity,
+                                child: ElevatedButton.icon(
+                                  onPressed: _openGoogleMaps,
+                                  icon: const Icon(Icons.map_rounded),
+                                  label: const Text(
+                                    "Buka Google Maps",
+                                    style: TextStyle(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: const Color(0xFFFF9800),
+                                    foregroundColor: Colors.white,
+                                    padding:
+                                        const EdgeInsets.symmetric(vertical: 14),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    elevation: 4,
+                                  ),
                                 ),
                               ),
                             ],
@@ -385,51 +502,6 @@ class _LaluLintasPageState extends State<LaluLintasPage> {
                         ),
 
                         const SizedBox(height: 20),
-
-                        // LOCATION INFO
-                        const Text(
-                          "Lokasi Saat Ini",
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-
-                        const SizedBox(height: 12),
-
-                        // CURRENT LOCATION CARD
-                        _buildLocationCard(
-                          icon: Icons.radio_button_checked,
-                          color: Colors.blue,
-                          title: "Alamat Anda",
-                          address: currentAddress,
-                        ),
-
-                        const SizedBox(height: 20),
-
-                        // OPEN GOOGLE MAPS BUTTON
-                        SizedBox(
-                          width: double.infinity,
-                          child: ElevatedButton.icon(
-                            onPressed: _openGoogleMaps,
-                            icon: const Icon(Icons.directions, color: Colors.white),
-                            label: const Text(
-                              "Buka Google Maps",
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.white,
-                              ),
-                            ),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFFFF9800),
-                              padding: const EdgeInsets.symmetric(vertical: 14),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                            ),
-                          ),
-                        ),
                       ],
                     ),
                   ),
@@ -439,32 +511,46 @@ class _LaluLintasPageState extends State<LaluLintasPage> {
     );
   }
 
-  // HELPER: BUILD LOCATION CARD
-  Widget _buildLocationCard({
+  // PREMIUM LOCATION CARD
+  Widget _buildPremiumLocationCard({
     required IconData icon,
     required Color color,
-    required String title,
     required String address,
   }) {
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: Colors.grey.shade200),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: color, size: 20),
-          const SizedBox(width: 12),
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(icon, color: color, size: 24),
+          ),
+          const SizedBox(width: 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  title,
-                  style: const TextStyle(
+                const Text(
+                  "Alamat Saat Ini",
+                  style: TextStyle(
                     fontSize: 12,
                     color: Colors.black54,
                     fontWeight: FontWeight.w500,
@@ -474,9 +560,10 @@ class _LaluLintasPageState extends State<LaluLintasPage> {
                 Text(
                   address,
                   style: const TextStyle(
-                    fontSize: 13,
+                    fontSize: 14,
                     fontWeight: FontWeight.w600,
                     color: Colors.black87,
+                    height: 1.4,
                   ),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
