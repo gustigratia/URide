@@ -426,7 +426,7 @@ class _LaluLintasPageState extends State<LaluLintasPage> {
                       ),
                     ),
 
-                    const SizedBox(height: 18),
+                    const SizedBox(height: 12),
 
                     // LOCATION INFO SECTION
                     const Text(
@@ -447,7 +447,7 @@ class _LaluLintasPageState extends State<LaluLintasPage> {
                       address: currentAddress,
                     ),
 
-                    const SizedBox(height: 28),
+                    const SizedBox(height: 14),
 
                     // ACTION BUTTONS
                     Container(
@@ -500,7 +500,7 @@ class _LaluLintasPageState extends State<LaluLintasPage> {
                       ),
                     ),
 
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 8),
                   ],
                 ),
               ),
