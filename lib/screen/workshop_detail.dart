@@ -2,19 +2,76 @@ import 'package:flutter/material.dart';
 import 'package:uride/main.dart'; // supabase
 import 'package:uride/routes/app_routes.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:geolocator/geolocator.dart'; // Tambahkan import ini
 
 class BengkelDetailScreen extends StatelessWidget {
   final int workshopId;
 
   const BengkelDetailScreen({super.key, required this.workshopId});
 
-  Future<Map<String, dynamic>?> getWorkshopDetail() async {
-    final data = await supabase
-        .from('workshops')
-        .select()
-        .eq('id', workshopId)
-        .single();
-    return data;
+  // Gabungkan pengambilan data bengkel + lokasi user
+  Future<Map<String, dynamic>?> getWorkshopDetailWithDistance() async {
+    try {
+      // 1. Ambil data bengkel
+      final data = await supabase
+          .from('workshops')
+          .select()
+          .eq('id', workshopId)
+          .single();
+
+      // 2. Ambil Lokasi User & Hitung Jarak
+      String distanceStr = '-- km';
+      try {
+        // Cek permission sederhana (asumsi sudah dihandle di screen sebelumnya, tapi tetap safe check)
+        LocationPermission permission = await Geolocator.checkPermission();
+        if (permission == LocationPermission.denied) {
+          permission = await Geolocator.requestPermission();
+        }
+
+        if (permission == LocationPermission.whileInUse ||
+            permission == LocationPermission.always) {
+          
+          final userPos = await Geolocator.getCurrentPosition(
+            desiredAccuracy: LocationAccuracy.high,
+          );
+
+          if (data['latitude'] != null && data['longitude'] != null) {
+            final double latD = (data['latitude'] is num)
+                ? data['latitude'].toDouble()
+                : double.parse(data['latitude'].toString());
+            final double lngD = (data['longitude'] is num)
+                ? data['longitude'].toDouble()
+                : double.parse(data['longitude'].toString());
+
+            double meters = Geolocator.distanceBetween(
+              userPos.latitude,
+              userPos.longitude,
+              latD,
+              lngD,
+            );
+
+            // Format jarak
+            if (meters < 1000) {
+              distanceStr = '${meters.toStringAsFixed(0)} m';
+            } else {
+              double km = meters / 1000;
+              distanceStr = '${km.toStringAsFixed(2)} km';
+            }
+          }
+        }
+      } catch (e) {
+        debugPrint("Error calculating distance: $e");
+      }
+
+      // 3. Masukkan formatted distance ke dalam data map
+      final Map<String, dynamic> result = Map.from(data);
+      result['formatted_distance'] = distanceStr;
+      
+      return result;
+    } catch (e) {
+      debugPrint("Error fetching workshop: $e");
+      return null;
+    }
   }
 
   Future<List<Map<String, dynamic>>> getWorkshopServices() async {
@@ -28,7 +85,7 @@ class BengkelDetailScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<Map<String, dynamic>?>(
-      future: getWorkshopDetail(),
+      future: getWorkshopDetailWithDistance(), // Panggil fungsi baru
       builder: (context, snap) {
         if (snap.connectionState == ConnectionState.waiting) {
           return const Scaffold(
@@ -43,6 +100,7 @@ class BengkelDetailScreen extends StatelessWidget {
 
         final w = snap.data!;
         final price = w['price'] ?? 0;
+        final distance = w['formatted_distance'] ?? '-';
 
         return Scaffold(
           backgroundColor: Colors.white,
@@ -73,7 +131,7 @@ class BengkelDetailScreen extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const SizedBox(height: 16),
-                      // Gambar
+                      // Gambar (Diperbarui mengambil dari w['image'] atau w['image_url'])
                       Container(
                         margin: const EdgeInsets.symmetric(vertical: 16),
                         height: 200,
@@ -81,14 +139,15 @@ class BengkelDetailScreen extends StatelessWidget {
                           borderRadius: BorderRadius.circular(12),
                           image: DecorationImage(
                             image: NetworkImage(
-                              w['image_url'] ??
+                              w['image'] ?? w['image_url'] ??
                                   'https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?w=800',
                             ),
                             fit: BoxFit.cover,
                           ),
                         ),
                       ),
-                      // Nama & rating
+                      
+                      // Nama Bengkel
                       Text(
                         w['bengkelname'] ?? 'Nama tidak tersedia',
                         style: const TextStyle(
@@ -97,19 +156,39 @@ class BengkelDetailScreen extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 8),
+
+                      // --- BARIS RATING & DISTANCE (DIPERBARUI) ---
                       Row(
-                        children: const [
-                          Icon(Icons.star, size: 16, color: Colors.amber),
-                          SizedBox(width: 4),
+                        children: [
+                          // Icon & Text Jarak
+                          const Icon(Icons.location_on, size: 16, color: Colors.grey),
+                          const SizedBox(width: 4),
                           Text(
-                            '4.7',
+                            distance, // Hasil hitungan geolocator
                             style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey[700],
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          
+                          // Pemisah
+                          const SizedBox(width: 16),
+
+                          // Icon & Text Rating
+                          const Icon(Icons.star, size: 16, color: Colors.amber),
+                          const SizedBox(width: 4),
+                          Text(
+                            (w['rating'] ?? 0.0).toString(),
+                            style: const TextStyle(
                               fontWeight: FontWeight.w600,
                               fontSize: 14,
                             ),
                           ),
                         ],
                       ),
+                      // -------------------------------------------
+
                       const SizedBox(height: 16),
                       // Alamat
                       Container(
@@ -120,7 +199,7 @@ class BengkelDetailScreen extends StatelessWidget {
                         ),
                         child: Row(
                           children: [
-                            Icon(Icons.location_on,
+                            Icon(Icons.map, // Ganti icon map biar beda dikit dari pin jarak
                                 color: Colors.amber.shade700, size: 20),
                             const SizedBox(width: 8),
                             Expanded(
@@ -143,7 +222,7 @@ class BengkelDetailScreen extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 16),
-                      // Tombol aksi
+                      // Tombol aksi (Save, Share, Ulas)
                       Row(
                         children: [
                           _SaveButton(workshopId: workshopId),
@@ -318,17 +397,20 @@ class _SaveButtonState extends State<_SaveButton> {
           .eq('id', widget.workshopId)
           .single();
 
-      setState(() {
-        isSaved = data['save'] ?? false;
-        isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          isSaved = data['save'] ?? false;
+          isLoading = false;
+        });
+      }
     } catch (e) {
-      setState(() {
-        isLoading = false;
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error load save status: $e')),
-      );
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+        });
+      }
+      // Silent fail or simple log
+      debugPrint('Error load save status: $e');
     }
   }
 
@@ -342,9 +424,11 @@ class _SaveButtonState extends State<_SaveButton> {
           .eq('id', widget.workshopId);
     } catch (e) {
       setState(() => isSaved = !isSaved);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Gagal update save: $e')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Gagal update save: $e')),
+        );
+      }
     }
   }
 
