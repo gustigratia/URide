@@ -3,7 +3,6 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:geocoding/geocoding.dart' as geocoding;
 import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
 
@@ -17,9 +16,9 @@ class WeatherScreen extends StatefulWidget {
 class _WeatherScreenState extends State<WeatherScreen> {
   Position? _pos;
   Map<String, dynamic>? _weather;
-  String? _address;
   bool _loading = true;
   String? _error;
+
   String? _googleAddress;
   String locationText = "Memuat lokasi...";
 
@@ -29,19 +28,9 @@ class _WeatherScreenState extends State<WeatherScreen> {
     _init();
   }
 
-  void loadLocation() async {
-    final pos = await Geolocator.getCurrentPosition();
-    final loc = await getDistrictCityProvince(pos.latitude, pos.longitude);
-
-    setState(() {
-      locationText = loc;
-    });
-  }
-
   Future<void> _init() async {
     try {
       final pos = await _determinePosition();
-
       _pos = pos;
 
       locationText = await getDistrictCityProvince(pos.latitude, pos.longitude);
@@ -61,14 +50,9 @@ class _WeatherScreenState extends State<WeatherScreen> {
     }
   }
 
-  // GOOGLE REVERSE GEOCODING
+  // REVERSE GEOCODING GOOGLE
   Future<String> reverseGeocode(double lat, double lng) async {
     final apiKey = dotenv.env['MAPS_API_KEY'] ?? '';
-
-    if (apiKey.isEmpty) {
-      print("MAPS_API_KEY kosong / tidak terbaca dari .env");
-      return "Alamat tidak ditemukan";
-    }
 
     final url = Uri.parse(
       "https://maps.googleapis.com/maps/api/geocode/json?latlng=$lat,$lng&key=$apiKey",
@@ -81,16 +65,13 @@ class _WeatherScreenState extends State<WeatherScreen> {
       if (jsonData["status"] == "OK") {
         return jsonData["results"][0]["formatted_address"];
       }
-    } catch (e) {
-      print("Reverse geocode error: $e");
-    }
+    } catch (_) {}
 
     return "Alamat tidak ditemukan";
   }
 
   Future<String> getDistrictCityProvince(double lat, double lng) async {
     final apiKey = dotenv.env['MAPS_API_KEY'];
-
     final url =
         "https://maps.googleapis.com/maps/api/geocode/json?latlng=$lat,$lng&key=$apiKey";
 
@@ -107,20 +88,42 @@ class _WeatherScreenState extends State<WeatherScreen> {
 
     for (var c in components) {
       if (c["types"].contains("administrative_area_level_3")) {
-        district = c["long_name"]; // kecamatan
+        district = c["long_name"];
       }
       if (c["types"].contains("administrative_area_level_2")) {
-        city = c["long_name"]; // kabupaten/kota
+        city = c["long_name"];
       }
       if (c["types"].contains("administrative_area_level_1")) {
-        province = c["long_name"]; // provinsi
+        province = c["long_name"];
       }
     }
 
     return "$district, $city, $province";
   }
 
+  // GET WEATHER
+  Future<Map<String, dynamic>> _fetchWeather(Position pos) async {
+    final apiKey = dotenv.env['MAPS_API_KEY'];
+    final uri = Uri.parse(
+      'https://weather.googleapis.com/v1/currentConditions:lookup'
+      '?key=$apiKey'
+      '&location.latitude=${pos.latitude}'
+      '&location.longitude=${pos.longitude}'
+      '&unitsSystem=METRIC',
+    );
 
+    final res = await http.get(uri);
+    final json = jsonDecode(res.body);
+
+    if (json['currentConditions'] is List &&
+        json['currentConditions'].isNotEmpty) {
+      return Map<String, dynamic>.from(json['currentConditions'][0]);
+    }
+
+    return json;
+  }
+
+  // LOCATION PERMISSION
   Future<Position> _determinePosition() async {
     bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) throw Exception('Location service tidak aktif');
@@ -141,110 +144,46 @@ class _WeatherScreenState extends State<WeatherScreen> {
     );
   }
 
-  Future<Map<String, dynamic>> _fetchWeather(Position pos) async {
-    final apiKey = dotenv.env['MAPS_API_KEY'];
-    if (apiKey == null || apiKey.isEmpty) {
-      throw Exception('MAPS_API_KEY tidak ditemukan di .env');
-    }
-
-    final uri = Uri.parse(
-      'https://weather.googleapis.com/v1/currentConditions:lookup'
-      '?key=$apiKey'
-      '&location.latitude=${pos.latitude}'
-      '&location.longitude=${pos.longitude}'
-      '&unitsSystem=METRIC',
-    );
-
-    final res = await http.get(uri);
-    if (res.statusCode != 200) {
-      throw Exception('Weather API error (HTTP ${res.statusCode})');
-    }
-
-    final json = jsonDecode(res.body);
-
-    if (json['currentConditions'] is List &&
-        json['currentConditions'].isNotEmpty) {
-      return Map<String, dynamic>.from(json['currentConditions'][0]);
-    }
-
-    if (json.containsKey('weatherCondition')) return json;
-
-    for (final v in json.values) {
-      if (v is Map<String, dynamic> && v.containsKey('weatherCondition')) {
-        return v;
-      }
-      if (v is List &&
-          v.isNotEmpty &&
-          v.first is Map &&
-          v.first.containsKey('weatherCondition')) {
-        return Map<String, dynamic>.from(v.first);
-      }
-    }
-
-    throw Exception("Format API tidak sesuai: $json");
-  }
-
-
-  int? get precipPercent {
-    final p = _weather?['precipitation']?['probability']?['percent'];
-    return p is num ? p.toInt() : null;
-  }
-
+  // WEATHER TEXT
   String get conditionText {
     final type = _weather?['weatherCondition']?['type']?.toUpperCase() ?? '';
-    final desc = _weather?['weatherCondition']?['description']?['text'];
 
-    if (type.contains("LIGHT_RAIN")) return "Hujan ringan";
+    if (type.contains("LIGHT_RAIN")) return "Hujan Ringan";
     if (type.contains("RAIN")) return "Hujan";
     if (type.contains("CLEAR")) return "Cerah";
-    if (type.contains("PARTLY_CLOUDY")) return "Berawan sebagian";
+    if (type.contains("PARTLY_CLOUDY")) return "Berawan Sebagian";
     if (type.contains("CLOUDY")) return "Berawan";
     if (type.contains("FOG")) return "Berkabut";
 
-    return desc ?? "Cuaca tidak diketahui";
+    return "Cuaca tidak diketahui";
   }
 
   IconData get conditionIcon {
     final type = _weather?['weatherCondition']?['type']?.toUpperCase() ?? '';
 
-    if (type.contains("LIGHT_RAIN")) return Icons.grain;          // gerimis
-    if (type.contains("RAIN")) return Icons.umbrella;             // hujan
-    if (type.contains("SNOW")) return Icons.ac_unit;              // salju
-    if (type.contains("FOG")) return Icons.deblur;                // kabut
-    if (type.contains("CLOUD")) return Icons.cloud;               // berawan
-    if (type.contains("CLEAR")) return Icons.wb_sunny;            // cerah
+    if (type.contains("RAIN")) return Icons.umbrella;
+    if (type.contains("CLOUD")) return Icons.cloud;
+    if (type.contains("FOG")) return Icons.deblur;
 
     return Icons.wb_sunny;
   }
 
-  double? get tempC =>
-      _weather?['temperature']?['degrees']?.toDouble();
-
+  double? get tempC => _weather?['temperature']?['degrees']?.toDouble();
   double? get feelsLikeC =>
       _weather?['feelsLikeTemperature']?['degrees']?.toDouble();
-
   int? get humidity => _weather?['relativeHumidity'];
   int? get cloud => _weather?['cloudCover'];
-
-  String get _headerAddress {
-    if (_address != null && _address!.isNotEmpty) return _address!;
-    if (_pos == null) return "Lokasi tidak diketahui";
-    return "Lat ${_pos!.latitude.toStringAsFixed(3)}, "
-        "Lng ${_pos!.longitude.toStringAsFixed(3)}";
-  }
+  int? get precipPercent =>
+      _weather?['precipitation']?['probability']?['percent'];
 
   @override
   Widget build(BuildContext context) {
     if (_loading) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
     if (_error != null) {
-      return Scaffold(
-        body: Center(child: Text(_error!)),
-      );
+      return Scaffold(body: Center(child: Text(_error!)));
     }
 
     final isSmall = MediaQuery.of(context).size.width < 360;
@@ -255,9 +194,9 @@ class _WeatherScreenState extends State<WeatherScreen> {
         child: SingleChildScrollView(
           child: Column(
             children: [
-            _buildHeaderWithHero(isSmall),
+              _buildHeaderWithHero(isSmall),
               const SizedBox(height: 20),
-              Container(
+              Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: Column(
                   children: [
@@ -274,157 +213,88 @@ class _WeatherScreenState extends State<WeatherScreen> {
     );
   }
 
-  //HEADER
-  Widget _buildHeader(bool small) {
+  // HEADER + HERO
+  Widget _buildHeaderWithHero(bool small) {
+    final now = DateTime.now();
+    final dayNames = [
+      "Minggu",
+      "Senin",
+      "Selasa",
+      "Rabu",
+      "Kamis",
+      "Jumat",
+      "Sabtu",
+    ];
+    final months = [
+      "",
+      "Januari",
+      "Februari",
+      "Maret",
+      "April",
+      "Mei",
+      "Juni",
+      "Juli",
+      "Agustus",
+      "September",
+      "Oktober",
+      "November",
+      "Desember",
+    ];
+
+    final date =
+        "${dayNames[now.weekday]}, ${now.day} ${months[now.month]} ${now.year}";
+
     return Container(
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 30),
-      decoration: const BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [
-            Color(0xFFF6F1E9),
-            Color(0xFFFFD93D),
-            Color(0xFFFF8400),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 40),
+      decoration: BoxDecoration(
+        image: const DecorationImage(
+          image: AssetImage("assets/images/gradient.png"),
+          fit: BoxFit.cover,
         ),
-        borderRadius: BorderRadius.vertical(
-          bottom: Radius.circular(26),
-        ),
+        borderRadius: const BorderRadius.vertical(bottom: Radius.circular(26)),
       ),
-      child: Row(
+      child: Column(
         children: [
-          IconButton(
-            onPressed: () => Navigator.pop(context),
-            icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
+          Row(
+            children: [
+              IconButton(
+                onPressed: () => Navigator.pop(context),
+                icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  locationText,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 19,
+                    fontWeight: FontWeight.w700,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(width: 8),
-          const Text(
-            "Cuaca Saat Ini",
+          const SizedBox(height: 12),
+          Icon(conditionIcon, size: small ? 70 : 90, color: Colors.white),
+          const SizedBox(height: 8),
+          Text(
+            conditionText,
             style: TextStyle(
               color: Colors.white,
-              fontSize: 20,
-              fontWeight: FontWeight.w600,
+              fontSize: small ? 22 : 26,
+              fontWeight: FontWeight.bold,
             ),
-          )
+          ),
+          const SizedBox(height: 4),
+          Text(date, style: const TextStyle(color: Colors.white)),
         ],
       ),
     );
   }
 
-  //HERO SECTION
-
-  Widget _buildHeaderWithHero(bool small) {
-  final now = DateTime.now();
-
-  String dayName(int d) {
-    switch (d) {
-      case 1: return "Senin";
-      case 2: return "Selasa";
-      case 3: return "Rabu";
-      case 4: return "Kamis";
-      case 5: return "Jumat";
-      case 6: return "Sabtu";
-      default: return "Minggu";
-    }
-  }
-
-  String monthName(int m) {
-    const bulan = [
-      "", "Januari", "Februari", "Maret", "April", "Mei", "Juni",
-      "Juli", "Agustus", "September", "Oktober", "November", "Desember"
-    ];
-    return bulan[m];
-  }
-
-  final date = "${dayName(now.weekday)}, ${now.day} ${monthName(now.month)} ${now.year}";
-
-  return Container(
-    width: double.infinity,
-    padding: const EdgeInsets.fromLTRB(20, 16, 20, 40),
-    decoration: const BoxDecoration(
-      gradient: const LinearGradient(
-        colors: [
-          Color(0xFFF6F1E9),
-          Color(0xFFFFD93D),
-          Color(0xFFFF8400),
-        ],
-        stops: [
-          0.0,   // 0%
-          0.23,  // 41%
-          1.0,   // 100%
-        ],
-        begin: Alignment.bottomCenter,
-        end: Alignment.topCenter,
-      ),
-      borderRadius: BorderRadius.vertical(
-        bottom: Radius.circular(26),
-      ),
-    ),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            IconButton(
-              onPressed: () => Navigator.pop(context),
-              icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
-            ),
-            const SizedBox(width: 8),
-            const Text(
-              "Cuaca Saat Ini",
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 20,
-                fontWeight: FontWeight.w600,
-              ),
-            )
-          ],
-        ),
-        const SizedBox(height: 10),
-
-        Center(
-          child: Column(
-            children: [
-              Text(
-                locationText,
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: small ? 16 : 18,
-                  fontWeight: FontWeight.w600,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 6),
-              Icon(
-                conditionIcon,
-                size: small ? 70 : 90,
-                color: Colors.white,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                conditionText,
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: small ? 22 : 26,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                date,
-                style: const TextStyle(color: Color.fromARGB(255, 255, 255, 255), fontSize: 14),
-              ),
-            ],
-          ),
-        ),
-      ],
-    ),
-  );
-}
-
-
-  //LOCATION CARD
+  // LOCATION CARD
   Widget _buildLocationCard() {
     return Container(
       padding: const EdgeInsets.all(20),
@@ -434,72 +304,78 @@ class _WeatherScreenState extends State<WeatherScreen> {
         children: [
           const Text(
             "Informasi Lokasi",
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 12),
           Text(
             _googleAddress ?? "Alamat tidak ditemukan",
             style: const TextStyle(fontSize: 14),
           ),
-          const SizedBox(height: 8),
         ],
       ),
     );
   }
 
   // DETAILS GRID
-
   Widget _buildDetailsGrid() {
-  final t = tempC != null ? "${tempC!.toStringAsFixed(1)}°C" : "--";
-  final f = feelsLikeC != null ? "${feelsLikeC!.toStringAsFixed(1)}°C" : "--";
-  final h = humidity != null ? "$humidity%" : "--";
-  final c = cloud != null ? "$cloud%" : "--";
+    final t = tempC != null ? "${tempC!.toStringAsFixed(1)}°C" : "--";
+    final f = feelsLikeC != null ? "${feelsLikeC!.toStringAsFixed(1)}°C" : "--";
+    final h = humidity != null ? "$humidity%" : "--";
+    final c = cloud != null ? "$cloud%" : "--";
 
-  return Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      const Text(
-        "Rincian",
-        style: TextStyle(
-          fontSize: 18,
-          fontWeight: FontWeight.bold,
-          color: Color.fromARGB(255, 255, 255, 255),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          "Rincian",
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
         ),
-      ),
-      const SizedBox(height: 14),
+        const SizedBox(height: 14),
+        LayoutBuilder(
+          builder: (context, cst) {
+            final half = (cst.maxWidth - 12) / 2;
 
-      LayoutBuilder(
-        builder: (context, cst) {
-          final half = (cst.maxWidth - 12) / 2;
+            return Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              children: [
+                _tile(half, Icons.thermostat, "Suhu", t, "Terukur"),
+                _tile(half, Icons.device_thermostat, "Feels like", f, "Terasa"),
+                _tile(
+                  half,
+                  Icons.water_drop,
+                  "Kelembapan",
+                  h,
+                  "Relative humidity",
+                ),
+                _tile(half, Icons.cloud, "Cloud cover", c, "Tingkat awan"),
+                _tile(
+                  cst.maxWidth,
+                  Icons.umbrella,
+                  "Presipitasi",
+                  "Kemungkinan hujan (${precipPercent ?? 0}%)",
+                  "",
+                ),
+              ],
+            );
+          },
+        ),
+      ],
+    );
+  }
 
-          return Wrap(
-            spacing: 12,
-            runSpacing: 12,
-            children: [
-              _tile(half, Icons.thermostat, "Suhu", t, "Terukur"),
-              _tile(half, Icons.device_thermostat, "Feels like", f, "Terasa"),
-              _tile(half, Icons.water_drop, "Kelembapan", h, "Relative humidity"),
-              _tile(half, Icons.cloud, "Cloud cover", c, "Tingkat awan"),
-              _tile(
-                cst.maxWidth,
-                Icons.umbrella,
-                "Presipitasi",
-                "Kemungkinan hujan (${precipPercent ?? 0}%)",
-                "",
-              ),
-            ],
-          );
-        },
-      ),
-    ],
-  );
-}
-
-
-  Widget _tile(double width, IconData icon, String label, String val, String desc) {
+  // TILE
+  Widget _tile(
+    double width,
+    IconData icon,
+    String label,
+    String val,
+    String desc,
+  ) {
     return Container(
       width: width,
       padding: const EdgeInsets.all(14),
@@ -519,18 +395,23 @@ class _WeatherScreenState extends State<WeatherScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(label, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                Text(
+                  label,
+                  style: const TextStyle(fontSize: 12, color: Colors.grey),
+                ),
                 const SizedBox(height: 2),
                 Text(
                   val,
-                  overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
                 if (desc.isNotEmpty)
-                  Text(desc, style: const TextStyle(fontSize: 10, color: Colors.grey)),
+                  Text(
+                    desc,
+                    style: const TextStyle(fontSize: 10, color: Colors.grey),
+                  ),
               ],
             ),
           ),
