@@ -323,7 +323,7 @@ class _GabungMitraPageState extends State<GabungMitraPage> {
 
         final storagePath = "workshops/$fileName";
 
-        final result = await supabase.storage
+        await supabase.storage
             .from("images")
             .uploadBinary(
               storagePath,
@@ -331,7 +331,7 @@ class _GabungMitraPageState extends State<GabungMitraPage> {
               fileOptions: const FileOptions(upsert: false),
             );
 
-        final publicUrl = supabase.storage.from("images").getPublicUrl(result);
+        final publicUrl = supabase.storage.from("images").getPublicUrl(storagePath);
 
         imageUrl = publicUrl;
       }
@@ -394,7 +394,13 @@ class _GabungMitraPageState extends State<GabungMitraPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Berhasil mendaftar sebagai Mitra!")),
       );
-      Navigator.pop(context);
+      if (mounted) {
+        Navigator.pushNamedAndRemoveUntil(
+          context,
+          '/dashboard-workshop', 
+          (route) => false, 
+        );
+      }
     } catch (e) {
       ScaffoldMessenger.of(
         context,

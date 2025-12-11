@@ -10,6 +10,9 @@ class ProfilePage extends StatefulWidget {
 
 class _ProfilePageState extends State<ProfilePage> {
   bool isEditing = false;
+  
+  // Variabel untuk status apakah user punya bengkel
+  bool hasWorkshop = false;
 
   final TextEditingController nameC = TextEditingController();
   final TextEditingController emailC = TextEditingController();
@@ -35,20 +38,38 @@ class _ProfilePageState extends State<ProfilePage> {
 
       emailC.text = currentUser!.email ?? "";
 
-      final data = await supabase
+      // 1. Ambil data User
+      final userData = await supabase
           .from("users")
           .select()
           .eq("id", currentUser!.id)
           .maybeSingle();
 
-      if (data != null) {
-        firstname = data["firstname"] ?? "";
-        lastname = data["lastname"] ?? "";
+      if (userData != null) {
+        firstname = userData["firstname"] ?? "";
+        lastname = userData["lastname"] ?? "";
         nameC.text = "$firstname $lastname".trim();
-        phoneC.text = data["phone"] ?? "";
+        phoneC.text = userData["phone"] ?? "";
       }
 
-      setState(() {});
+      // 2. Cek apakah user ini sudah punya workshop (bengkel)
+      // Kita query ke tabel workshops dimana userid = current user id
+      final workshopData = await supabase
+          .from("workshops")
+          .select("id") // Kita hanya butuh ID untuk memastikan datanya ada
+          .eq("userid", currentUser!.id)
+          .maybeSingle();
+
+      // Jika workshopData tidak null, berarti user punya bengkel
+      if (workshopData != null) {
+        hasWorkshop = true;
+      } else {
+        hasWorkshop = false;
+      }
+
+      if (mounted) {
+        setState(() {});
+      }
     } catch (e) {
       print("ERROR LOAD USER: $e");
     }
@@ -115,6 +136,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     ),
                     child: const CircleAvatar(
                       radius: 32,
+                      // Pastikan aset gambar ada
                       backgroundImage: AssetImage("assets/profile.jpg"),
                     ),
                   ),
@@ -165,9 +187,15 @@ class _ProfilePageState extends State<ProfilePage> {
                                 ),
                         ),
                         const SizedBox(height: 8),
+                        
+                        // --- BAGIAN TOMBOL MITRA / BENGKEL SAYA ---
                         GestureDetector(
                           onTap: () {
-                            Navigator.pushNamed(context, '/dashboard-workshop');
+                            if (hasWorkshop) {
+                              Navigator.pushNamed(context, '/dashboard-workshop');
+                            } else {
+                              Navigator.pushNamed(context, '/join-workshop'); 
+                            }
                           },
                           child: Container(
                             padding: const EdgeInsets.symmetric(
@@ -178,9 +206,10 @@ class _ProfilePageState extends State<ProfilePage> {
                               color: Colors.white,
                               borderRadius: BorderRadius.circular(8),
                             ),
-                            child: const Text(
-                              "Gabung Jadi Mitra",
-                              style: TextStyle(
+                            child: Text(
+                              // Logika text tombol
+                              hasWorkshop ? "Bengkel Saya" : "Gabung Jadi Mitra",
+                              style: const TextStyle(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w500,
                                 color: Colors.black87,
@@ -188,6 +217,8 @@ class _ProfilePageState extends State<ProfilePage> {
                             ),
                           ),
                         ),
+                        // ------------------------------------------
+
                       ],
                     ),
                   ),
@@ -236,6 +267,8 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
+  // ... (Sisa kode _profileCard dan _logoutCard sama seperti sebelumnya)
+  
   Widget _profileCard({
     required IconData icon,
     required String title,
@@ -253,56 +286,72 @@ class _ProfilePageState extends State<ProfilePage> {
           BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      // UBAH DARI COLUMN KE ROW AGAR ICON DI KIRI DAN TEXT DI KANAN
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center, // PENTING: Ini yang bikin icon di tengah vertikal
         children: [
-          Row(
-            children: [
-              Icon(icon, color: Colors.black54),
-              const SizedBox(width: 12),
-              Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.grey,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 6),
-          Container(
-            height: 22,
-            padding: const EdgeInsets.only(left: 40),
-            alignment: Alignment.centerLeft,
-            child: isEditing
-                ? TextField(
-                    controller: controller,
-                    readOnly: readOnly,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                    ),
-                    decoration: const InputDecoration(
-                      isDense: true,
-                      border: UnderlineInputBorder(
-                        borderSide: BorderSide(color: Colors.black54, width: 1),
-                      ),
-                      enabledBorder: UnderlineInputBorder(
-                        borderSide: BorderSide(color: Colors.black54, width: 1),
-                      ),
-                      focusedBorder: UnderlineInputBorder(
-                        borderSide: BorderSide(color: Colors.black, width: 1.4),
-                      ),
-                    ),
-                  )
-                : Text(
-                    controller.text,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                    ),
+          // 1. BAGIAN ICON
+          Icon(icon, color: Colors.black54, size: 24),
+          
+          const SizedBox(width: 16), // Jarak antara icon dan teks
+
+          // 2. BAGIAN TEXT (JUDUL + ISI)
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // Judul (Email/Phone)
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 12, // Sedikit dikecilkan agar proporsional
+                    fontWeight: FontWeight.bold,
+                    color: Colors.grey,
                   ),
+                ),
+                const SizedBox(height: 4), // Jarak kecil ke input field
+
+                // Input Field / Text Value
+                SizedBox(
+                  height: 24, // Tinggi area input
+                  child: isEditing
+                      ? TextField(
+                          controller: controller,
+                          readOnly: readOnly,
+                          style: const TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w500,
+                          ),
+                          decoration: const InputDecoration(
+                            isDense: true,
+                            contentPadding: EdgeInsets.only(bottom: 4),
+                            border: UnderlineInputBorder(
+                              borderSide: BorderSide(color: Colors.black54, width: 1),
+                            ),
+                            enabledBorder: UnderlineInputBorder(
+                              borderSide: BorderSide(color: Colors.black54, width: 1),
+                            ),
+                            focusedBorder: UnderlineInputBorder(
+                              borderSide: BorderSide(color: Colors.black, width: 1.4),
+                            ),
+                          ),
+                        )
+                      : Align(
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            controller.text,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                ),
+              ],
+            ),
           ),
         ],
       ),

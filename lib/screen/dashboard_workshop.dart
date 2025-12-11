@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:uride/screen/profile_page.dart';
 
 class DashboardWorkshop extends StatefulWidget {
   const DashboardWorkshop({super.key});
@@ -39,9 +40,6 @@ class _DashboardWorkshopState extends State<DashboardWorkshop> {
     loadOrders();
   }
 
-  // =============================================================
-  // FETCH ORDERS + JOIN USERS (vehicletype langsung dari orders)
-  // =============================================================
   Future<void> loadOrders() async {
     if (workshop == null) return;
 
@@ -68,9 +66,6 @@ class _DashboardWorkshopState extends State<DashboardWorkshop> {
     });
   }
 
-  // =============================================================
-  // UI
-  // =============================================================
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -114,19 +109,17 @@ class _DashboardWorkshopState extends State<DashboardWorkshop> {
                               vehicleType: vehicleType ?? "-",
                               orderType: o["ordertype"] ?? "-",
                               status: o["orderstatus"] == "ongoing"
-                                  ? "Tangani"
+                                  ? "On going"
                                   : o["orderstatus"] == "completed"
-                                  ? "Selesai"
-                                  : o["orderstatus"] ?? "Batal",
+                                  ? "Completed"
+                                  : o["orderstatus"] == "cancelled"
+                                  ? "Cancelled"
+                                  : o["orderstatus"] ?? "-", 
                               statusColor: o["orderstatus"] == "ongoing"
-                                  ? Colors.green
+                                  ? Colors.orange 
                                   : o["orderstatus"] == "completed"
-                                  ? const Color.fromARGB(255, 196, 196, 196)
-                                  : o["orderstatus"] ??
-                                        const Color.fromARGB(255, 252, 0, 0),
-
-                              isNew:
-                                  o["orderstatus"] == "ongoing", // ⭐ NEW ADDED
+                                  ? Colors.green 
+                                  : Colors.red,
                             ),
                             const SizedBox(height: 16),
                           ],
@@ -144,24 +137,24 @@ class _DashboardWorkshopState extends State<DashboardWorkshop> {
     );
   }
 
-  // =============================================================
-  // APP BAR
-  // =============================================================
   Widget _buildAppBar() {
     return Container(
-      padding: const EdgeInsets.only(top: 45, bottom: 20),
+      padding: const EdgeInsets.only(top: 20, bottom: 20),
       decoration: const BoxDecoration(
-        color: Color(0xFFFFC727),
-        borderRadius: BorderRadius.only(
-          bottomLeft: Radius.circular(30),
-          bottomRight: Radius.circular(30),
+        gradient: LinearGradient(
+          colors: [Color(0xFFFFD93D), Color(0xFFFF8400)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
         ),
+        borderRadius: BorderRadius.vertical(bottom: Radius.circular(25)),
       ),
       child: Row(
         children: [
           const SizedBox(width: 15),
           GestureDetector(
-            onTap: () => Navigator.pop(context),
+            onTap: () {
+              Navigator.pop(context);
+            },
             child: const Icon(Icons.arrow_back, size: 26, color: Colors.white),
           ),
           const Expanded(
@@ -183,9 +176,6 @@ class _DashboardWorkshopState extends State<DashboardWorkshop> {
     );
   }
 
-  // =============================================================
-  // WORKSHOP HEADER
-  // =============================================================
   Widget _buildWorkshopHeader() {
     return ClipRRect(
       borderRadius: BorderRadius.circular(16),
@@ -278,10 +268,6 @@ class _DashboardWorkshopState extends State<DashboardWorkshop> {
   }
 }
 
-// ==================================================================
-//                           ORDER CARD
-// ==================================================================
-
 class OrderCard extends StatelessWidget {
   final String orderId;
   final String name;
@@ -291,7 +277,6 @@ class OrderCard extends StatelessWidget {
   final String orderType;
   final String status;
   final Color statusColor;
-  final bool isNew; // ⭐ NEW ADDED
 
   const OrderCard({
     super.key,
@@ -303,7 +288,6 @@ class OrderCard extends StatelessWidget {
     required this.orderType,
     required this.status,
     required this.statusColor,
-    required this.isNew, // ⭐ NEW ADDED
   });
 
   @override
@@ -324,65 +308,48 @@ class OrderCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Text(
-                "$orderId - $name",
-                style: const TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w700,
-                  fontFamily: "Euclid",
-                ),
+          // ========================================================
+          // 1. STATUS (PINDAH KE PALING ATAS)
+          // ========================================================
+          Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: 14,
+              vertical: 6,
+            ),
+            decoration: BoxDecoration(
+              color: statusColor.withOpacity(0.15),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Text(
+              status,
+              style: TextStyle(
+                color: statusColor,
+                fontWeight: FontWeight.w700,
+                fontFamily: "Euclid",
+                fontSize: 12, 
               ),
-
-              const Spacer(),
-
-              // ⭐ BADGE NEW ADDED
-              if (isNew)
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.red,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Text(
-                    "NEW",
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                      fontFamily: "Euclid",
-                    ),
-                  ),
-                ),
-
-              const SizedBox(width: 8),
-
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 6,
-                ),
-                decoration: BoxDecoration(
-                  color: statusColor.withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  status,
-                  style: TextStyle(
-                    color: statusColor,
-                    fontWeight: FontWeight.w700,
-                    fontFamily: "Euclid",
-                  ),
-                ),
-              ),
-            ],
+            ),
           ),
 
+          const SizedBox(height: 12), // Jarak antara Status dan Nama
+
+          // ========================================================
+          // 2. ORDER ID & NAMA
+          // ========================================================
+          Text(
+            "$orderId - $name",
+            style: const TextStyle(
+              fontSize: 16, // Sedikit diperbesar agar jelas
+              fontWeight: FontWeight.w700,
+              fontFamily: "Euclid",
+            ),
+          ),
+          
           const SizedBox(height: 4),
+
+          // ========================================================
+          // 3. TANGGAL
+          // ========================================================
           Text(
             date,
             style: const TextStyle(
@@ -394,6 +361,9 @@ class OrderCard extends StatelessWidget {
 
           const SizedBox(height: 12),
 
+          // ========================================================
+          // 4. ALAMAT
+          // ========================================================
           Row(
             children: [
               const Icon(Icons.location_on, color: Colors.orange, size: 20),
@@ -414,9 +384,17 @@ class OrderCard extends StatelessWidget {
 
           const SizedBox(height: 16),
 
+          // ========================================================
+          // 5. TAGS (Tipe Kendaraan & Order Type)
+          // ========================================================
           Row(
             children: [
-              TagChip(icon: Icons.two_wheeler, label: vehicleType),
+              TagChip(
+                icon: vehicleType.toLowerCase().contains("mobil")
+                    ? Icons.directions_car_filled
+                    : Icons.two_wheeler,
+                label: vehicleType,
+              ),
               const SizedBox(width: 10),
               OrderTypeChip(orderType: orderType),
             ],
