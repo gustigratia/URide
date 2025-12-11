@@ -133,7 +133,7 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
                 ),
                 const SizedBox(height: 20),
                 _fullButton(
-                  icon: "images/edit.jpg",
+                  icon: "assets/images/edit.jpg",
                   title: "Tambah Kendaraan",
                   onTap: () {
                     Navigator.pushNamed(
@@ -150,8 +150,10 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    _navArrow(() => setState(() => selectedIndex--),
-                        Icons.chevron_left),
+                    _navArrow(
+                      () => setState(() => selectedIndex--),
+                      Icons.chevron_left,
+                    ),
                     Expanded(
                       child: Text(
                         v?['vehiclename'] ?? "-",
@@ -163,8 +165,10 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
                         ),
                       ),
                     ),
-                    _navArrow(() => setState(() => selectedIndex++),
-                        Icons.chevron_right),
+                    _navArrow(
+                      () => setState(() => selectedIndex++),
+                      Icons.chevron_right,
+                    ),
                   ],
                 ),
 
@@ -188,8 +192,8 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
                     },
                     child: Image.asset(
                       v != null && v['img'] != null && v['img'] != ""
-                          ? "images/${v['img']}"
-                          : "images/nmax.jpg",
+                          ? "assets/images/${v['img']}"
+                          : "assets/images/nmax.jpg",
                       key: ValueKey("img-${v?['id']}"),
                       fit: BoxFit.contain,
                     ),
@@ -232,7 +236,7 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Image.asset(
-                          "images/routing.jpg",
+                          "assets/images/routing.jpg",
                           width: 22,
                           height: 22,
                         ),
@@ -264,7 +268,7 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
                 ),
 
                 _fullButton(
-                  icon: "images/edit.jpg",
+                  icon: "assets/images/edit.jpg",
                   title: "Edit Informasi Kendaraan",
                   onTap: () async {
                     final result = await Navigator.pushNamed(
@@ -287,7 +291,7 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
 
                 const SizedBox(height: 10),
                 _fullButton(
-                  icon: "images/edit.jpg",
+                  icon: "assets/images/edit.jpg",
                   title: "Tambah Kendaraan",
                   onTap: () {
                     Navigator.pushNamed(context, '/add-vehicle',
@@ -301,7 +305,7 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
                   children: [
                     Expanded(
                       child: _statusBox(
-                        icon: "images/oli.jpg",
+                        icon: "assets/images/oli.jpg",
                         title: "${(v?['kilometer'] ?? 0) % 5000} Km",
                         subtitle: "Ganti Oli",
                         value: ((v?['kilometer'] ?? 0) % 5000) / 5000,
@@ -310,7 +314,7 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
                     const SizedBox(width: 15),
                     Expanded(
                       child: _statusBox(
-                        icon: "images/wrench.jpg",
+                        icon: "assets/images/wrench.jpg",
                         title: _nextServiceDate(v),
                         subtitle: "Servis Rutin",
                         value: _serviceProgress(v),
@@ -490,8 +494,8 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
                 value < 0.33
                     ? Colors.green
                     : value < 0.66
-                        ? Colors.orange
-                        : Colors.red,
+                    ? Colors.orange
+                    : Colors.red,
               ),
             ),
           ),

@@ -528,6 +528,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   fit: BoxFit.contain,
                 ),
               ),
+
               Row(
                 children: [
                   GestureDetector(
@@ -544,6 +545,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ],
           ),
+
           Text(
             firstName.isEmpty ? "Selamat Pagi!" : "Selamat Pagi, $firstName!",
             style: TextStyle(
