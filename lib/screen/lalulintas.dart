@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math';
 
 class LaluLintasPage extends StatefulWidget {
   const LaluLintasPage({super.key});
@@ -118,115 +119,121 @@ class _LaluLintasPageState extends State<LaluLintasPage> {
         return;
       }
 
+      LatLng userLatLng = LatLng(currentLat!, currentLng!);
       final LatLng origin = LatLng(currentLat!, currentLng!);
-      
-      // Destinasi: 4 titik di sekitar radius 5km (utama: N, E, S, W)
-      // 1 degree ≈ 111 km, jadi 5km ≈ 0.045 degree
-      final List<LatLng> destinations = [
-        // Utara
-        LatLng(currentLat! + 0.045, currentLng!),
-        // Timur
-        LatLng(currentLat!, currentLng! + 0.045),
-        // Selatan
-        LatLng(currentLat! - 0.045, currentLng!),
-        // Barat
-        LatLng(currentLat!, currentLng! - 0.045),
-      ];
 
-      // Hitung rata-rata traffic dari semua arah
-      int totalSeconds = 0;
-      int totalTrafficSeconds = 0;
-      int successCount = 0;
+      // Generate random bearing (0-360 degrees)
+      final randomBearing = Random().nextInt(360).toDouble();
+      // 1km offset untuk traffic check
+      LatLng destination = _offsetPosition(userLatLng, 1000, randomBearing);
 
-      print("🚗 Starting traffic check from ${origin.latitude}, ${origin.longitude}");
+      final String url =
+          'https://maps.googleapis.com/maps/api/directions/json?'
+          'origin=${origin.latitude},${origin.longitude}'
+          '&destination=${destination.latitude},${destination.longitude}'
+          '&key=$mapsApiKey'
+          '&departure_time=now';
 
-      for (int i = 0; i < destinations.length; i++) {
-        final destination = destinations[i];
-        
-        final String url =
-            'https://maps.googleapis.com/maps/api/directions/json?'
-            'origin=${origin.latitude},${origin.longitude}'
-            '&destination=${destination.latitude},${destination.longitude}'
-            '&key=$mapsApiKey'
-            '&departure_time=now';
+      print("🚗 Traffic API Call:");
+      print("   Origin: ${origin.latitude}, ${origin.longitude}");
+      print("   Destination: ${destination.latitude}, ${destination.longitude}");
+      print("   URL: $url");
 
-        try {
-          final response = await http.get(Uri.parse(url)).timeout(
-            const Duration(seconds: 10),
-          );
+      final response = await http.get(Uri.parse(url))
+          .timeout(const Duration(seconds: 15))
+          .catchError((error) {
+        print("❌ Network Error: $error");
+        throw error;
+      });
 
-          print("Direction $i Response Code: ${response.statusCode}");
+      print("📡 Traffic Response Code: ${response.statusCode}");
+      print("📡 Response Body: ${response.body.substring(0, 200)}...");
 
-          if (response.statusCode == 200) {
-            final data = jsonDecode(response.body);
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
 
-            if (data['routes'] != null && data['routes'].isNotEmpty) {
-              final route = data['routes'][0];
-              final leg = route['legs'][0];
-
-              final int durationSeconds = leg['duration']['value'] ?? 0;
-              final int trafficDurationSeconds = 
-                  leg['duration_in_traffic']['value'] ?? durationSeconds;
-
-              print("Direction $i - Normal: ${durationSeconds}s, Traffic: ${trafficDurationSeconds}s");
-
-              totalSeconds += durationSeconds;
-              totalTrafficSeconds += trafficDurationSeconds;
-              successCount++;
-            } else {
-              print("Direction $i - No routes found");
-            }
-          } else {
-            print('Direction $i Failed: ${response.statusCode}');
-          }
-        } on TimeoutException {
-          print('Direction $i - TIMEOUT');
-          continue;
-        } catch (e) {
-          print('Error checking direction $i: $e');
-          continue;
-        }
-      }
-
-      print("✅ Success Count: $successCount, Total Normal: $totalSeconds, Total Traffic: $totalTrafficSeconds");
-
-      if (successCount > 0) {
-        final double avgDuration = totalSeconds / successCount;
-        final double avgTraffic = totalTrafficSeconds / successCount;
-        final double ratio = avgDuration > 0 ? avgTraffic / avgDuration : 1.0;
-
-        String status = "Lancar";
-        Color color = Colors.green;
-
-        print("📊 Ratio: $ratio (avg normal: ${avgDuration}s, avg traffic: ${avgTraffic}s)");
-
-        if (ratio >= 1.5) {
-          status = "Macet";
-          color = Colors.red;
-        } else if (ratio >= 1.2) {
-          status = "Padat";
-          color = Colors.amber;
-        } else {
-          status = "Lancar";
-          color = Colors.green;
-        }
-
-        if (mounted) {
+        // Check for API errors in response
+        if (data['status'] != 'OK') {
+          print("❌ API Error: ${data['status']} - ${data['error_message'] ?? 'Unknown error'}");
           setState(() {
-            trafficStatus = status;
-            trafficColor = color;
+            trafficStatus = "API Error: ${data['status']}";
+            trafficColor = Colors.grey;
           });
-          print("✅ Traffic Status Updated: $status");
+          return;
+        }
+
+        if (data['routes'] != null && data['routes'].isNotEmpty) {
+          final route = data['routes'][0];
+          final leg = route['legs'][0];
+
+          final String durationText = leg['duration']['text'] ?? 'N/A';
+          final int durationSeconds = leg['duration']['value'] ?? 0;
+
+          String status = "Lancar";
+          String duration = durationText;
+
+          if (leg['duration_in_traffic'] != null) {
+            final int trafficDurationSeconds =
+                leg['duration_in_traffic']['value'] ?? durationSeconds;
+            duration = leg['duration_in_traffic']['text'] ?? durationText;
+
+            // Logika untuk menentukan status
+            final double ratio =
+                durationSeconds > 0 ? trafficDurationSeconds / durationSeconds : 1.0;
+
+            print("📊 DEBUG ratio: $ratio");
+            print("📊 DEBUG duration: $durationSeconds | traffic: $trafficDurationSeconds");
+
+            if (ratio >= 1.5) {
+              status = "Macet";
+            } else if (ratio >= 1.2) {
+              status = "Padat";
+            } else {
+              status = "Lancar";
+            }
+          }
+
+          // Update UI
+          if (mounted) {
+            setState(() {
+              trafficStatus = status;
+              trafficDuration = duration;
+
+              // Set color based on status
+              if (status == "Macet") {
+                trafficColor = Colors.red;
+              } else if (status == "Padat") {
+                trafficColor = Colors.amber;
+              } else {
+                trafficColor = Colors.green;
+              }
+            });
+            print("✅ Traffic Status Updated: $status - $duration");
+          }
+        } else {
+          setState(() {
+            trafficStatus = "Rute tidak ditemukan";
+            trafficColor = Colors.grey;
+          });
+          print("❌ No routes found in response");
         }
       } else {
+        print('❌ Failed to load traffic data: ${response.statusCode}');
+        print('Response: ${response.body}');
         setState(() {
-          trafficStatus = "Tidak ada data";
+          trafficStatus = "Error ${response.statusCode}";
           trafficColor = Colors.grey;
         });
-        print("❌ No successful API calls");
       }
+    } on TimeoutException {
+      print('⏱️ Traffic API TIMEOUT after 15s');
+      setState(() {
+        trafficStatus = "Timeout";
+        trafficColor = Colors.grey;
+      });
     } catch (e) {
-      print('Traffic API Error: $e');
+      print('❌ Traffic API Error: $e');
+      print('Error Type: ${e.runtimeType}');
       if (mounted) {
         setState(() {
           trafficStatus = "Error jaringan";
@@ -234,6 +241,28 @@ class _LaluLintasPageState extends State<LaluLintasPage> {
         });
       }
     }
+  }
+
+  // OFFSET POSITION USING BEARING & DISTANCE
+  LatLng _offsetPosition(LatLng origin, double distanceMeters, double bearingDegrees) {
+    const double earthRadius = 6371000; // meters
+    final double bearing = bearingDegrees * pi / 180;
+
+    final double lat1 = origin.latitude * pi / 180;
+    final double lon1 = origin.longitude * pi / 180;
+
+    final double lat2 = asin(
+      sin(lat1) * cos(distanceMeters / earthRadius) +
+          cos(lat1) * sin(distanceMeters / earthRadius) * sin(bearing),
+    );
+
+    final double lon2 = lon1 +
+        atan2(
+          sin(bearing) * sin(distanceMeters / earthRadius) * cos(lat1),
+          cos(distanceMeters / earthRadius) - sin(lat1) * sin(lat2),
+        );
+
+    return LatLng(lat2 * 180 / pi, lon2 * 180 / pi);
   }
 
   // OPEN GOOGLE MAPS (USER SEARCH SENDIRI)
@@ -344,7 +373,7 @@ class _LaluLintasPageState extends State<LaluLintasPage> {
                               ),
                               const SizedBox(height: 12),
                               const Text(
-                                "Radius 5km ke semua arah (bundar)",
+                                "Radius 1km ke semua arah (bundar)",
                                 style: TextStyle(
                                   fontSize: 12,
                                   color: Colors.black45,
