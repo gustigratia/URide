@@ -19,16 +19,13 @@ class _LaluLintasPageState extends State<LaluLintasPage> {
 
   double? currentLat;
   double? currentLng;
-  double? bengkelLat;
-  double? bengkelLng;
   String currentAddress = "Memuat alamat...";
-  String bengkelAddress = "Memuat alamat...";
-  String trafficCondition = "Memeriksa...";
+  String trafficStatus = "Memeriksa...";
+  String trafficDuration = "--";
   Color trafficColor = Colors.orange;
 
   bool loading = true;
   Set<Marker> markers = {};
-  Set<Polyline> polylines = {};
 
   @override
   void initState() {
@@ -47,16 +44,12 @@ class _LaluLintasPageState extends State<LaluLintasPage> {
       setState(() {
         currentLat = pos.latitude;
         currentLng = pos.longitude;
-        // Bengkel terdekat: 5km ke arah timur laut (default)
-        bengkelLat = pos.latitude + 0.025;
-        bengkelLng = pos.longitude + 0.035;
       });
 
-      // Get addresses & traffic
+      // Get address & traffic status
       await Future.wait([
-        _getAddresses(),
-        _getTrafficCondition(),
-        _createRoute(),
+        _getAddress(),
+        _fetchTrafficStatus(),
       ]);
 
       setState(() => loading = false);
@@ -69,8 +62,8 @@ class _LaluLintasPageState extends State<LaluLintasPage> {
     }
   }
 
-  // GET ADDRESSES VIA REVERSE GEOCODING
-  Future<void> _getAddresses() async {
+  // GET ADDRESS VIA REVERSE GEOCODING
+  Future<void> _getAddress() async {
     try {
       final mapsApiKey = dotenv.env['MAPS_API_KEY'];
       if (mapsApiKey == null) {
@@ -78,7 +71,6 @@ class _LaluLintasPageState extends State<LaluLintasPage> {
         return;
       }
 
-      // Current address
       if (currentLat != null && currentLng != null) {
         final url =
             "https://maps.googleapis.com/maps/api/geocode/json?latlng=$currentLat,$currentLng&key=$mapsApiKey";
@@ -88,186 +80,166 @@ class _LaluLintasPageState extends State<LaluLintasPage> {
           if (data['results'].isNotEmpty) {
             setState(() {
               currentAddress = data['results'][0]['formatted_address'];
-            });
-          }
-        }
-      }
-
-      // Bengkel address
-      if (bengkelLat != null && bengkelLng != null) {
-        final url =
-            "https://maps.googleapis.com/maps/api/geocode/json?latlng=$bengkelLat,$bengkelLng&key=$mapsApiKey";
-        final response = await http.get(Uri.parse(url));
-        if (response.statusCode == 200) {
-          final data = jsonDecode(response.body);
-          if (data['results'].isNotEmpty) {
-            setState(() {
-              bengkelAddress = data['results'][0]['formatted_address'];
+              // Create marker for current location
+              markers = {
+                Marker(
+                  markerId: const MarkerId('current'),
+                  position: LatLng(currentLat!, currentLng!),
+                  infoWindow: const InfoWindow(title: 'Lokasi Anda'),
+                  icon: BitmapDescriptor.defaultMarkerWithHue(
+                    BitmapDescriptor.hueBlue,
+                  ),
+                ),
+              };
             });
           }
         }
       }
     } catch (e) {
-      print("Error getAddresses: $e");
+      print("Error getAddress: $e");
     }
   }
 
-  // GET TRAFFIC CONDITION
-  Future<void> _getTrafficCondition() async {
+  // FETCH REAL-TIME TRAFFIC STATUS (RADIUS 5KM)
+  Future<void> _fetchTrafficStatus() async {
     try {
+      if (currentLat == null || currentLng == null) {
+        setState(() {
+          trafficStatus = "Lokasi tidak tersedia";
+        });
+        return;
+      }
+
       final mapsApiKey = dotenv.env['MAPS_API_KEY'];
-      if (mapsApiKey == null) return;
+      if (mapsApiKey == null || mapsApiKey.isEmpty) {
+        setState(() {
+          trafficStatus = "Kunci API Hilang";
+        });
+        return;
+      }
 
-      if (currentLat == null || currentLng == null) return;
+      final LatLng origin = LatLng(currentLat!, currentLng!);
+      
+      // Destinasi: 4 titik di sekitar radius 5km (utama: N, E, S, W)
+      // 1 degree ≈ 111 km, jadi 5km ≈ 0.045 degree
+      final List<LatLng> destinations = [
+        // Utara
+        LatLng(currentLat! + 0.045, currentLng!),
+        // Timur
+        LatLng(currentLat!, currentLng! + 0.045),
+        // Selatan
+        LatLng(currentLat! - 0.045, currentLng!),
+        // Barat
+        LatLng(currentLat!, currentLng! - 0.045),
+      ];
 
-      final url =
-          "https://maps.googleapis.com/maps/api/distancematrix/json?"
-          "origins=$currentLat,$currentLng&destinations=$bengkelLat,$bengkelLng"
-          "&departure_time=now&traffic_model=best_guess&key=$mapsApiKey";
+      // Hitung rata-rata traffic dari semua arah
+      int totalSeconds = 0;
+      int totalTrafficSeconds = 0;
+      int successCount = 0;
 
-      final response = await http.get(Uri.parse(url));
+      print("🚗 Starting traffic check from ${origin.latitude}, ${origin.longitude}");
 
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
+      for (int i = 0; i < destinations.length; i++) {
+        final destination = destinations[i];
+        
+        final String url =
+            'https://maps.googleapis.com/maps/api/directions/json?'
+            'origin=${origin.latitude},${origin.longitude}'
+            '&destination=${destination.latitude},${destination.longitude}'
+            '&key=$mapsApiKey'
+            '&departure_time=now';
 
-        if (data['rows'].isNotEmpty) {
-          final element = data['rows'][0]['elements'][0];
-          final duration = element['duration_in_traffic']['value'] ?? 0;
-          final normalDuration = element['duration']['value'] ?? 0;
+        try {
+          final response = await http.get(Uri.parse(url)).timeout(
+            const Duration(seconds: 10),
+          );
 
-          // Calculate traffic condition
-          final ratio = normalDuration > 0 ? duration / normalDuration : 1.0;
+          print("Direction $i Response Code: ${response.statusCode}");
 
-          String condition = "Lancar";
-          Color color = Colors.green;
+          if (response.statusCode == 200) {
+            final data = jsonDecode(response.body);
 
-          if (ratio > 2.0) {
-            condition = "Sangat Macet";
-            color = Colors.red;
-          } else if (ratio > 1.5) {
-            condition = "Macet";
-            color = Colors.orange;
-          } else if (ratio > 1.2) {
-            condition = "Ramai";
-            color = Colors.amber;
+            if (data['routes'] != null && data['routes'].isNotEmpty) {
+              final route = data['routes'][0];
+              final leg = route['legs'][0];
+
+              final int durationSeconds = leg['duration']['value'] ?? 0;
+              final int trafficDurationSeconds = 
+                  leg['duration_in_traffic']['value'] ?? durationSeconds;
+
+              print("Direction $i - Normal: ${durationSeconds}s, Traffic: ${trafficDurationSeconds}s");
+
+              totalSeconds += durationSeconds;
+              totalTrafficSeconds += trafficDurationSeconds;
+              successCount++;
+            } else {
+              print("Direction $i - No routes found");
+            }
+          } else {
+            print('Direction $i Failed: ${response.statusCode}');
           }
+        } on TimeoutException {
+          print('Direction $i - TIMEOUT');
+          continue;
+        } catch (e) {
+          print('Error checking direction $i: $e');
+          continue;
+        }
+      }
 
+      print("✅ Success Count: $successCount, Total Normal: $totalSeconds, Total Traffic: $totalTrafficSeconds");
+
+      if (successCount > 0) {
+        final double avgDuration = totalSeconds / successCount;
+        final double avgTraffic = totalTrafficSeconds / successCount;
+        final double ratio = avgDuration > 0 ? avgTraffic / avgDuration : 1.0;
+
+        String status = "Lancar";
+        Color color = Colors.green;
+
+        print("📊 Ratio: $ratio (avg normal: ${avgDuration}s, avg traffic: ${avgTraffic}s)");
+
+        if (ratio >= 1.5) {
+          status = "Macet";
+          color = Colors.red;
+        } else if (ratio >= 1.2) {
+          status = "Padat";
+          color = Colors.amber;
+        } else {
+          status = "Lancar";
+          color = Colors.green;
+        }
+
+        if (mounted) {
           setState(() {
-            trafficCondition = condition;
+            trafficStatus = status;
             trafficColor = color;
           });
+          print("✅ Traffic Status Updated: $status");
         }
+      } else {
+        setState(() {
+          trafficStatus = "Tidak ada data";
+          trafficColor = Colors.grey;
+        });
+        print("❌ No successful API calls");
       }
     } catch (e) {
-      print("Error traffic: $e");
-    }
-  }
-
-  // CREATE ROUTE WITH POLYLINE
-  Future<void> _createRoute() async {
-    try {
-      final mapsApiKey = dotenv.env['MAPS_API_KEY'];
-      if (mapsApiKey == null) return;
-
-      if (currentLat == null || currentLng == null) return;
-
-      final url =
-          "https://maps.googleapis.com/maps/api/directions/json?"
-          "origin=$currentLat,$currentLng&destination=$bengkelLat,$bengkelLng"
-          "&key=$mapsApiKey";
-
-      final response = await http.get(Uri.parse(url));
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-
-        if (data['routes'].isNotEmpty) {
-          final route = data['routes'][0];
-          final polylinePoints = route['overview_polyline']['points'];
-
-          // Decode polyline
-          final points = _decodePolyline(polylinePoints);
-
-          setState(() {
-            polylines = {
-              Polyline(
-                polylineId: const PolylineId('route'),
-                points: points,
-                color: Colors.blue,
-                width: 5,
-              ),
-            };
-
-            // Create markers
-            markers = {
-              Marker(
-                markerId: const MarkerId('current'),
-                position: LatLng(currentLat!, currentLng!),
-                infoWindow: const InfoWindow(title: 'Lokasi Anda'),
-                icon: BitmapDescriptor.defaultMarkerWithHue(
-                  BitmapDescriptor.hueBlue,
-                ),
-              ),
-              Marker(
-                markerId: const MarkerId('bengkel'),
-                position: LatLng(bengkelLat!, bengkelLng!),
-                infoWindow: const InfoWindow(title: 'Bengkel Terdekat'),
-                icon: BitmapDescriptor.defaultMarkerWithHue(
-                  BitmapDescriptor.hueRed,
-                ),
-              ),
-            };
-          });
-        }
+      print('Traffic API Error: $e');
+      if (mounted) {
+        setState(() {
+          trafficStatus = "Error jaringan";
+          trafficColor = Colors.grey;
+        });
       }
-    } catch (e) {
-      print("Error createRoute: $e");
     }
   }
 
-  // DECODE POLYLINE FROM DIRECTIONS API
-  List<LatLng> _decodePolyline(String encoded) {
-    List<LatLng> poly = [];
-    int index = 0, len = encoded.length;
-    int lat = 0, lng = 0;
-
-    while (index < len) {
-      int b, shift = 0, result = 0;
-      do {
-        b = encoded.codeUnitAt(index++) - 63;
-        result |= (b & 0x1f) << shift;
-        shift += 5;
-      } while (b >= 0x20);
-      int dlat = ((result & 1) != 0) ? ~(result >> 1) : (result >> 1);
-      lat += dlat;
-
-      shift = 0;
-      result = 0;
-      do {
-        b = encoded.codeUnitAt(index++) - 63;
-        result |= (b & 0x1f) << shift;
-        shift += 5;
-      } while (b >= 0x20);
-      int dlng = ((result & 1) != 0) ? ~(result >> 1) : (result >> 1);
-      lng += dlng;
-
-      poly.add(LatLng((lat / 1e5).toDouble(), (lng / 1e5).toDouble()));
-    }
-    return poly;
-  }
-
-  // OPEN GOOGLE MAPS NAVIGATION
+  // OPEN GOOGLE MAPS (USER SEARCH SENDIRI)
   Future<void> _openGoogleMaps() async {
-    final url = Uri.parse(
-      "google.navigation:q=$bengkelLat,$bengkelLng&mode=d",
-    );
-
-    if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
-      final fallback = Uri.parse(
-        "https://www.google.com/maps/dir/?api=1&destination=$bengkelLat,$bengkelLng",
-      );
-      await launchUrl(fallback, mode: LaunchMode.externalApplication);
-    }
+    final url = Uri.parse("https://www.google.com/maps");
+    await launchUrl(url, mode: LaunchMode.externalApplication);
   }
 
   @override
@@ -298,7 +270,7 @@ class _LaluLintasPageState extends State<LaluLintasPage> {
           : SingleChildScrollView(
               child: Column(
                 children: [
-                  // GOOGLE MAPS WITH TRAFFIC
+                  // GOOGLE MAPS - LOKASI SAAT INI DENGAN TRAFFIC
                   SizedBox(
                     height: 350,
                     child: GoogleMap(
@@ -316,7 +288,6 @@ class _LaluLintasPageState extends State<LaluLintasPage> {
                       zoomControlsEnabled: true,
                       trafficEnabled: true, // ✅ TRAFFIC ENABLED
                       markers: markers,
-                      polylines: polylines,
                     ),
                   ),
 
@@ -339,37 +310,46 @@ class _LaluLintasPageState extends State<LaluLintasPage> {
                               ),
                             ],
                           ),
-                          child: Row(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Container(
-                                width: 12,
-                                height: 12,
-                                decoration: BoxDecoration(
-                                  color: trafficColor,
-                                  shape: BoxShape.circle,
+                              const Text(
+                                "Kondisi Lalu Lintas",
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.black54,
                                 ),
                               ),
-                              const SizedBox(width: 12),
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
+                              const SizedBox(height: 8),
+                              Row(
                                 children: [
-                                  const Text(
-                                    "Kondisi Lalu Lintas",
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: Colors.black54,
+                                  Container(
+                                    width: 12,
+                                    height: 12,
+                                    decoration: BoxDecoration(
+                                      color: trafficColor,
+                                      shape: BoxShape.circle,
                                     ),
                                   ),
-                                  const SizedBox(height: 4),
+                                  const SizedBox(width: 10),
                                   Text(
-                                    trafficCondition,
+                                    trafficStatus,
                                     style: TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold,
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
                                       color: trafficColor,
                                     ),
                                   ),
                                 ],
+                              ),
+                              const SizedBox(height: 12),
+                              const Text(
+                                "Radius 5km ke semua arah (bundar)",
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.black45,
+                                  fontStyle: FontStyle.italic,
+                                ),
                               ),
                             ],
                           ),
@@ -379,7 +359,7 @@ class _LaluLintasPageState extends State<LaluLintasPage> {
 
                         // LOCATION INFO
                         const Text(
-                          "Informasi Rute",
+                          "Lokasi Saat Ini",
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w700,
@@ -392,18 +372,8 @@ class _LaluLintasPageState extends State<LaluLintasPage> {
                         _buildLocationCard(
                           icon: Icons.radio_button_checked,
                           color: Colors.blue,
-                          title: "Lokasi Saat Ini",
+                          title: "Alamat Anda",
                           address: currentAddress,
-                        ),
-
-                        const SizedBox(height: 12),
-
-                        // BENGKEL LOCATION CARD
-                        _buildLocationCard(
-                          icon: Icons.location_on,
-                          color: Colors.red,
-                          title: "Bengkel Terdekat",
-                          address: bengkelAddress,
                         ),
 
                         const SizedBox(height: 20),
@@ -415,7 +385,7 @@ class _LaluLintasPageState extends State<LaluLintasPage> {
                             onPressed: _openGoogleMaps,
                             icon: const Icon(Icons.directions),
                             label: const Text(
-                              "Buka di Google Maps",
+                              "Buka Google Maps",
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w600,
