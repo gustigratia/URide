@@ -27,7 +27,6 @@ class _ProfilePageState extends State<ProfilePage> {
     loadUser();
   }
 
-  // LOAD USER DATA
   Future<void> loadUser() async {
     final supabase = Supabase.instance.client;
 
@@ -55,7 +54,6 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
 
-  // SAVE PROFILE
   Future<void> saveProfile() async {
     final supabase = Supabase.instance.client;
 
@@ -79,7 +77,6 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
 
-  // UI
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -93,14 +90,10 @@ class _ProfilePageState extends State<ProfilePage> {
           style: TextStyle(color: Colors.black, fontWeight: FontWeight.w600),
         ),
       ),
-
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
-            // ===========================
-            // HEADER SECTION
-            // ===========================
             Container(
               padding: const EdgeInsets.all(18),
               decoration: BoxDecoration(
@@ -114,7 +107,6 @@ class _ProfilePageState extends State<ProfilePage> {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // PHOTO
                   Container(
                     padding: const EdgeInsets.all(3),
                     decoration: const BoxDecoration(
@@ -126,15 +118,11 @@ class _ProfilePageState extends State<ProfilePage> {
                       backgroundImage: AssetImage("assets/profile.jpg"),
                     ),
                   ),
-
                   const SizedBox(width: 20),
-
-                  // NAME + BUTTON
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // NAME — WITH UNDERLINE WHEN EDITING
                         SizedBox(
                           height: 26,
                           child: isEditing
@@ -176,10 +164,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                   ),
                                 ),
                         ),
-
                         const SizedBox(height: 8),
-
-                        // BUTTON DAFTARKAN BENGKEL
                         GestureDetector(
                           onTap: () {
                             Navigator.pushNamed(context, '/workshop-dashboard');
@@ -206,10 +191,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       ],
                     ),
                   ),
-
                   const SizedBox(width: 12),
-
-                  // EDIT BUTTON
                   GestureDetector(
                     onTap: () async {
                       if (isEditing) await saveProfile();
@@ -232,10 +214,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 ],
               ),
             ),
-
             const SizedBox(height: 18),
-
-            // EMAIL
             _profileCard(
               icon: Icons.email_outlined,
               title: "Email",
@@ -243,8 +222,6 @@ class _ProfilePageState extends State<ProfilePage> {
               readOnly: false,
               isEditing: isEditing,
             ),
-
-            // PHONE (UNDERLINE WHEN EDITING)
             _profileCard(
               icon: Icons.phone_outlined,
               title: "Phone",
@@ -252,8 +229,6 @@ class _ProfilePageState extends State<ProfilePage> {
               readOnly: false,
               isEditing: isEditing,
             ),
-
-            // LOGOUT
             _logoutCard(),
           ],
         ),
@@ -261,9 +236,6 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  // ===========================
-  // PROFILE CARD (WITH UNDERLINE)
-  // ===========================
   Widget _profileCard({
     required IconData icon,
     required String title,
@@ -284,7 +256,6 @@ class _ProfilePageState extends State<ProfilePage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // LABEL ROW
           Row(
             children: [
               Icon(icon, color: Colors.black54),
@@ -299,10 +270,7 @@ class _ProfilePageState extends State<ProfilePage> {
               ),
             ],
           ),
-
           const SizedBox(height: 6),
-
-          // TEXT AREA WITH UNDERLINE WHEN EDITING
           Container(
             height: 22,
             padding: const EdgeInsets.only(left: 40),
@@ -341,9 +309,6 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  // ===========================
-  // LOGOUT CARD
-  // ===========================
   Widget _logoutCard() {
     return Container(
       padding: const EdgeInsets.all(4),
@@ -364,16 +329,12 @@ class _ProfilePageState extends State<ProfilePage> {
         ),
         onTap: () async {
           final supabase = Supabase.instance.client;
-
-          // 1. Sign out dari Supabase (hapus session & tokens)
           await supabase.auth.signOut();
-
-          // 2. Pastikan semua halaman sebelumnya dibuang
           if (mounted) {
             Navigator.pushNamedAndRemoveUntil(
               context,
               '/signin',
-              (route) => false, // hapus semua route, reset navigation stack
+              (route) => false,
             );
           }
         },
