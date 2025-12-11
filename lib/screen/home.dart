@@ -7,6 +7,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'dart:math';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -29,6 +30,8 @@ class _HomeScreenState extends State<HomeScreen> {
   String locationError = '';
   String firstName = "";
   String mapsApiKey = dotenv.env['MAPS_API_KEY'] ?? '';
+  Map<String, dynamic>? _weather;
+  bool _isLoadingWeather = true;
 
   @override
   void initState() {
@@ -49,6 +52,7 @@ class _HomeScreenState extends State<HomeScreen> {
     await _determinePosition();
     await _fetchTrafficStatus();
     await fetchData();
+    await _loadWeather();
   }
 
   Future<void> fetchData() async {
@@ -90,8 +94,89 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  String get conditionText {
+    final type = _weather?['weatherCondition']?['type']?.toUpperCase() ?? '';
 
+    if (type.contains("LIGHT_RAIN")) return "Hujan Ringan";
+    if (type.contains("RAIN")) return "Hujan";
+    if (type.contains("CLEAR")) return "Cerah";
+    if (type.contains("PARTLY_CLOUDY")) return "Berawan Sebagian";
+    if (type.contains("CLOUDY")) return "Berawan";
+    if (type.contains("FOG")) return "Berkabut";
 
+    return "Tidak diketahui";
+  }
+
+  IconData get conditionIcon {
+    final type = _weather?['weatherCondition']?['type']?.toUpperCase() ?? '';
+
+    if (type.contains("RAIN")) return Icons.umbrella;
+    if (type.contains("CLOUD")) return Icons.cloud;
+    if (type.contains("FOG")) return Icons.deblur;
+
+    return Icons.wb_sunny;
+  }
+
+  double? get tempC => _weather?['temperature']?['degrees']?.toDouble();
+  int? get precipPercent =>
+      _weather?['precipitation']?['probability']?['percent'];
+  int? get humidity => _weather?['relativeHumidity'];
+
+  Future<void> _loadWeather() async {
+    try {
+      if (userPosition == null) {
+        print("DEBUG: userPosition null");
+        return;
+      }
+
+      final pos = userPosition!;
+      final uri = Uri.parse(
+        'https://weather.googleapis.com/v1/currentConditions:lookup'
+            '?key=$mapsApiKey'
+            '&location.latitude=${pos.latitude}'
+            '&location.longitude=${pos.longitude}'
+            '&unitsSystem=METRIC',
+      );
+
+      print("DEBUG URL: $uri");
+
+      final res = await http.get(uri);
+      print("DEBUG status: ${res.statusCode}");
+      print("DEBUG body: ${res.body}");
+
+      final json = jsonDecode(res.body);
+
+      // GOOGLE WEATHER API return langsung OBJECT, bukan list
+      setState(() {
+        _weather = Map<String, dynamic>.from(json);
+        _isLoadingWeather = false;
+      });
+    } catch (e) {
+      print("Weather error: $e");
+      setState(() => _isLoadingWeather = false);
+    }
+  }
+
+  LatLng offsetPosition(LatLng origin, double distanceMeters, double bearingDegrees) {
+    const double earthRadius = 6371000; // meters
+    final double bearing = bearingDegrees * pi / 180;
+
+    final double lat1 = origin.latitude * pi / 180;
+    final double lon1 = origin.longitude * pi / 180;
+
+    final double lat2 = asin(
+      sin(lat1) * cos(distanceMeters / earthRadius) +
+          cos(lat1) * sin(distanceMeters / earthRadius) * sin(bearing),
+    );
+
+    final double lon2 = lon1 +
+        atan2(
+          sin(bearing) * sin(distanceMeters / earthRadius) * cos(lat1),
+          cos(distanceMeters / earthRadius) - sin(lat1) * sin(lat2),
+        );
+
+    return LatLng(lat2 * 180 / pi, lon2 * 180 / pi);
+  }
 
   Future<void> _fetchTrafficStatus() async {
     if (userPosition == null) {
@@ -115,13 +200,15 @@ class _HomeScreenState extends State<HomeScreen> {
       return;
     }
 
-
+    LatLng userLatLng = LatLng(
+      userPosition!.latitude,
+      userPosition!.longitude,
+    );
     final LatLng origin = LatLng(userPosition!.latitude, userPosition!.longitude);
 
-    // Tentukan tujuan yang RELEVAN (tetap gunakan contoh koordinat Monas)
-    const LatLng destination = LatLng(-6.214620, 106.845130);
+    final randomBearing = Random().nextInt(360).toDouble();
+    LatLng destination = offsetPosition(userLatLng, 1000, randomBearing);
 
-    // MENGGUNAKAN mapsApiKey dari State
     final String url = 'https://maps.googleapis.com/maps/api/directions/json?'
         'origin=${origin.latitude},${origin.longitude}'
         '&destination=${destination.latitude},${destination.longitude}'
@@ -133,7 +220,6 @@ class _HomeScreenState extends State<HomeScreen> {
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
 
-        // Memastikan respons sukses dan memiliki rute
         if (data['routes'] != null && data['routes'].isNotEmpty) {
           final route = data['routes'][0];
           final leg = route['legs'][0];
@@ -141,7 +227,7 @@ class _HomeScreenState extends State<HomeScreen> {
           final String durationText = leg['duration']['text'] ?? 'N/A';
           final int durationSeconds = leg['duration']['value'] ?? 0;
 
-          String trafficStatus = "Lancar";
+          String trafficStatus = "Macet";
           String durationWithTraffic = durationText;
 
           if (leg['duration_in_traffic'] != null) {
@@ -150,7 +236,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
             // Logika sederhana untuk menentukan status
             final double ratio = trafficDurationSeconds / durationSeconds;
-
+            print("DEBUG ratio: $ratio");
+            print("DEBUG duration: $durationSeconds | traffic: $trafficDurationSeconds");
             if (ratio >= 1.5) {
               trafficStatus = "Macet";
             } else if (ratio >= 1.2) {
@@ -620,14 +707,22 @@ class _HomeScreenState extends State<HomeScreen> {
 
 
   Widget _buildWeatherRow(BuildContext context) {
+    if (_isLoadingWeather) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (_weather == null) {
+      return const Text("Gagal memuat cuaca");
+    }
+
     return Row(
       children: [
         Expanded(
           child: _weatherCard(
-            percent: 79,
-            title: "Berpotensi\nhujan",
-            subtitle: "Berawan",
-            icon: Image.asset('assets/icons/weather.png'),
+            percent: precipPercent ?? 0,
+            subtitle: conditionText,
+            title: "Presipitasi",
+            icon: Icon(conditionIcon, size: 36),
             isActive: true,
             context: context,
           ),
@@ -637,6 +732,7 @@ class _HomeScreenState extends State<HomeScreen> {
       ],
     );
   }
+
 
   Widget _weatherCard({
     required int percent,
@@ -665,6 +761,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ],
         ),
         child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
@@ -775,9 +872,10 @@ class _HomeScreenState extends State<HomeScreen> {
     return GestureDetector(
       onTap: onTap,
       child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Container(
-            padding: const EdgeInsets.all(10),
+            padding: const EdgeInsets.all(7),
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(12),
@@ -794,13 +892,12 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           const SizedBox(height: 6),
 
-          /// 🔥 AutoSizeText untuk title, max 2 baris
           SizedBox(
-            width: 80, // supaya lebih stabil & tidak melebar
+            width: 60,
             child: AutoSizeText(
               title,
               textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 12),
+              style: const TextStyle(fontSize: 11),
               maxLines: 2,
               minFontSize: 8,
               overflow: TextOverflow.ellipsis,
@@ -814,7 +911,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildNearestWorkshopTitle() {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: const [
+      children: [
         Text(
           "Bengkel terdekat",
           style: TextStyle(
@@ -823,7 +920,15 @@ class _HomeScreenState extends State<HomeScreen> {
             fontWeight: FontWeight.bold,
           ),
         ),
-        Text("Lihat Semua", style: TextStyle(color: Colors.orange)),
+        GestureDetector(
+          onTap: () {
+            Navigator.pushNamed(context, '/workshop');
+          },
+          child: const Text(
+            "Lihat Semua",
+            style: TextStyle(color: Colors.orange),
+          ),
+        ),
       ],
     );
   }
@@ -906,7 +1011,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        AutoSizeText(
+                        Text(
                           name,
                           style: const TextStyle(
                             fontWeight: FontWeight.bold,
@@ -914,8 +1019,8 @@ class _HomeScreenState extends State<HomeScreen> {
                             fontSize: 16,
                           ),
                           maxLines: 1,
-                          minFontSize: 10,
                           overflow: TextOverflow.ellipsis,
+                          softWrap: false,
                         ),
                         const SizedBox(height: 6),
                         Row(
@@ -1056,8 +1161,11 @@ class _HomeScreenState extends State<HomeScreen> {
                           style: const TextStyle(
                             fontWeight: FontWeight.bold,
                             color: Color(0xff3d3d3d),
-                            fontSize: 14,
+                            fontSize: 16,
                           ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          softWrap: false,
                         ),
                         const SizedBox(height: 6),
                         Row(
