@@ -291,9 +291,9 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withOpacity(0.3)),
+        border: Border.all(color: Colors.grey[300]!),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -302,7 +302,7 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
           const SizedBox(width: 6),
           Text(
             label,
-            style: TextStyle(fontSize: 12, color: color, fontWeight: FontWeight.w500),
+            style: TextStyle(fontSize: 12, color: Colors.grey[600], fontWeight: FontWeight.w500),
           ),
         ],
       ),

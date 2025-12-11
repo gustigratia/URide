@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:uride/widgets/bottom_nav.dart';
 import 'package:uride/main.dart'; // supabase
 import 'package:uride/routes/app_routes.dart';
+import 'package:geolocator/geolocator.dart';
 
 class BengkelListScreen extends StatefulWidget {
   const BengkelListScreen({Key? key}) : super(key: key);
@@ -11,14 +12,17 @@ class BengkelListScreen extends StatefulWidget {
 }
 
 class _BengkelListScreenState extends State<BengkelListScreen> {
-  String selectedFilter = 'All';
+  // 1. Ubah default filter menjadi 'Terdekat'
+  String selectedFilter = 'Terdekat'; 
   List<Map<String, dynamic>> bengkelList = [];
   TextEditingController searchController = TextEditingController();
+  
+  Position? userPosition;
 
   @override
   void initState() {
     super.initState();
-    fetchWorkshops();
+    _initData();
     searchController.addListener(() {
       setState(() {});
     });
@@ -30,56 +34,116 @@ class _BengkelListScreenState extends State<BengkelListScreen> {
     super.dispose();
   }
 
+  Future<void> _initData() async {
+    await _determinePosition();
+    await fetchWorkshops();
+  }
+
+  Future<void> _determinePosition() async {
+    try {
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) return;
+
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) return;
+      }
+
+      if (permission == LocationPermission.deniedForever) return;
+
+      final pos = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+      );
+      
+      if (mounted) {
+        setState(() {
+          userPosition = pos;
+        });
+      }
+    } catch (e) {
+      print('Error getting location: $e');
+    }
+  }
+
   Future<void> fetchWorkshops() async {
     try {
       final response = await supabase.from('workshops').select();
 
-      List<int> workshopIds = response.map<int>((w) => w['id'] as int).toList();
+      if (mounted) {
+        setState(() {
+          bengkelList = response.map<Map<String, dynamic>>((item) {
+            
+            // 2. Hitung jarak mentah (double) dan format string
+            double? meters;
+            String distanceString = '--';
 
-      final serviceResponse = await supabase
-          .from('service')
-          .select()
-          .filter('workshop_id', 'in', '(${workshopIds.join(',')})');
+            if (userPosition != null && item['latitude'] != null && item['longitude'] != null) {
+               try {
+                 final double latD = (item['latitude'] is num) ? item['latitude'].toDouble() : double.parse(item['latitude'].toString());
+                 final double lngD = (item['longitude'] is num) ? item['longitude'].toDouble() : double.parse(item['longitude'].toString());
+                 
+                 meters = Geolocator.distanceBetween(
+                    userPosition!.latitude,
+                    userPosition!.longitude,
+                    latD,
+                    lngD,
+                 );
+                 distanceString = _formatDistance(meters);
+               } catch (e) {
+                 print("Error parsing latlng: $e");
+               }
+            }
 
-      Map<int, List<String>> serviceMap = {};
-      for (var s in serviceResponse) {
-        int wid = s['workshop_id'];
-        if (!serviceMap.containsKey(wid)) serviceMap[wid] = [];
-        serviceMap[wid]!.add(s['name']);
+            return {
+              'id': item['id'],
+              'name': item['bengkelname'],
+              'is_open': item['is_open'],
+              'distance_m': meters, // SIMPAN JARAK MENTAH (double) UNTUK SORTING
+              'distance': distanceString, // Simpan String untuk UI
+              'rating': item['rating'] ?? 0.0,
+              'image': item["image"] ?? 'assets/images/workshop.png',
+              'save': item['save'] ?? false,
+              'services': item['services'] ?? [],
+            };
+          }).toList();
+        });
       }
-
-      setState(() {
-        bengkelList = response.map<Map<String, dynamic>>((item) {
-          return {
-            'id': item['id'],
-            'name': item['bengkelname'],
-            'is_open': item['is_open'],
-            'distance': '2 Km',
-            'rating': item['rating'] ?? 0.0,
-            'image':
-                'https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?w=800',
-            'save': item['save'] ?? false,
-            'services': serviceMap[item['id']] ?? [],
-          };
-        }).toList();
-      });
     } catch (e) {
       print('Error fetch: $e');
     }
   }
 
-  List<Map<String, dynamic>> getFilteredList() {
-    List<Map<String, dynamic>> filtered = bengkelList;
+  String _formatDistance(double meters) {
+    if (meters < 1000) {
+      return '${meters.toStringAsFixed(0)} m';
+    } else {
+      final km = meters / 1000;
+      return '${km.toStringAsFixed(2)} km';
+    }
+  }
 
-    if (selectedFilter == 'Favorit') {
+  List<Map<String, dynamic>> getFilteredList() {
+    // Buat salinan list agar tidak mengubah list asli secara permanen saat sorting
+    List<Map<String, dynamic>> filtered = List.from(bengkelList);
+
+    // 3. Logika Sorting Berdasarkan Filter
+    if (selectedFilter == 'Terdekat') {
+      // Sort berdasarkan distance_m (jarak meter)
+      filtered.sort((a, b) {
+        double distA = a['distance_m'] ?? double.infinity; // Jika null anggap sangat jauh
+        double distB = b['distance_m'] ?? double.infinity;
+        return distA.compareTo(distB); // Kecil ke Besar (Ascending)
+      });
+    } else if (selectedFilter == 'Favorit') {
       filtered = filtered.where((b) => b['save'] == true).toList();
     } else if (selectedFilter == 'Rating') {
-      filtered = List.from(filtered);
       filtered.sort((a, b) => (b['rating'] ?? 0).compareTo(a['rating'] ?? 0));
     } else if (selectedFilter == 'Buka') {
       filtered = filtered.where((b) => b['is_open'] == true).toList();
     }
 
+    // Filter Search Text
     String query = searchController.text.toLowerCase();
     if (query.isNotEmpty) {
       filtered = filtered
@@ -103,7 +167,7 @@ class _BengkelListScreenState extends State<BengkelListScreen> {
             Navigator.pushAndRemoveUntil(
               context,
               MaterialPageRoute(builder: (context) => const BengkelListScreen()),
-              (route) => false, // hapus semua route sebelumnya agar langsung ke BengkelListScreen
+              (route) => false,
             );
           },
         ),
@@ -142,7 +206,8 @@ class _BengkelListScreenState extends State<BengkelListScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 16.0),
             child: Row(
               children: [
-                Expanded(child: _buildFilterChip('All')),
+                // 4. Update UI Chip dari 'All' ke 'Terdekat'
+                Expanded(child: _buildFilterChip('Terdekat')),
                 const SizedBox(width: 8),
                 Expanded(child: _buildFilterChip('Favorit')),
                 const SizedBox(width: 8),
@@ -215,10 +280,8 @@ class BengkelCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    List<String> services = List<String>.from(data['services'] ?? []);
-
     return Container(
-      margin: const EdgeInsets.only(bottom: 100),
+      margin: const EdgeInsets.only(bottom: 80), 
       child: Stack(
         clipBehavior: Clip.none,
         children: [
@@ -231,6 +294,8 @@ class BengkelCard extends StatelessWidget {
               child: Image.network(
                 data['image'],
                 fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) => 
+                  Image.asset('assets/images/workshop.png', fit: BoxFit.cover),
               ),
             ),
           ),
@@ -264,6 +329,8 @@ class BengkelCard extends StatelessWidget {
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
                           ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                       Container(
@@ -304,32 +371,7 @@ class BengkelCard extends StatelessWidget {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 12),
-
-                  // Layanan
-                  if (services.isNotEmpty)
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 4,
-                      children: services.map((s) {
-                        return Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            border: Border.all(color: Colors.amber),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(
-                            s,
-                            style: const TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.black87,
-                            ),
-                          ),
-                        );
-                      }).toList(),
-                    ),
+                  const SizedBox(height: 6),
                 ],
               ),
             ),
