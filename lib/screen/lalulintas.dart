@@ -298,216 +298,214 @@ class _LaluLintasPageState extends State<LaluLintasPage> {
                 valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFFF9800)),
               ),
             )
-          : SingleChildScrollView(
-              child: Column(
-                children: [
-                  // GOOGLE MAPS - LOKASI SAAT INI DENGAN TRAFFIC
-                  Container(
-                    height: 350,
-                    decoration: BoxDecoration(
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
-                          blurRadius: 10,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
+          : Column(
+            children: [
+              // GOOGLE MAPS - LOKASI SAAT INI DENGAN TRAFFIC
+              Container(
+                height: 250,
+                decoration: BoxDecoration(
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 10,
+                      offset: const Offset(0, 2),
                     ),
-                    child: GoogleMap(
-                      onMapCreated: (controller) {
-                        if (!_mapController.isCompleted) {
-                          _mapController.complete(controller);
-                        }
-                      },
-                      initialCameraPosition: CameraPosition(
-                        target: LatLng(currentLat ?? 0, currentLng ?? 0),
-                        zoom: 13,
-                      ),
-                      myLocationEnabled: true,
-                      myLocationButtonEnabled: true,
-                      zoomControlsEnabled: true,
-                      trafficEnabled: true,
-                      markers: markers,
-                    ),
+                  ],
+                ),
+                child: GoogleMap(
+                  onMapCreated: (controller) {
+                    if (!_mapController.isCompleted) {
+                      _mapController.complete(controller);
+                    }
+                  },
+                  initialCameraPosition: CameraPosition(
+                    target: LatLng(currentLat ?? 0, currentLng ?? 0),
+                    zoom: 13,
                   ),
-
-                  // CONTENT BELOW MAP
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // TRAFFIC STATUS CARD - PREMIUM DESIGN
-                        Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.all(20),
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                              colors: [
-                                trafficColor.withOpacity(0.1),
-                                trafficColor.withOpacity(0.05),
-                              ],
-                            ),
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(
-                              color: trafficColor.withOpacity(0.3),
-                              width: 1.5,
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: trafficColor.withOpacity(0.15),
-                                blurRadius: 12,
-                                offset: const Offset(0, 4),
-                              ),
-                            ],
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Container(
-                                    width: 14,
-                                    height: 14,
-                                    decoration: BoxDecoration(
-                                      color: trafficColor,
-                                      shape: BoxShape.circle,
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: trafficColor.withOpacity(0.5),
-                                          blurRadius: 8,
-                                          spreadRadius: 2,
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  const Text(
-                                    "Kondisi Lalu Lintas",
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: Colors.black54,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 12),
-                              Text(
-                                trafficStatus,
-                                style: TextStyle(
-                                  fontSize: 28,
-                                  fontWeight: FontWeight.w800,
-                                  color: trafficColor,
-                                  letterSpacing: 0.5,
-                                ),
-                              ),
-                              const SizedBox(height: 12),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 6,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: trafficColor.withOpacity(0.15),
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Text(
-                                  "Radius 1km ke semua arah",
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    color: trafficColor,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-
-                        const SizedBox(height: 28),
-
-                        // LOCATION INFO SECTION
-                        const Text(
-                          "Lokasi Anda",
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.black87,
-                          ),
-                        ),
-
-                        const SizedBox(height: 12),
-
-                        // LOCATION CARD
-                        _buildPremiumLocationCard(
-                          icon: Icons.location_on_rounded,
-                          color: const Color(0xFF2196F3),
-                          address: currentAddress,
-                        ),
-
-                        const SizedBox(height: 28),
-
-                        // ACTION BUTTONS
-                        Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: Colors.grey.shade200,
-                            ),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                "Navigasi Cepat",
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w700,
-                                  color: Colors.black87,
-                                ),
-                              ),
-                              const SizedBox(height: 12),
-                              SizedBox(
-                                width: double.infinity,
-                                child: ElevatedButton.icon(
-                                  onPressed: _openGoogleMaps,
-                                  icon: const Icon(Icons.map_rounded),
-                                  label: const Text(
-                                    "Buka Google Maps",
-                                    style: TextStyle(
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: const Color(0xFFFF9800),
-                                    foregroundColor: Colors.white,
-                                    padding:
-                                        const EdgeInsets.symmetric(vertical: 14),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(10),
-                                    ),
-                                    elevation: 4,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-
-                        const SizedBox(height: 20),
-                      ],
-                    ),
-                  ),
-                ],
+                  myLocationEnabled: true,
+                  myLocationButtonEnabled: true,
+                  zoomControlsEnabled: true,
+                  trafficEnabled: true,
+                  markers: markers,
+                ),
               ),
-            ),
+
+              // CONTENT BELOW MAP
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // TRAFFIC STATUS CARD - PREMIUM DESIGN
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            trafficColor.withOpacity(0.1),
+                            trafficColor.withOpacity(0.05),
+                          ],
+                        ),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: trafficColor.withOpacity(0.3),
+                          width: 1.5,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: trafficColor.withOpacity(0.15),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Container(
+                                width: 14,
+                                height: 14,
+                                decoration: BoxDecoration(
+                                  color: trafficColor,
+                                  shape: BoxShape.circle,
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: trafficColor.withOpacity(0.5),
+                                      blurRadius: 8,
+                                      spreadRadius: 2,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              const Text(
+                                "Kondisi Lalu Lintas",
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.black54,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            trafficStatus,
+                            style: TextStyle(
+                              fontSize: 28,
+                              fontWeight: FontWeight.w800,
+                              color: trafficColor,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 6,
+                            ),
+                            decoration: BoxDecoration(
+                              color: trafficColor.withOpacity(0.15),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              "Radius 1km ke semua arah",
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: trafficColor,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 18),
+
+                    // LOCATION INFO SECTION
+                    const Text(
+                      "Lokasi Anda",
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.black87,
+                      ),
+                    ),
+
+                    const SizedBox(height: 12),
+
+                    // LOCATION CARD
+                    _buildPremiumLocationCard(
+                      icon: Icons.location_on_rounded,
+                      color: const Color(0xFF2196F3),
+                      address: currentAddress,
+                    ),
+
+                    const SizedBox(height: 28),
+
+                    // ACTION BUTTONS
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: Colors.grey.shade200,
+                        ),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            "Navigasi Cepat",
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.black87,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton.icon(
+                              onPressed: _openGoogleMaps,
+                              icon: const Icon(Icons.map_rounded),
+                              label: const Text(
+                                "Buka Google Maps",
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFFFF9800),
+                                foregroundColor: Colors.white,
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 14),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                elevation: 4,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 20),
+                  ],
+                ),
+              ),
+            ],
+          ),
     );
   }
 
@@ -535,8 +533,8 @@ class _LaluLintasPageState extends State<LaluLintasPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            width: 44,
-            height: 44,
+            width: 34,
+            height: 34,
             decoration: BoxDecoration(
               color: color.withOpacity(0.1),
               borderRadius: BorderRadius.circular(10),
