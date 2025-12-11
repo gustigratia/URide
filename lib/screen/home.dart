@@ -3,6 +3,11 @@ import 'package:uride/widgets/bottom_nav.dart';
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'dart:math';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -14,13 +19,19 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   final supabase = Supabase.instance.client;
 
+  GoogleMapController? mapController;
+  static const LatLng _defaultLocation = LatLng(-6.200000, 106.816666);
   List<Map<String, dynamic>> workshops = [];
   List<Map<String, dynamic>> spbu = [];
-
+  String currentTrafficStatus = "Loading...";
+  String currentDuration = "N/A";
   bool isLoading = true;
   Position? userPosition;
   String locationError = '';
   String firstName = "";
+  String mapsApiKey = dotenv.env['MAPS_API_KEY'] ?? '';
+  Map<String, dynamic>? _weather;
+  bool _isLoadingWeather = true;
 
   @override
   void initState() {
@@ -29,9 +40,19 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _initAll() async {
+    // 1. Ambil API Key dari .env sebelum digunakan
+    mapsApiKey = dotenv.env['MAPS_API_KEY'] ?? '';
+
+    // Peringatan jika kunci tidak ditemukan
+    if (mapsApiKey.isEmpty) {
+      debugPrint("ERROR: MAPS_API_KEY not found in environment variables.");
+    }
+
     await _loadFirstName();
     await _determinePosition();
+    await _fetchTrafficStatus();
     await fetchData();
+    await _loadWeather();
   }
 
   Future<void> fetchData() async {
@@ -48,8 +69,8 @@ class _HomeScreenState extends State<HomeScreen> {
       final spbuData = await supabase.from('spbu').select().order('id');
 
       // Convert to List<Map<String,dynamic>>
-      final w = List<Map<String, dynamic>>.from(workshopData ?? []);
-      final s = List<Map<String, dynamic>>.from(spbuData ?? []);
+      final w = List<Map<String, dynamic>>.from(workshopData);
+      final s = List<Map<String, dynamic>>.from(spbuData);
 
       // Compute distance string for each item (if we have userPosition)
       final updatedW = w.map((e) => _withDistance(e)).toList();
@@ -68,6 +89,193 @@ class _HomeScreenState extends State<HomeScreen> {
         setState(() {
           isLoading = false;
           locationError = 'Gagal mengambil data: $err';
+        });
+      }
+    }
+  }
+
+  String get conditionText {
+    final type = _weather?['weatherCondition']?['type']?.toUpperCase() ?? '';
+
+    if (type.contains("LIGHT_RAIN")) return "Hujan Ringan";
+    if (type.contains("RAIN")) return "Hujan";
+    if (type.contains("CLEAR")) return "Cerah";
+    if (type.contains("PARTLY_CLOUDY")) return "Berawan Sebagian";
+    if (type.contains("CLOUDY")) return "Berawan";
+    if (type.contains("FOG")) return "Berkabut";
+
+    return "Tidak diketahui";
+  }
+
+  IconData get conditionIcon {
+    final type = _weather?['weatherCondition']?['type']?.toUpperCase() ?? '';
+
+    if (type.contains("RAIN")) return Icons.umbrella;
+    if (type.contains("CLOUD")) return Icons.cloud;
+    if (type.contains("FOG")) return Icons.deblur;
+
+    return Icons.wb_sunny;
+  }
+
+  double? get tempC => _weather?['temperature']?['degrees']?.toDouble();
+  int? get precipPercent =>
+      _weather?['precipitation']?['probability']?['percent'];
+  int? get humidity => _weather?['relativeHumidity'];
+
+  Future<void> _loadWeather() async {
+    try {
+      if (userPosition == null) {
+        print("DEBUG: userPosition null");
+        return;
+      }
+
+      final pos = userPosition!;
+      final uri = Uri.parse(
+        'https://weather.googleapis.com/v1/currentConditions:lookup'
+            '?key=$mapsApiKey'
+            '&location.latitude=${pos.latitude}'
+            '&location.longitude=${pos.longitude}'
+            '&unitsSystem=METRIC',
+      );
+
+      print("DEBUG URL: $uri");
+
+      final res = await http.get(uri);
+      print("DEBUG status: ${res.statusCode}");
+      print("DEBUG body: ${res.body}");
+
+      final json = jsonDecode(res.body);
+
+      // GOOGLE WEATHER API return langsung OBJECT, bukan list
+      setState(() {
+        _weather = Map<String, dynamic>.from(json);
+        _isLoadingWeather = false;
+      });
+    } catch (e) {
+      print("Weather error: $e");
+      setState(() => _isLoadingWeather = false);
+    }
+  }
+
+  LatLng offsetPosition(LatLng origin, double distanceMeters, double bearingDegrees) {
+    const double earthRadius = 6371000; // meters
+    final double bearing = bearingDegrees * pi / 180;
+
+    final double lat1 = origin.latitude * pi / 180;
+    final double lon1 = origin.longitude * pi / 180;
+
+    final double lat2 = asin(
+      sin(lat1) * cos(distanceMeters / earthRadius) +
+          cos(lat1) * sin(distanceMeters / earthRadius) * sin(bearing),
+    );
+
+    final double lon2 = lon1 +
+        atan2(
+          sin(bearing) * sin(distanceMeters / earthRadius) * cos(lat1),
+          cos(distanceMeters / earthRadius) - sin(lat1) * sin(lat2),
+        );
+
+    return LatLng(lat2 * 180 / pi, lon2 * 180 / pi);
+  }
+
+  Future<void> _fetchTrafficStatus() async {
+    if (userPosition == null) {
+      if (mounted) {
+        setState(() {
+          currentTrafficStatus = "Lokasi tidak tersedia";
+          currentDuration = "--";
+        });
+      }
+      return;
+    }
+
+    // Tambahkan cek kunci API
+    if (mapsApiKey.isEmpty) {
+      if (mounted) {
+        setState(() {
+          currentTrafficStatus = "Kunci API Hilang";
+          currentDuration = "N/A";
+        });
+      }
+      return;
+    }
+
+    LatLng userLatLng = LatLng(
+      userPosition!.latitude,
+      userPosition!.longitude,
+    );
+    final LatLng origin = LatLng(userPosition!.latitude, userPosition!.longitude);
+
+    final randomBearing = Random().nextInt(360).toDouble();
+    LatLng destination = offsetPosition(userLatLng, 1000, randomBearing);
+
+    final String url = 'https://maps.googleapis.com/maps/api/directions/json?'
+        'origin=${origin.latitude},${origin.longitude}'
+        '&destination=${destination.latitude},${destination.longitude}'
+        '&key=$mapsApiKey'
+        '&departure_time=now';
+
+    try {
+      final response = await http.get(Uri.parse(url));
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+
+        if (data['routes'] != null && data['routes'].isNotEmpty) {
+          final route = data['routes'][0];
+          final leg = route['legs'][0];
+
+          final String durationText = leg['duration']['text'] ?? 'N/A';
+          final int durationSeconds = leg['duration']['value'] ?? 0;
+
+          String trafficStatus = "Macet";
+          String durationWithTraffic = durationText;
+
+          if (leg['duration_in_traffic'] != null) {
+            final int trafficDurationSeconds = leg['duration_in_traffic']['value'] ?? durationSeconds;
+            durationWithTraffic = leg['duration_in_traffic']['text'] ?? durationText;
+
+            // Logika sederhana untuk menentukan status
+            final double ratio = trafficDurationSeconds / durationSeconds;
+            print("DEBUG ratio: $ratio");
+            print("DEBUG duration: $durationSeconds | traffic: $trafficDurationSeconds");
+            if (ratio >= 1.5) {
+              trafficStatus = "Macet";
+            } else if (ratio >= 1.2) {
+              trafficStatus = "Padat";
+            } else {
+              trafficStatus = "Lancar";
+            }
+          }
+
+          if (mounted) {
+            setState(() {
+              currentTrafficStatus = trafficStatus;
+              currentDuration = durationWithTraffic;
+            });
+          }
+        } else {
+          if (mounted) {
+            setState(() {
+              currentTrafficStatus = "Rute tidak ditemukan";
+              currentDuration = "N/A";
+            });
+          }
+        }
+      } else {
+        debugPrint('Failed to load traffic data: ${response.statusCode}');
+        if (mounted) {
+          setState(() {
+            currentTrafficStatus = "Gagal mengambil data";
+            currentDuration = "N/A";
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint('Traffic API Error: $e');
+      if (mounted) {
+        setState(() {
+          currentTrafficStatus = "Error jaringan";
+          currentDuration = "N/A";
         });
       }
     }
@@ -327,10 +535,12 @@ class _HomeScreenState extends State<HomeScreen> {
                     onTap: () {
                       Navigator.pushNamed(context, '/profile');
                     },
-                    child: const Icon(Icons.person, color: Colors.white),
+                    child: Icon(
+                      Icons.person,
+                      color: Colors.white,
+                      size: 30,
+                    ),
                   ),
-                  const SizedBox(width: 15),
-                  const Icon(Icons.settings, color: Colors.white),
                 ],
               ),
             ],
@@ -378,6 +588,14 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildTrafficCard() {
+    // Tentukan posisi awal
+    final initialPosition = userPosition != null
+        ? LatLng(userPosition!.latitude, userPosition!.longitude)
+        : _defaultLocation;
+
+    final String status = currentTrafficStatus;
+    final String duration = currentDuration;
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -386,15 +604,33 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       child: Row(
         children: [
-          // Fake map image
           Container(
             width: 120,
             height: 120,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(12),
-              image: const DecorationImage(
-                image: AssetImage("assets/images/map.png"),
-                fit: BoxFit.cover,
+              border: Border.all(color: const Color(0xFFE0E0E0)),
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: GoogleMap(
+                initialCameraPosition: CameraPosition(
+                  target: initialPosition,
+                  zoom: 15,
+                ),
+                onMapCreated: (controller) {
+                  mapController = controller;
+                },
+                myLocationEnabled: true,
+                myLocationButtonEnabled: false,
+                zoomControlsEnabled: false,
+                scrollGesturesEnabled: false, // Nonaktifkan interaksi agar map terlihat statis di card
+                zoomGesturesEnabled: false,
+                tiltGesturesEnabled: false,
+                rotateGesturesEnabled: false,
+                trafficEnabled: true, //
+                mapType: MapType.normal,
+
               ),
             ),
           ),
@@ -403,7 +639,6 @@ class _HomeScreenState extends State<HomeScreen> {
           Expanded(
             child: LayoutBuilder(
               builder: (context, constraints) {
-                final String status = "Padat"; // <-- nanti bisa dynamic
                 final Color lineColor = _getTrafficColor(status);
                 final double lineWidth = _getTrafficLineWidth(
                   status,
@@ -432,7 +667,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       color: lineColor,
                     ),
                     const Text(
-                      "12.9 Kilometer",
+                      "12.9 Kilometer", // <-- Tetap statis, perlu API untuk data real
                       style: TextStyle(
                         fontSize: 20,
                         color: Color(0xff3d3d3d),
@@ -449,6 +684,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       alignment: Alignment.centerRight,
                       child: GestureDetector(
                         onTap: () {
+                          // Navigasi ke halaman detail atau buka Map full-screen
                           Navigator.pushNamed(context, '/lalulintas');
                         },
                         child: const Text(
@@ -471,16 +707,26 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+
   Widget _buildWeatherRow(BuildContext context) {
+    if (_isLoadingWeather) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (_weather == null) {
+      return const Text("Gagal memuat cuaca");
+    }
+
     return Row(
       children: [
         Expanded(
           child: _weatherCard(
-            percent: 79,
-            title: "Berpotensi\nhujan",
-            subtitle: "Berawan",
-            icon: Image.asset('assets/icons/weather.png'),
+            percent: precipPercent ?? 0,
+            subtitle: conditionText,
+            title: "Presipitasi",
+            icon: Icon(conditionIcon, size: 36),
             isActive: true,
+            context: context,
           ),
         ),
         const SizedBox(width: 12),
@@ -489,96 +735,112 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+
   Widget _weatherCard({
     required int percent,
     required String title,
     required String subtitle,
     required Widget icon,
     required bool isActive,
+    required BuildContext context,
   }) {
-    return Container(
-      height: 120,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black12.withOpacity(0.08),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Kiri: persentase dan judul
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    AutoSizeText(
-                      "$percent%",
-                      style: const TextStyle(
-                        fontSize: 35,
-                        color: Color(0xff292D32),
-                        fontWeight: FontWeight.bold,
+    return GestureDetector(
+      onTap: () {
+        Navigator.pushNamed(context, "/weather");
+      },
+      child: Container(
+        height: 150,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(18),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black12.withOpacity(0.08),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      AutoSizeText(
+                        "$percent%",
+                        style: const TextStyle(
+                          fontSize: 35,
+                          color: Color(0xff292D32),
+                          fontWeight: FontWeight.bold,
+                        ),
+                        minFontSize: 10,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      minFontSize: 8,
-                      maxLines: 1,
+                      const SizedBox(height: 4),
+                      AutoSizeText(
+                        title,
+                        style: const TextStyle(fontSize: 14),
+                        minFontSize: 8,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+                Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(14),
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFFFFC93C), Color(0xFFFFD65C)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                      ),
+                      child: SizedBox(width: 36, height: 36, child: icon),
                     ),
-                    const SizedBox(height: 4),
-                    Text(title, style: const TextStyle(fontSize: 12)),
+                    const SizedBox(height: 8),
+                    SizedBox(
+                      width: 90,
+                      child: AutoSizeText(
+                        subtitle,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          color: Color(0xff3d3d3d),
+                          fontWeight: FontWeight.w600,
+                        ),
+                        maxLines: 2,
+                        minFontSize: 8,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
                   ],
                 ),
-              ),
-              Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(14),
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFFFFC93C), Color(0xFFFFD65C)],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                    ),
-                    child: SizedBox(width: 36, height: 36, child: icon),
-                  ),
-                  const SizedBox(height: 8),
-                  SizedBox(
-                    width: 90,
-                    child: AutoSizeText(
-                      subtitle,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        color: Color(0xff3d3d3d),
-                        fontWeight: FontWeight.w600,
-                      ),
-                      maxLines: 2,
-                      minFontSize: 8,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ],
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
 
+
+
   Widget _menuCards(BuildContext context) {
     return Container(
-      height: 120,
+      height: 150,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -594,6 +856,7 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           _menuCard("Log Perjalanan", "assets/icons/log.png"),
           GestureDetector(
@@ -611,9 +874,10 @@ class _HomeScreenState extends State<HomeScreen> {
     return GestureDetector(
       onTap: onTap,
       child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Container(
-            padding: const EdgeInsets.all(10),
+            padding: const EdgeInsets.all(7),
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(12),
@@ -629,12 +893,17 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Image.asset(iconPath, width: 26, height: 26),
           ),
           const SizedBox(height: 6),
-          Text(
-            title,
-            textAlign: TextAlign.center,
-            softWrap: false,
-            overflow: TextOverflow.fade,
-            style: const TextStyle(fontSize: 11),
+
+          SizedBox(
+            width: 60,
+            child: AutoSizeText(
+              title,
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 11),
+              maxLines: 2,
+              minFontSize: 8,
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
         ],
       ),
@@ -644,7 +913,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildNearestWorkshopTitle() {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: const [
+      children: [
         Text(
           "Bengkel terdekat",
           style: TextStyle(
@@ -653,7 +922,15 @@ class _HomeScreenState extends State<HomeScreen> {
             fontWeight: FontWeight.bold,
           ),
         ),
-        Text("Lihat Semua", style: TextStyle(color: Colors.orange)),
+        GestureDetector(
+          onTap: () {
+            Navigator.pushNamed(context, '/workshop');
+          },
+          child: const Text(
+            "Lihat Semua",
+            style: TextStyle(color: Colors.orange),
+          ),
+        ),
       ],
     );
   }
@@ -698,14 +975,16 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Stack(
         clipBehavior: Clip.none,
         children: [
-          // Gambar
           Container(
             height: 200,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(18),
               image: DecorationImage(
-                image: AssetImage(image),
+                image: NetworkImage(image),
                 fit: BoxFit.cover,
+                onError: (exception, stackTrace) {
+                  debugPrint('Image error: $exception');
+                },
               ),
             ),
           ),
@@ -734,7 +1013,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        AutoSizeText(
+                        Text(
                           name,
                           style: const TextStyle(
                             fontWeight: FontWeight.bold,
@@ -742,8 +1021,8 @@ class _HomeScreenState extends State<HomeScreen> {
                             fontSize: 16,
                           ),
                           maxLines: 1,
-                          minFontSize: 10,
                           overflow: TextOverflow.ellipsis,
+                          softWrap: false,
                         ),
                         const SizedBox(height: 6),
                         Row(
@@ -846,8 +1125,11 @@ class _HomeScreenState extends State<HomeScreen> {
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(18),
               image: DecorationImage(
-                image: AssetImage(image),
+                image: NetworkImage(image),
                 fit: BoxFit.cover,
+                onError: (exception, stackTrace) {
+                  debugPrint('Image error: $exception');
+                },
               ),
             ),
           ),
@@ -881,8 +1163,11 @@ class _HomeScreenState extends State<HomeScreen> {
                           style: const TextStyle(
                             fontWeight: FontWeight.bold,
                             color: Color(0xff3d3d3d),
-                            fontSize: 14,
+                            fontSize: 16,
                           ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          softWrap: false,
                         ),
                         const SizedBox(height: 6),
                         Row(
@@ -958,7 +1243,7 @@ class _HomeScreenState extends State<HomeScreen> {
               name: item["name"] ?? 'Unnamed',
               distance: item["distance"] ?? '--',
               rating: item["rating"]?.toString() ?? '0.0',
-              image: item["image"] ?? 'assets/images/spbu.png',
+              image: item["image_url"] ?? 'assets/images/spbu.png',
               status: (item["is_open"] == true) ? 'Buka' : 'Tutup',
             ),
           );
@@ -975,9 +1260,8 @@ Color _getTrafficColor(String status) {
       return Colors.red;
     case "padat":
       return Colors.orange;
-    case "normal":
-      return Colors.yellow.shade700;
     case "lancar":
+    case "normal":
       return Colors.blue;
     default:
       return Colors.grey;

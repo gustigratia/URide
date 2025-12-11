@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
-
 import 'package:uride/screen/home.dart';
 import 'package:uride/screen/sign_in.dart';
 import 'package:uride/screen/sign_up.dart';
 import 'package:uride/screen/search.dart';
 import 'package:uride/screen/lalulintas.dart';
 import 'package:uride/screen/lokasi_parkir.dart';
+import 'package:uride/screen/workshop_detail.dart';
+import 'package:uride/screen/order_service.dart';
+import 'package:uride/screen/order_confirmation.dart';
+import 'package:uride/screen/workshop.dart';
 import 'package:uride/screen/ubah_kata_sandi.dart';
 import 'package:uride/screen/verifikasi_kode.dart';
 import 'package:uride/screen/buat_password_baru.dart';
@@ -14,11 +17,13 @@ import 'package:uride/screen/addvehicle_screen.dart';
 import 'package:uride/screen/search_result.dart';
 import 'package:uride/screen/edit_kendaraan_page.dart';
 import 'package:uride/screen/spbu.dart'; 
-import 'package:uride/screen/profile_page.dart';
+import 'package:uride/screen/weather_screen.dart';
 import 'package:uride/screen/orderhistory_screen.dart';
 import 'package:uride/screen/chatbot.dart';
+import 'package:uride/screen/invoice.dart';
+import 'package:uride/screen/splash_screen.dart';
+import 'package:uride/screen/profile_page.dart';
 import 'package:uride/screen/dashboard_workshop.dart';
-
 
 class AppRoutes {
   static const home = '/home';
@@ -26,6 +31,10 @@ class AppRoutes {
   static const signup = '/signup';
   static const search = '/search';
   static const parking = '/parking';
+  static const workshopDetail = '/workshop_detail';
+  static const ajukanLayanan = '/order_service';
+  static const konfirmasiAjuan = '/order_confirmation';
+  static const listbengkel = '/workshop';
   static const vehicle = '/vehicle';
   static const addvehicle = '/add-vehicle';
   static const search_result = '/search-result';
@@ -37,14 +46,22 @@ class AppRoutes {
   static const editKendaraan = '/edit-kendaraan';
   static const orderHistory = '/history';
   static const chatbot = '/chatbot';
-  static const profile = '/profile';  
-  static const workshopDashboard = '/workshop-dashboard';
+  static const invoice = '/invoice';
+  static const splash = '/splash';
+  static const weather = '/weather';
+  static const profilePage = '/profile';
+  static const dashboardWorkshop = '/dashboard-workshop';
+  
+
 
 
 
   static Map<String, WidgetBuilder> routes = {
     home: (_) => const HomeScreen(),
     signin: (_) => const SignInPage(),
+    search: (_) => const SearchPage(),
+    parking: (_) => const LokasiParkirPage(),
+    listbengkel: (_) => const BengkelListScreen(),
     signup: (_) => const SignUpPage(),
     vehicle: (_) => const VehicleDetailPage(),
     addvehicle: (_) => const TambahKendaraanPage(),
@@ -58,12 +75,62 @@ class AppRoutes {
     spbuList: (_) => const SPBUListScreen(),
     orderHistory: (_) => const OrderHistoryScreen(),
     chatbot: (_) => const ChatbotPage(),
-    profile: (_) => const ProfilePage(),
-    workshopDashboard: (_) => const DashboardWorkshop(),
+    weather: (_) => const WeatherScreen(),
+    splash: (_) => const SplashScreen(),
+    profilePage: (_) => const ProfilePage(),
+    dashboardWorkshop: (_) => const DashboardWorkshop(),
   };
 
   static Route<dynamic>? generateRoute(RouteSettings settings) {
     switch (settings.name) {
+
+      case workshopDetail:
+        final args = settings.arguments as Map<String, dynamic>;
+        return _animatedRoute(
+          BengkelDetailScreen(workshopId: args['workshopId']),
+        );
+
+      case ajukanLayanan:
+        final args = settings.arguments as Map<String, dynamic>;
+        return _animatedRoute(
+          AjukanLayananScreen(
+            workshopId: args['workshopId'],
+            workshopName: args['workshopName'],
+            workshopAddress: args['workshopAddress'],
+            price: args['price'],
+          ),
+        );
+
+      case konfirmasiAjuan:
+        final args = settings.arguments as Map<String, dynamic>?;
+        return _animatedRoute(
+          KonfirmasiAjuanScreen(
+            workshopId: args?['workshopId'] ?? '',
+            workshopName: args?['workshopName'] ?? '',
+            workshopAddress: args?['workshopAddress'] ?? '',
+            userAddress: args?['userAddress'] ?? '',
+            vehicleType: args?['vehicleType'] ?? '',
+            requestType: args?['requestType'] ?? '',
+            isOnLocation: args?['isOnLocation'] ?? false,
+            price: args?['price'] ?? 0, // pastikan price dikirim
+          ),
+        );
+
+      case invoice:
+        final args = settings.arguments as Map<String, dynamic>?;
+        return _animatedRoute(
+          InvoiceScreen(
+            orderId: args?['orderId'] ?? 0,
+            workshopName: args?['workshopName'] ?? '',
+            workshopAddress: args?['workshopAddress'] ?? '',
+            userAddress: args?['userAddress'] ?? '',
+            vehicleType: args?['vehicleType'] ?? '',
+            requestType: args?['requestType'] ?? '',
+            isOnLocation: args?['isOnLocation'] ?? false,
+            price: args?['price'] ?? 0,
+          ),
+        );
+
       case search:
         return _animatedRoute(const SearchPage());
       case parking:
@@ -88,8 +155,12 @@ class AppRoutes {
         return _animatedRoute(const OrderHistoryScreen());
       case addvehicle:
         return _animatedRoute(const TambahKendaraanPage());
-      case profile:
+      case weather:
+        return _animatedRoute(const WeatherScreen());
+      case profilePage:
         return _animatedRoute(const ProfilePage());
+      case dashboardWorkshop:
+        return _animatedRoute(const DashboardWorkshop());
       case search_result:
         return PageRouteBuilder(
           transitionDuration: const Duration(milliseconds: 300),
@@ -109,7 +180,7 @@ class AppRoutes {
 
   static PageRouteBuilder _animatedRoute(Widget page) {
     return PageRouteBuilder(
-      transitionDuration: const Duration(milliseconds: 320),
+      transitionDuration: const Duration(milliseconds: 300),
       pageBuilder: (_, __, ___) => page,
       transitionsBuilder: (_, animation, __, child) {
         final fade = CurvedAnimation(
@@ -129,10 +200,7 @@ class AppRoutes {
 
         return FadeTransition(
           opacity: fade,
-          child: SlideTransition(
-            position: slide,
-            child: child,
-          ),
+          child: SlideTransition(position: slide, child: child),
         );
       },
     );

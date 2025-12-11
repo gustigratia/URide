@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uride/routes/app_routes.dart';
+import 'package:geolocator/geolocator.dart'; // 1. Import Geolocator
 
 class SPBUListScreen extends StatefulWidget {
   const SPBUListScreen({Key? key}) : super(key: key);
@@ -11,38 +12,137 @@ class SPBUListScreen extends StatefulWidget {
 }
 
 class _SPBUListScreenState extends State<SPBUListScreen> {
-  String selectedFilter = 'Buka';
-  String searchQuery = '';
+  // 2. Ubah default filter atau biarkan 'Buka', di sini saya ubah ke 'Terdekat' agar langsung terlihat
+  String selectedFilter = 'Terdekat'; 
+  List<SPBUModel> _allSpbuList = [];
+  bool _isLoading = true;
+  
+  // 3. Variable untuk Lokasi User
+  Position? _userPosition;
 
-  Future<List<SPBUModel>> fetchSPBU(String filter) async {
-    final response = await Supabase.instance.client
-        .from('spbu')
-        .select()
-        .order('name', ascending: true);
+  TextEditingController searchController = TextEditingController();
 
-    List<SPBUModel> list =
-        response.map<SPBUModel>((data) => SPBUModel.fromJson(data)).toList();
+  @override
+  void initState() {
+    super.initState();
+    _initData(); // 4. Panggil init data gabungan
+    
+    searchController.addListener(() {
+      setState(() {});
+    });
+  }
 
-    // Search filter
-    if (searchQuery.isNotEmpty) {
-      final q = searchQuery.toLowerCase();
-      list = list.where((e) {
-        return e.name.toLowerCase().contains(q) ||
-            e.address.toLowerCase().contains(q);
+  @override
+  void dispose() {
+    searchController.dispose();
+    super.dispose();
+  }
+
+  // 5. Fungsi inisialisasi urut: Cari Lokasi -> Ambil Data SPBU
+  Future<void> _initData() async {
+    await _determinePosition();
+    await _fetchSPBU();
+  }
+
+  // 6. Logika mendapatkan lokasi user (Geolocator)
+  Future<void> _determinePosition() async {
+    try {
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) return;
+
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) return;
+      }
+
+      if (permission == LocationPermission.deniedForever) return;
+
+      final pos = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+      );
+      
+      if (mounted) {
+        setState(() {
+          _userPosition = pos;
+        });
+      }
+    } catch (e) {
+      print('Error getting location: $e');
+    }
+  }
+
+  // 7. Fetch Data & Hitung Jarak
+  Future<void> _fetchSPBU() async {
+    try {
+      final response = await Supabase.instance.client
+          .from('spbu')
+          .select()
+          .order('name', ascending: true);
+
+      if (mounted) {
+        List<SPBUModel> tempList = response
+            .map<SPBUModel>((data) => SPBUModel.fromJson(data))
+            .toList();
+
+        // Hitung jarak jika lokasi user ditemukan
+        if (_userPosition != null) {
+          for (var spbu in tempList) {
+            double dist = Geolocator.distanceBetween(
+              _userPosition!.latitude,
+              _userPosition!.longitude,
+              spbu.latitude,
+              spbu.longitude,
+            );
+            spbu.distanceMeters = dist; // Set jarak ke model
+          }
+        }
+
+        setState(() {
+          _allSpbuList = tempList;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      print('Error fetching SPBU: $e');
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  // 8. Logika Filtering & Sorting Updated
+  List<SPBUModel> getFilteredList() {
+    List<SPBUModel> filtered = List.from(_allSpbuList);
+
+    // Filter Logic
+    if (selectedFilter == 'Buka') {
+      filtered = filtered.where((e) => e.isCurrentlyOpen).toList();
+    } else if (selectedFilter == 'Terdekat') { 
+      // LOGIC BARU: Sorting berdasarkan jarak
+      filtered.sort((a, b) {
+        double distA = a.distanceMeters ?? double.infinity;
+        double distB = b.distanceMeters ?? double.infinity;
+        return distA.compareTo(distB);
+      });
+    } else if (selectedFilter == 'Toilet') {
+      filtered = filtered.where((e) => e.hasToilet).toList();
+    } else if (selectedFilter == 'Musholla') {
+      filtered = filtered.where((e) => e.hasMusholla).toList();
+    }
+
+    // Search Logic
+    String query = searchController.text.toLowerCase();
+    if (query.isNotEmpty) {
+      filtered = filtered.where((e) {
+        return e.name.toLowerCase().contains(query) ||
+               e.address.toLowerCase().contains(query);
       }).toList();
     }
 
-    if (filter == 'Buka') {
-      list = list.where((e) => e.isCurrentlyOpen).toList();
-    } else if (filter == 'Rating') {
-      list.sort((a, b) => b.rating.compareTo(a.rating));
-    } else if (filter == 'Toilet') {
-      list = list.where((e) => e.hasToilet).toList();
-    } else if (filter == 'Musholla') {
-      list = list.where((e) => e.hasMusholla).toList();
-    }
-
-    return list;
+    return filtered;
   }
 
   @override
@@ -74,11 +174,7 @@ class _SPBUListScreenState extends State<SPBUListScreen> {
           Padding(
             padding: const EdgeInsets.all(16.0),
             child: TextField(
-              onChanged: (value) {
-                setState(() {
-                  searchQuery = value;
-                });
-              },
+              controller: searchController,
               decoration: InputDecoration(
                 hintText: 'Search...',
                 hintStyle: TextStyle(color: Colors.grey[400]),
@@ -95,13 +191,14 @@ class _SPBUListScreenState extends State<SPBUListScreen> {
             ),
           ),
 
+          // FILTER CHIPS (Update 'Rating' ke 'Terdekat')
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16.0),
             child: Row(
               children: [
-                Expanded(child: _buildFilterChip('Buka')),
+                Expanded(child: _buildFilterChip('Terdekat')), // Ganti Rating jadi Terdekat
                 const SizedBox(width: 8),
-                Expanded(child: _buildFilterChip('Rating')),
+                Expanded(child: _buildFilterChip('Buka')),
                 const SizedBox(width: 8),
                 Expanded(child: _buildFilterChip('Toilet')),
                 const SizedBox(width: 8),
@@ -112,34 +209,20 @@ class _SPBUListScreenState extends State<SPBUListScreen> {
 
           const SizedBox(height: 16),
 
+          // LIST VIEW
           Expanded(
-            child: FutureBuilder<List<SPBUModel>>(
-              future: fetchSPBU(selectedFilter),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-
-                if (snapshot.hasError) {
-                  return const Center(
-                    child: Text(
-                      'Gagal memuat data',
-                      style: TextStyle(color: Colors.red),
-                    ),
-                  );
-                }
-
-                final spbuList = snapshot.data ?? [];
-
-                return ListView.builder(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  itemCount: spbuList.length,
-                  itemBuilder: (context, index) {
-                    return SPBUCard(spbu: spbuList[index]);
-                  },
-                );
-              },
-            ),
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : _allSpbuList.isEmpty
+                    ? const Center(child: Text("Data Kosong"))
+                    : ListView.builder(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        itemCount: getFilteredList().length,
+                        itemBuilder: (context, index) {
+                          final spbu = getFilteredList()[index];
+                          return SPBUCard(spbu: spbu);
+                        },
+                      ),
           ),
         ],
       ),
@@ -157,15 +240,15 @@ class _SPBUListScreenState extends State<SPBUListScreen> {
       },
       child: Container(
         alignment: Alignment.center,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        padding: const EdgeInsets.symmetric(vertical: 8),
         decoration: BoxDecoration(
-          color: isSelected ? Colors.blue[50] : Colors.grey[200],
+          color: isSelected ? Colors.amber : Colors.grey[200],
           borderRadius: BorderRadius.circular(10),
         ),
         child: Text(
           label,
           style: TextStyle(
-            color: isSelected ? Colors.blue[700] : Colors.grey[700],
+            color: isSelected ? Colors.white : Colors.grey[700],
             fontSize: 13,
             fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
           ),
@@ -175,7 +258,6 @@ class _SPBUListScreenState extends State<SPBUListScreen> {
   }
 }
 
-// CARD
 class SPBUCard extends StatelessWidget {
   final SPBUModel spbu;
 
@@ -195,19 +277,25 @@ class SPBUCard extends StatelessWidget {
         _openMapUrl(spbu.address);
       },
       child: Container(
-        margin: const EdgeInsets.only(bottom: 140),
+        margin: const EdgeInsets.only(bottom: 140), 
         child: Stack(
           clipBehavior: Clip.none,
           children: [
+            // IMAGE
             ClipRRect(
               borderRadius: BorderRadius.circular(12),
               child: Container(
                 height: 200,
                 width: double.infinity,
                 color: Colors.grey[300],
-                child: Image.asset(
+                child: Image.network(
                   spbu.imageUrl,
                   fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) => const Icon(Icons.error),
+                  loadingBuilder: (context, child, loadingProgress) {
+                    if (loadingProgress == null) return child;
+                    return const Center(child: CircularProgressIndicator());
+                  },
                 ),
               ),
             ),
@@ -224,19 +312,19 @@ class SPBUCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(12),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.15),
-                      blurRadius: 12,
-                      offset: const Offset(0, 4),
+                      color: Colors.grey.withOpacity(0.2),
+                      blurRadius: 5,
+                      offset: const Offset(0, 2),
                     ),
                   ],
                 ),
-
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // NAME AND STATUS
+                    // --- NAMA & STATUS ---
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.start, 
                       children: [
                         Expanded(
                           child: Text(
@@ -245,6 +333,8 @@ class SPBUCard extends StatelessWidget {
                               fontSize: 16,
                               fontWeight: FontWeight.w600,
                             ),
+                            maxLines: 2, 
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                         const SizedBox(width: 8),
@@ -271,7 +361,6 @@ class SPBUCard extends StatelessWidget {
 
                     const SizedBox(height: 8),
 
-                    // RATING, FACILITIES
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -279,8 +368,24 @@ class SPBUCard extends StatelessWidget {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
+                              // --- UPDATE: Menampilkan Jarak dan Rating ---
                               Row(
                                 children: [
+                                  // Jarak
+                                  Icon(Icons.location_on, size: 16, color: Colors.grey[600]),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    spbu.formattedDistance, // Menggunakan getter helper
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      color: Colors.grey[600],
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                  
+                                  const SizedBox(width: 16),
+                                  
+                                  // Rating
                                   const Icon(Icons.star,
                                       size: 16, color: Colors.amber),
                                   const SizedBox(width: 4),
@@ -293,9 +398,9 @@ class SPBUCard extends StatelessWidget {
                                   ),
                                 ],
                               ),
-
                               const SizedBox(height: 8),
-
+                              
+                              // Fasilitas Toilet
                               Row(
                                 children: [
                                   Icon(Icons.wc,
@@ -319,9 +424,9 @@ class SPBUCard extends StatelessWidget {
                                   ),
                                 ],
                               ),
-
                               const SizedBox(height: 8),
 
+                              // Fasilitas Musholla
                               Row(
                                 children: [
                                   Icon(Icons.mosque,
@@ -361,7 +466,7 @@ class SPBUCard extends StatelessWidget {
   }
 }
 
-// MODEL
+// 9. UPDATE MODEL CLASS
 class SPBUModel {
   final String name;
   final double rating;
@@ -371,6 +476,11 @@ class SPBUModel {
   final String address;
   final String openTime;
   final String closeTime;
+  final double latitude;  // New
+  final double longitude; // New
+  
+  // Field mutable untuk menyimpan jarak yang dihitung
+  double? distanceMeters; 
 
   SPBUModel({
     required this.name,
@@ -381,36 +491,57 @@ class SPBUModel {
     required this.address,
     required this.openTime,
     required this.closeTime,
+    required this.latitude,
+    required this.longitude,
+    this.distanceMeters,
   });
 
   factory SPBUModel.fromJson(Map<String, dynamic> json) {
     return SPBUModel(
-      name: json['name'],
-      rating: (json['rating'] as num).toDouble(),
-      hasToilet: json['has_toilet'],
-      hasMusholla: json['has_musholla'],
-      imageUrl: json['image_url'],
-      address: json['address'],
-      openTime: json['open_time'],
-      closeTime: json['close_time'],
+      name: json['name'] ?? '',
+      rating: (json['rating'] as num?)?.toDouble() ?? 0.0,
+      hasToilet: json['has_toilet'] ?? false,
+      hasMusholla: json['has_musholla'] ?? false,
+      imageUrl: json['image_url'] ?? '',
+      address: json['address'] ?? '',
+      openTime: json['open_time'] ?? '00:00',
+      closeTime: json['close_time'] ?? '00:00',
+      // Pastikan field latitude/longitude ada di tabel Supabase kamu
+      // Jika tipe datanya text, gunakan double.parse
+      latitude: (json['latitude'] as num?)?.toDouble() ?? 0.0,
+      longitude: (json['longitude'] as num?)?.toDouble() ?? 0.0,
     );
   }
 
-  bool get isCurrentlyOpen {
-    final now = TimeOfDay.now();
-    final open = _parseTime(openTime);
-    final close = _parseTime(closeTime);
-
-    // 24 JAM
-    if (open.hour == 0 && close.hour == 23 && close.minute == 59) {
-      return true;
+  // Helper untuk format display jarak
+  String get formattedDistance {
+    if (distanceMeters == null) return '--';
+    if (distanceMeters! < 1000) {
+      return '${distanceMeters!.toStringAsFixed(0)} m';
+    } else {
+      double km = distanceMeters! / 1000;
+      return '${km.toStringAsFixed(2)} km';
     }
+  }
 
-    final nowMinutes = now.hour * 60 + now.minute;
-    final openMinutes = open.hour * 60 + open.minute;
-    final closeMinutes = close.hour * 60 + close.minute;
+  bool get isCurrentlyOpen {
+    try {
+      final now = TimeOfDay.now();
+      final open = _parseTime(openTime);
+      final close = _parseTime(closeTime);
 
-    return nowMinutes >= openMinutes && nowMinutes <= closeMinutes;
+      if (open.hour == 0 && close.hour == 23 && close.minute == 59) {
+        return true;
+      }
+
+      final nowMinutes = now.hour * 60 + now.minute;
+      final openMinutes = open.hour * 60 + open.minute;
+      final closeMinutes = close.hour * 60 + close.minute;
+
+      return nowMinutes >= openMinutes && nowMinutes <= closeMinutes;
+    } catch (e) {
+      return false;
+    }
   }
 
   TimeOfDay _parseTime(String time) {

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:uride/services/gemini_service.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
 
 class ChatbotPage extends StatefulWidget {
   const ChatbotPage({super.key});
@@ -15,43 +17,33 @@ class _ChatbotPageState extends State<ChatbotPage> {
     {
       "sender": "bot",
       "text":
-          "Hai! Selamat datang di URide Assistant 🚗✨\nAda yang bisa saya bantu hari ini?",
+          "Hai! Selamat datang di URide Assistant \nAda yang bisa saya bantu hari ini?",
     },
   ];
 
   bool isTyping = false;
 
-  LinearGradient homeGradient() {
-    return const LinearGradient(
-      begin: Alignment.topLeft,
-      end: Alignment.bottomRight,
-      colors: [Color(0xFFFFD93D), Color(0xFFFF8400)],
-    );
-  }
-
-  void sendMessage() {
-    final text = _controller.text.trim();
-    if (text.isEmpty) return;
+  void sendMessage() async {
+    final userInput = _controller.text.trim();
+    if (userInput.isEmpty) return;
 
     setState(() {
-      messages.add({"sender": "user", "text": text});
+      messages.add({"sender": "user", "text": userInput});
       isTyping = true;
     });
 
     _controller.clear();
     _scrollToBottom();
 
-    Future.delayed(const Duration(milliseconds: 800), () {
-      setState(() {
-        messages.add({
-          "sender": "bot",
-          "text":
-              "Ini jawaban untuk: \"$text\".\n(Sudah siap saya kembangkan jadi AI beneran kalau kamu mau 😄)",
-        });
-        isTyping = false;
-      });
-      _scrollToBottom();
+    // KIRIM KE GEMINI (automatic initialize jika belum)
+    final reply = await GeminiService.chat(userInput);
+
+    setState(() {
+      messages.add({"sender": "bot", "text": reply});
+      isTyping = false;
     });
+
+    _scrollToBottom();
   }
 
   void _scrollToBottom() {
@@ -89,12 +81,15 @@ class _ChatbotPageState extends State<ChatbotPage> {
             ),
           ],
         ),
-        child: Text(
-          text,
-          style: TextStyle(
-            color: isUser ? Colors.white : Colors.black87,
-            fontSize: 15,
-            height: 1.35,
+        child: MarkdownBody(
+          data: text,
+          softLineBreak: true,
+          styleSheet: MarkdownStyleSheet(
+            p: TextStyle(
+              color: isUser ? Colors.white : Colors.black87,
+              fontSize: 15,
+              height: 1.35,
+            ),
           ),
         ),
       ),
@@ -151,9 +146,7 @@ class _ChatbotPageState extends State<ChatbotPage> {
           flexibleSpace: Container(
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [
-                  Color(0xFFFFD93D), Color(0xFFFF8400)
-                ],
+                colors: [Color(0xFFFFD93D), Color(0xFFFF8400)],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
@@ -171,7 +164,7 @@ class _ChatbotPageState extends State<ChatbotPage> {
             children: [
               // BACK BUTTON
               IconButton(
-                icon: Icon(Icons.arrow_back, color: Colors.black),
+                icon: Icon(Icons.arrow_back, color: const Color.fromARGB(255, 255, 255, 255)),
                 onPressed: () => Navigator.pop(context),
               ),
 
@@ -179,26 +172,26 @@ class _ChatbotPageState extends State<ChatbotPage> {
               Container(
                 width: 38,
                 height: 38,
-                decoration: BoxDecoration(
+                decoration: const BoxDecoration(
                   color: Colors.white,
                   shape: BoxShape.circle,
                 ),
-                child: Center(
-                  child: Text(
-                    "UR", // ganti sesuai logo text kamu
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black, // biar tetap terlihat
-                      fontSize: 14,
-                    ),
+                child: Padding(
+                  padding: EdgeInsets.all(
+                    5,
+                  ), 
+                  child: Image.asset(
+                    "assets/images/uride.png",
+                    fit: BoxFit.contain, // menjaga proporsi gambar
                   ),
                 ),
               ),
+
               SizedBox(width: 12),
 
               // TITLE (white)
               Text(
-                "URide Assistant",
+                "UR Assistant",
                 style: TextStyle(
                   color: Colors.white,
                   fontSize: 18,

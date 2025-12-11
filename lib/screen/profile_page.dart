@@ -167,7 +167,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         const SizedBox(height: 8),
                         GestureDetector(
                           onTap: () {
-                            Navigator.pushNamed(context, '/workshop-dashboard');
+                            Navigator.pushNamed(context, '/dashboard-workshop');
                           },
                           child: Container(
                             padding: const EdgeInsets.symmetric(
