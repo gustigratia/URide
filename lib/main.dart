@@ -36,7 +36,7 @@ class MyApp extends StatelessWidget {
       ),
 
       // route awal
-      initialRoute: AppRoutes.signin,
+      initialRoute: AppRoutes.splash,
 
       routes: AppRoutes.routes,
       onGenerateRoute: AppRoutes.generateRoute,

@@ -20,6 +20,7 @@ import 'package:uride/screen/spbu.dart';
 import 'package:uride/screen/orderhistory_screen.dart';
 import 'package:uride/screen/chatbot.dart';
 import 'package:uride/screen/invoice.dart';
+import 'package:uride/screen/splash_screen.dart';
 
 class AppRoutes {
   static const home = '/home';
@@ -43,6 +44,7 @@ class AppRoutes {
   static const orderHistory = '/history';
   static const chatbot = '/chatbot';
   static const invoice = '/invoice';
+  static const splash = '/splash';
 
 
 
@@ -64,6 +66,7 @@ class AppRoutes {
     spbuList: (_) => const SPBUListScreen(),
     orderHistory: (_) => const OrderHistoryScreen(),
     chatbot: (_) => const ChatbotPage(),
+    splash: (_) => const SplashScreen(),
   };
 
   static Route<dynamic>? generateRoute(RouteSettings settings) {
