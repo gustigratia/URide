@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uride/routes/app_routes.dart';
+import 'package:uride/widgets/bottom_nav.dart';
 
 class VehicleDetailPage extends StatefulWidget {
   const VehicleDetailPage({super.key});
@@ -15,6 +16,17 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
 
   List<dynamic> vehiclesMotor = [];
   List<dynamic> vehiclesMobil = [];
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    final args = ModalRoute.of(context)!.settings.arguments as Map?;
+
+    if (args != null && args.containsKey("type")) {
+      selectedType = args["type"]; // <-- SET TAB SESUAI YG DITAMBAH
+    }
+  }
 
   @override
   void initState() {
@@ -62,9 +74,13 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
 
     return Scaffold(
       backgroundColor: Colors.white,
+      bottomNavigationBar: CustomBottomNav(
+        currentIndex: 1,
+      ),
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
+        automaticallyImplyLeading: false,
         centerTitle: true,
         title: const Text(
           "Detail Kendaraan",
@@ -75,11 +91,8 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
             color: Colors.black,
           ),
         ),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
-          onPressed: () => Navigator.pop(context),
-        ),
       ),
+
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -88,42 +101,25 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
               const SizedBox(height: 10),
 
               // TAB MOTOR / MOBIL
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  _vehicleTab(
-                    title: "Motor",
-                    icon: selectedType == "motor"
-                        ? "images/motor(active).png"
-                        : "images/motor(inactive).png",
-                    active: selectedType == "motor",
-                    onTap: () {
-                      setState(() {
-                        selectedType = "motor";
-                        selectedIndex = 0;
-                      });
-                    },
-                  ),
-                  const SizedBox(width: 10),
-                  _vehicleTab(
-                    title: "Mobil",
-                    icon: selectedType == "mobil"
-                        ? "images/mobil(active).png"
-                        : "images/mobil(inactive).jpg",
-                    active: selectedType == "mobil",
-                    onTap: () {
-                      setState(() {
-                        selectedType = "mobil";
-                        selectedIndex = 0;
-                      });
-                    },
-                  ),
-                ],
+              Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(30),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    _tabButton("motor", "images/motor(active).png",
+                        "images/motor(inactive).png"),
+                    const SizedBox(width: 20),
+                    _tabButton("mobil", "images/mobil(active).png",
+                        "images/mobil(inactive).jpg"),
+                  ],
+                ),
               ),
 
               const SizedBox(height: 25),
 
-              // EMPTY STATE
               if (!hasVehicle) ...[
                 const SizedBox(height: 40),
                 const Text(
@@ -140,13 +136,16 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
                   icon: "images/edit.jpg",
                   title: "Tambah Kendaraan",
                   onTap: () {
-                    Navigator.pushNamed(context, '/tambah-kendaraan');
+                    Navigator.pushNamed(
+                      context,
+                      '/add-vehicle',
+                      arguments: {"type": selectedType},
+                    );
                   },
                 ),
                 const SizedBox(height: 40),
               ],
 
-              // DETAIL KENDARAAN
               if (hasVehicle) ...[
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -184,10 +183,7 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
 
                       return SlideTransition(
                         position: slide,
-                        child: FadeTransition(
-                          opacity: animation,
-                          child: child,
-                        ),
+                        child: FadeTransition(opacity: animation, child: child),
                       );
                     },
                     child: Image.asset(
@@ -267,7 +263,6 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
                   ),
                 ),
 
-                // EDIT BUTTON — FIXED
                 _fullButton(
                   icon: "images/edit.jpg",
                   title: "Edit Informasi Kendaraan",
@@ -276,7 +271,7 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
                       context,
                       AppRoutes.editKendaraan,
                       arguments: {
-                        "id": v?['id'], // kirim ID langsung
+                        "id": v?['id'],
                         "index": selectedIndex,
                       },
                     );
@@ -295,7 +290,8 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
                   icon: "images/edit.jpg",
                   title: "Tambah Kendaraan",
                   onTap: () {
-                    Navigator.pushNamed(context, '/tambah-kendaraan');
+                    Navigator.pushNamed(context, '/add-vehicle',
+                        arguments: {"type": selectedType});
                   },
                 ),
 
@@ -332,32 +328,59 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
     );
   }
 
-  String _nextServiceDate(dynamic v) {
-    if (v == null || v['lastservicedate'] == null) return "-";
-    final raw = DateTime.tryParse(v['lastservicedate'].toString());
-    if (raw == null) return "-";
-    final next = raw.add(const Duration(days: 90));
-    return "${next.day} ${_monthName(next.month)} ${next.year}";
+  // -----------------------------------------------------
+  // TAB COMPONENT
+  // -----------------------------------------------------
+  Widget _tabButton(String type, String activeIcon, String inactiveIcon) {
+    final bool active = selectedType == type;
+
+    return SizedBox(
+      width: 150,
+      child: GestureDetector(
+        onTap: () {
+          setState(() {
+            selectedType = type;
+            selectedIndex = 0;
+          });
+        },
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(30),
+            gradient: active
+                ? const LinearGradient(
+                    colors: [
+                      Color(0xFFFED46A),
+                      Color(0xFFFFB000),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  )
+                : null,
+            color: active ? null : const Color(0xffE3E3E3),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Image.asset(active ? activeIcon : inactiveIcon, width: 22),
+              const SizedBox(width: 8),
+              Text(
+                type == "motor" ? "Motor" : "Mobil",
+                style: TextStyle(
+                  fontFamily: "Euclid",
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: active ? Colors.white : Colors.black,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
-  double _serviceProgress(dynamic v) {
-    if (v == null || v['lastservicedate'] == null) return 0;
-    final raw = DateTime.tryParse(v['lastservicedate'].toString());
-    if (raw == null) return 0;
-    final elapsed = DateTime.now().difference(raw).inDays;
-    return (elapsed / 90).clamp(0.0, 1.0);
-  }
 
-  String _monthName(int m) {
-    const arr = [
-      "",
-      "Jan","Feb","Mar","Apr","Mei","Jun",
-      "Jul","Agu","Sep","Okt","Nov","Des",
-    ];
-    return arr[m];
-  }
-
-  // WIDGETS
   Widget _navArrow(VoidCallback onTap, IconData icon) {
     return GestureDetector(
       onTap: onTap,
@@ -368,39 +391,6 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
           color: Colors.grey.shade200,
         ),
         child: Icon(icon, size: 22),
-      ),
-    );
-  }
-
-  Widget _vehicleTab({
-    required String title,
-    required String icon,
-    required bool active,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 10),
-        decoration: BoxDecoration(
-          color: active ? const Color(0xFFFFD233) : Colors.grey.shade200,
-          borderRadius: BorderRadius.circular(30),
-        ),
-        child: Row(
-          children: [
-            Image.asset(icon, width: 20),
-            const SizedBox(width: 8),
-            Text(
-              title,
-              style: TextStyle(
-                fontFamily: 'Euclid',
-                fontSize: 16,
-                color: active ? Colors.white : Colors.grey.shade600,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }
@@ -508,5 +498,40 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
         ],
       ),
     );
+  }
+
+  String _nextServiceDate(dynamic v) {
+    if (v == null || v['lastservicedate'] == null) return "-";
+    final raw = DateTime.tryParse(v['lastservicedate'].toString());
+    if (raw == null) return "-";
+    final next = raw.add(const Duration(days: 90));
+    return "${next.day} ${_monthName(next.month)} ${next.year}";
+  }
+
+  double _serviceProgress(dynamic v) {
+    if (v == null || v['lastservicedate'] == null) return 0;
+    final raw = DateTime.tryParse(v['lastservicedate'].toString());
+    if (raw == null) return 0;
+    final elapsed = DateTime.now().difference(raw).inDays;
+    return (elapsed / 90).clamp(0.0, 1.0);
+  }
+
+  String _monthName(int m) {
+    const arr = [
+      "",
+      "Jan",
+      "Feb",
+      "Mar",
+      "Apr",
+      "Mei",
+      "Jun",
+      "Jul",
+      "Agu",
+      "Sep",
+      "Okt",
+      "Nov",
+      "Des",
+    ];
+    return arr[m];
   }
 }
