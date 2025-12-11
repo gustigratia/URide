@@ -265,31 +265,35 @@ class _KonfirmasiAjuanScreenState extends State<KonfirmasiAjuanScreen> {
 
                   const SizedBox(height: 16),
 
-                  Row(
+                  Wrap(
+                    spacing: 8.0,    // Jarak horizontal otomatis antar elemen
+                    runSpacing: 8.0, // Jarak vertikal otomatis jika elemen turun ke baris baru
                     children: [
                       _buildTag(
                         icon: _getVehicleIcon(),
                         label: widget.vehicleType,
                         color: Colors.amber,
                       ),
-                      const SizedBox(width: 8),
+                      
+                      // SizedBox(width: 8) dihapus karena sudah digantikan oleh 'spacing'
+                      
                       _buildTag(
                         icon: Icons.circle,
                         label: widget.requestType,
                         color: _getRequestTypeColor(),
                       ),
-                      if (widget.isOnLocation) ...[
-                        const SizedBox(width: 8),
+
+                      if (widget.isOnLocation) 
                         _buildTag(
                           icon: Icons.construction,
                           label: 'Servis di lokasi',
-                          color: Colors.blue,
+                          color: Colors.amber,
                         ),
-                      ],
                     ],
                   ),
 
                   const SizedBox(height: 12),
+
                   Align(
                     alignment: Alignment.centerRight,
                     child: TextButton.icon(
@@ -501,7 +505,7 @@ class _KonfirmasiAjuanScreenState extends State<KonfirmasiAjuanScreen> {
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(50),
                 ),
               ),
               child: const Text(
@@ -528,9 +532,9 @@ class _KonfirmasiAjuanScreenState extends State<KonfirmasiAjuanScreen> {
     return Container(
     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
     decoration: BoxDecoration(
-      color: color.withOpacity(0.1),
+      color: Colors.white,
       borderRadius: BorderRadius.circular(20),
-      border: Border.all(color: color.withOpacity(0.3)),
+      border: Border.all(color: Colors.grey[400]!),
     ),
     child: Row(
       mainAxisSize: MainAxisSize.min,
@@ -541,7 +545,7 @@ class _KonfirmasiAjuanScreenState extends State<KonfirmasiAjuanScreen> {
           label,
           style: TextStyle(
             fontSize: 12,
-            color: color,
+            color: Colors.grey[600],
             fontWeight: FontWeight.w500,
           ),
         ),
