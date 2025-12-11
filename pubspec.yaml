@@ -14,13 +14,21 @@ dependencies:
 
   cupertino_icons: ^1.0.8
   supabase_flutter: ^2.10.3
+  flutter_map: ^7.0.0
+  latlong2: ^0.9.0
+  share_plus: ^12.0.1
   auto_size_text: ^3.0.0
   geolocator: ^12.0.0
   url_launcher: ^6.2.5
   http: ^1.1.0
-  latlong2: ^0.9.0
-  flutter_map: ^6.1.0
-  image_picker: ^1.1.1
+  google_fonts: ^6.2.1
+  google_maps_flutter: ^2.6.0
+  flutter_dotenv: ^5.1.0
+  geocoding: ^2.1.1
+  google_generative_ai: ^0.4.4
+  flutter_markdown: ^0.6.17
+  midtrans_sdk: ^1.2.0
+
   
 
 dev_dependencies:
@@ -28,12 +36,15 @@ dev_dependencies:
     sdk: flutter
 
   flutter_lints: ^5.0.0
+  flutter_launcher_icons: ^0.13.1
+
 
 flutter:
   uses-material-design: true  
   assets:
     - assets/images/
     - assets/icons/
+    - .env
 
   fonts:
     - family: Euclid
@@ -47,3 +58,11 @@ flutter:
           weight: 700
         - asset: assets/euclid-circular-a/Euclid Circular A Light.ttf
           weight: 300
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  web:
+    generate: true
+    image_path: "assets/icons/icons.png"
+  image_path: "assets/icons/icons.png"

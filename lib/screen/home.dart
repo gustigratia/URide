@@ -48,8 +48,8 @@ class _HomeScreenState extends State<HomeScreen> {
       final spbuData = await supabase.from('spbu').select().order('id');
 
       // Convert to List<Map<String,dynamic>>
-      final w = List<Map<String, dynamic>>.from(workshopData ?? []);
-      final s = List<Map<String, dynamic>>.from(spbuData ?? []);
+      final w = List<Map<String, dynamic>>.from(workshopData);
+      final s = List<Map<String, dynamic>>.from(spbuData);
 
       // Compute distance string for each item (if we have userPosition)
       final updatedW = w.map((e) => _withDistance(e)).toList();
@@ -321,10 +321,17 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
               Row(
-                children: const [
-                  Icon(Icons.person, color: Colors.white),
-                  SizedBox(width: 15),
-                  Icon(Icons.settings, color: Colors.white),
+                children: [
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.pushNamed(context, '/profile');
+                    },
+                    child: Icon(
+                      Icons.person,
+                      color: Colors.white,
+                      size: 30,
+                    ),
+                  ),
                 ],
               ),
             ],
@@ -474,6 +481,7 @@ class _HomeScreenState extends State<HomeScreen> {
             subtitle: "Berawan",
             icon: Image.asset('assets/icons/weather.png'),
             isActive: true,
+            context: context,
           ),
         ),
         const SizedBox(width: 12),
@@ -488,86 +496,92 @@ class _HomeScreenState extends State<HomeScreen> {
     required String subtitle,
     required Widget icon,
     required bool isActive,
+    required BuildContext context, // tambahkan context
   }) {
-    return Container(
-      height: 120,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black12.withOpacity(0.08),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Kiri: persentase dan judul
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    AutoSizeText(
-                      "$percent%",
-                      style: const TextStyle(
-                        fontSize: 35,
-                        color: Color(0xff292D32),
-                        fontWeight: FontWeight.bold,
+    return GestureDetector(
+      onTap: () {
+        Navigator.pushNamed(context, "/weather");
+      },
+      child: Container(
+        height: 120,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(18),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black12.withOpacity(0.08),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      AutoSizeText(
+                        "$percent%",
+                        style: const TextStyle(
+                          fontSize: 35,
+                          color: Color(0xff292D32),
+                          fontWeight: FontWeight.bold,
+                        ),
+                        minFontSize: 8,
+                        maxLines: 1,
                       ),
-                      minFontSize: 8,
-                      maxLines: 1,
+                      const SizedBox(height: 4),
+                      Text(title, style: const TextStyle(fontSize: 12)),
+                    ],
+                  ),
+                ),
+                Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(14),
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFFFFC93C), Color(0xFFFFD65C)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                      ),
+                      child: SizedBox(width: 36, height: 36, child: icon),
                     ),
-                    const SizedBox(height: 4),
-                    Text(title, style: const TextStyle(fontSize: 12)),
+                    const SizedBox(height: 8),
+                    SizedBox(
+                      width: 90,
+                      child: AutoSizeText(
+                        subtitle,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          color: Color(0xff3d3d3d),
+                          fontWeight: FontWeight.w600,
+                        ),
+                        maxLines: 2,
+                        minFontSize: 8,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
                   ],
                 ),
-              ),
-              Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(14),
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFFFFC93C), Color(0xFFFFD65C)],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                    ),
-                    child: SizedBox(width: 36, height: 36, child: icon),
-                  ),
-                  const SizedBox(height: 8),
-                  SizedBox(
-                    width: 90,
-                    child: AutoSizeText(
-                      subtitle,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        color: Color(0xff3d3d3d),
-                        fontWeight: FontWeight.w600,
-                      ),
-                      maxLines: 2,
-                      minFontSize: 8,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ],
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
+
 
   Widget _menuCards(BuildContext context) {
     return Container(
@@ -622,12 +636,14 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Image.asset(iconPath, width: 26, height: 26),
           ),
           const SizedBox(height: 6),
-          Text(
+          AutoSizeText(
             title,
             textAlign: TextAlign.center,
-            softWrap: false,
+            softWrap: true,
             overflow: TextOverflow.fade,
-            style: const TextStyle(fontSize: 11),
+            style: const TextStyle(fontSize: 9),
+            maxLines: 2,
+            minFontSize: 8,
           ),
         ],
       ),
@@ -691,14 +707,16 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Stack(
         clipBehavior: Clip.none,
         children: [
-          // Gambar
           Container(
             height: 200,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(18),
               image: DecorationImage(
-                image: AssetImage(image),
+                image: NetworkImage(image),
                 fit: BoxFit.cover,
+                onError: (exception, stackTrace) {
+                  debugPrint('Image error: $exception');
+                },
               ),
             ),
           ),
@@ -839,8 +857,11 @@ class _HomeScreenState extends State<HomeScreen> {
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(18),
               image: DecorationImage(
-                image: AssetImage(image),
+                image: NetworkImage(image),
                 fit: BoxFit.cover,
+                onError: (exception, stackTrace) {
+                  debugPrint('Image error: $exception');
+                },
               ),
             ),
           ),
@@ -951,7 +972,7 @@ class _HomeScreenState extends State<HomeScreen> {
               name: item["name"] ?? 'Unnamed',
               distance: item["distance"] ?? '--',
               rating: item["rating"]?.toString() ?? '0.0',
-              image: item["image"] ?? 'assets/images/spbu.png',
+              image: item["image_url"] ?? 'assets/images/spbu.png',
               status: (item["is_open"] == true) ? 'Buka' : 'Tutup',
             ),
           );

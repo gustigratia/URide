@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:uride/widgets/bottom_nav.dart';
 import 'orderdetail_screen.dart';
 
 class OrderHistoryScreen extends StatefulWidget {
-  const OrderHistoryScreen({super.key});
+  // FINAL REVISI: newOrderId harus menjadi nullable di sini
+  final int? newOrderId; 
+
+  const OrderHistoryScreen({super.key, this.newOrderId});
 
   @override
   State<OrderHistoryScreen> createState() => _OrderHistoryScreenState();
@@ -18,9 +21,77 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
   @override
   void initState() {
     super.initState();
+    // Anda bisa menambahkan logika untuk newOrderId di sini jika perlu
     fetchOrders();
   }
 
+  // ==========================================================
+  //                  HELPER FUNCTIONS (DIPINDAHKAN KE SINI)
+  // ==========================================================
+
+  String formatDate(String rawDate) {
+    final date = DateTime.parse(rawDate);
+
+    const monthNames = [
+      "", // dummy biar index mulai dari 1
+      "Januari",
+      "Februari",
+      "Maret",
+      "April",
+      "Mei",
+      "Juni",
+      "Juli",
+      "Agustus",
+      "September",
+      "Oktober",
+      "November",
+      "Desember"
+    ];
+
+    final day = date.day;
+    final month = monthNames[date.month];
+    final year = date.year;
+
+    return "$day $month $year";
+  }
+
+  String cleanText(String text) {
+    if (text.isEmpty) return text;
+    text = text.replaceAll("_", " ");
+    text = text.toLowerCase();
+    return text
+        .split(" ")
+        .map((word) => word.isNotEmpty
+            ? "${word[0].toUpperCase()}${word.substring(1)}"
+            : "")
+        .join(" ");
+  }
+  
+  String _getIconForTag(String type) {
+    switch (type.toLowerCase()) {
+      case "motor":
+        return "images/motor-default.png";
+      case "normal":
+        return "images/normal.png";
+      case "emergency":
+        return "images/emergency.png";
+      case "derek kendaraan":
+        return "images/derek.png";
+      case "servis di lokasi":
+        return "images/derek.png";
+      case "mobil":
+        return "images/mobil-default.png";
+      case "peta":
+        return "images/arrow.png";
+      default:
+        return "images/derek.png";
+    }
+  }
+
+  // ==========================================================
+  //                  DATA FETCHING & GROUPING
+  // ==========================================================
+  
   Future<void> fetchOrders() async {
     final supabase = Supabase.instance.client;
     final user = supabase.auth.currentUser;
@@ -44,40 +115,6 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
       orders = response;
       loading = false;
     });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xffF9F9F9),
-
-      bottomNavigationBar: const CustomBottomNav(
-        currentIndex: 3,
-      ),
-
-      body: SafeArea(
-        child: loading
-            ? const Center(child: CircularProgressIndicator())
-            : SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 10,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const SizedBox(height: 10),
-                    _header(),
-                    const SizedBox(height: 20),
-                    _searchBar(),
-                    const SizedBox(height: 25),
-
-                    ..._buildOrderGroups(searchC.text),
-                  ],
-                ),
-              ),
-      ),
-    );
   }
 
   List<Widget> _buildOrderGroups(String keyword) {
@@ -167,12 +204,15 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
     return widgets;
   }
 
+  // ==========================================================
+  //                       WIDGET BUILDERS
+  // ==========================================================
+
   Widget _header() {
     return Center(
       child: Text(
         "Riwayat Pesanan",
-        style: const TextStyle(
-          fontFamily: "Euclid",
+        style: GoogleFonts.poppins(
           fontSize: 20,
           fontWeight: FontWeight.w600,
           color: Colors.black,
@@ -202,12 +242,11 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
         onChanged: (value) {
           setState(() {}); // real-time update
         },
-        style: const TextStyle(fontFamily: "Euclid"),
+        style: GoogleFonts.poppins(fontSize: 13),
         decoration: InputDecoration(
           prefixIcon: Icon(Icons.search, color: Colors.grey.shade400),
           hintText: "Search...",
-          hintStyle: TextStyle(
-            fontFamily: "Euclid",
+          hintStyle: GoogleFonts.poppins(
             color: Colors.grey.shade400,
             fontSize: 13,
           ),
@@ -253,34 +292,30 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
               children: [
                 Text(
                   formatDate(date),
-                  style: const TextStyle(
-                    fontFamily: "Euclid",
+                  style: GoogleFonts.poppins(
                     fontSize: 13,
                     fontWeight: FontWeight.w500,
                     color: Colors.black87,
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 6,
-                  ),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
                   decoration: BoxDecoration(
                     color: statusOngoing
                         ? const Color(0xffFAD97A)
                         : statusCancelled
-                        ? const Color(0xffE57373)
-                        : const Color(0xff4CAF50),
+                            ? const Color(0xffE57373)
+                            : const Color(0xff4CAF50),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
                     statusOngoing
                         ? "Sedang Berlangsung"
                         : statusCancelled
-                        ? "Dibatalkan"
-                        : "Selesai",
-                    style: const TextStyle(
-                      fontFamily: "Euclid",
+                            ? "Dibatalkan"
+                            : "Selesai",
+                    style: GoogleFonts.poppins(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
                     ),
@@ -297,7 +332,10 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.grey.shade300, width: 1),
+                border: Border.all(
+                  color: Colors.grey.shade300,
+                  width: 1,
+                ),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withOpacity(0.03),
@@ -324,8 +362,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
                       children: [
                         Text(
                           title,
-                          style: const TextStyle(
-                            fontFamily: "Euclid",
+                          style: GoogleFonts.poppins(
                             fontSize: 15,
                             fontWeight: FontWeight.w600,
                           ),
@@ -335,8 +372,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
                         const SizedBox(height: 4),
                         Text(
                           address,
-                          style: TextStyle(
-                            fontFamily: "Euclid",
+                          style: GoogleFonts.poppins(
                             fontSize: 12,
                             color: Colors.grey.shade600,
                           ),
@@ -345,7 +381,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
                         ),
                       ],
                     ),
-                  ),
+                  )
                 ],
               ),
             ),
@@ -361,7 +397,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
                 Expanded(
                   child: Text(
                     fullAddress,
-                    style: const TextStyle(fontFamily: "Euclid"),
+                    style: GoogleFonts.poppins(fontSize: 12),
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -389,15 +425,11 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
             if (statusOngoing) ...[
               Text(
                 "Mekanik sedang menuju lokasi Anda...",
-                style: const TextStyle(fontFamily: "Euclid", fontSize: 13),
+                style: GoogleFonts.poppins(fontSize: 13),
               ),
               Text(
                 "Siap-siap, bantuan segera tiba!",
-                style: const TextStyle(
-                  fontFamily: "Euclid",
-                  fontSize: 12,
-                  color: Colors.grey,
-                ),
+                style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey),
               ),
               Row(
                 mainAxisAlignment: MainAxisAlignment.end,
@@ -410,18 +442,14 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
             ] else if (statusCancelled) ...[
               Text(
                 "Pesanan ini telah dibatalkan.",
-                style: const TextStyle(
-                  fontFamily: "Euclid",
-                  fontSize: 13,
-                  color: Colors.red,
-                ),
+                style: GoogleFonts.poppins(fontSize: 13, color: Colors.red),
               ),
             ] else ...[
               Text(
                 "Pesanan anda telah terselesaikan.",
-                style: const TextStyle(fontFamily: "Euclid", fontSize: 13),
+                style: GoogleFonts.poppins(fontSize: 13),
               ),
-            ],
+            ]
           ],
         ),
       ),
@@ -434,7 +462,10 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
       decoration: BoxDecoration(
         color: Colors.grey.shade100,
         borderRadius: BorderRadius.circular(30),
-        border: Border.all(color: Colors.grey.shade300, width: 1),
+        border: Border.all(
+          color: Colors.grey.shade300,
+          width: 1,
+        ),
       ),
       child: Row(
         children: [
@@ -442,8 +473,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
           const SizedBox(width: 6),
           Text(
             text,
-            style: const TextStyle(
-              fontFamily: "Euclid",
+            style: GoogleFonts.poppins(
               fontSize: 11.5,
               fontWeight: FontWeight.w500,
               color: Colors.black87,
@@ -454,75 +484,47 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
     );
   }
 
-  String _getIconForTag(String type) {
-    switch (type.toLowerCase()) {
-      case "motor":
-        return "images/motor-default.png";
-      case "normal":
-        return "images/normal.png";
-      case "emergency":
-        return "images/emergency.png";
-      case "derek kendaraan":
-        return "images/derek.png";
-      case "servis di lokasi":
-        return "images/derek.png";
-      case "mobil":
-        return "images/mobil-default.png";
-      case "peta":
-        return "images/arrow.png";
-      default:
-        return "images/derek.png";
-    }
-  }
-
   Widget _circleIcon(String assetPath) {
     return Container(
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        border: Border.all(color: Color(0xffEAEAEA)),
+        border: Border.all(color: const Color(0xffEAEAEA)),
       ),
-      child: Image.asset(assetPath, width: 20, height: 20, fit: BoxFit.contain),
+      child: Image.asset(
+        assetPath,
+        width: 20,
+        height: 20,
+        fit: BoxFit.contain,
+      ),
     );
   }
 
-  String formatDate(String rawDate) {
-    final date = DateTime.parse(rawDate);
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xffF9F9F9),
+      body: SafeArea(
+        child: loading
+            ? const Center(child: CircularProgressIndicator())
+            : SingleChildScrollView(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: 10),
+                    _header(),
+                    const SizedBox(height: 20),
+                    _searchBar(),
+                    const SizedBox(height: 25),
 
-    const monthNames = [
-      "", // dummy biar index mulai dari 1
-      "Januari",
-      "Februari",
-      "Maret",
-      "April",
-      "Mei",
-      "Juni",
-      "Juli",
-      "Agustus",
-      "September",
-      "Oktober",
-      "November",
-      "Desember",
-    ];
-
-    final day = date.day;
-    final month = monthNames[date.month];
-    final year = date.year;
-
-    return "$day $month $year";
-  }
-
-  String cleanText(String text) {
-    if (text.isEmpty) return text;
-    text = text.replaceAll("_", " ");
-    text = text.toLowerCase();
-    return text
-        .split(" ")
-        .map(
-          (word) => word.isNotEmpty
-              ? "${word[0].toUpperCase()}${word.substring(1)}"
-              : "",
-        )
-        .join(" ");
+                    // group by date
+                    ..._buildOrderGroups(searchC.text),
+                  ],
+                ),
+              ),
+      ),
+    );
   }
 }

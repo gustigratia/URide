@@ -74,9 +74,7 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
 
     return Scaffold(
       backgroundColor: Colors.white,
-      bottomNavigationBar: CustomBottomNav(
-        currentIndex: 1,
-      ),
+      bottomNavigationBar: CustomBottomNav(currentIndex: 1),
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
@@ -109,11 +107,17 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    _tabButton("motor", "images/motor(active).png",
-                        "images/motor(inactive).png"),
+                    _tabButton(
+                      "motor",
+                      "images/motor(active).png",
+                      "images/motor(inactive).png",
+                    ),
                     const SizedBox(width: 20),
-                    _tabButton("mobil", "images/mobil(active).png",
-                        "images/mobil(inactive).jpg"),
+                    _tabButton(
+                      "mobil",
+                      "images/mobil(active).png",
+                      "images/mobil(inactive).jpg",
+                    ),
                   ],
                 ),
               ),
@@ -150,8 +154,10 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    _navArrow(() => setState(() => selectedIndex--),
-                        Icons.chevron_left),
+                    _navArrow(
+                      () => setState(() => selectedIndex--),
+                      Icons.chevron_left,
+                    ),
                     Expanded(
                       child: Text(
                         v?['vehiclename'] ?? "-",
@@ -163,8 +169,10 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
                         ),
                       ),
                     ),
-                    _navArrow(() => setState(() => selectedIndex++),
-                        Icons.chevron_right),
+                    _navArrow(
+                      () => setState(() => selectedIndex++),
+                      Icons.chevron_right,
+                    ),
                   ],
                 ),
 
@@ -270,17 +278,26 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
                     final result = await Navigator.pushNamed(
                       context,
                       AppRoutes.editKendaraan,
-                      arguments: {
-                        "id": v?['id'],
-                        "index": selectedIndex,
-                      },
+                      arguments: {"id": v?['id'], "index": selectedIndex},
                     );
 
-                    if (result is Map && result["updated"] == true) {
-                      await fetchVehicles();
-                      setState(() {
-                        selectedIndex = result["index"] ?? 0;
-                      });
+                    if (result is Map) {
+                      // Jika kendaraan di-update
+                      if (result["updated"] == true) {
+                        await fetchVehicles();
+                        setState(() {
+                          selectedIndex = result["index"] ?? 0;
+                        });
+                      }
+
+                      // Jika kendaraan dihapus
+                      if (result["deleted"] == true) {
+                        await fetchVehicles();
+
+                        setState(() {
+                          selectedIndex = 0; // reset agar tidak out of range
+                        });
+                      }
                     }
                   },
                 ),
@@ -290,8 +307,11 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
                   icon: "images/edit.jpg",
                   title: "Tambah Kendaraan",
                   onTap: () {
-                    Navigator.pushNamed(context, '/add-vehicle',
-                        arguments: {"type": selectedType});
+                    Navigator.pushNamed(
+                      context,
+                      '/add-vehicle',
+                      arguments: {"type": selectedType},
+                    );
                   },
                 ),
 
@@ -349,10 +369,7 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
             borderRadius: BorderRadius.circular(30),
             gradient: active
                 ? const LinearGradient(
-                    colors: [
-                      Color(0xFFFED46A),
-                      Color(0xFFFFB000),
-                    ],
+                    colors: [Color(0xFFFED46A), Color(0xFFFFB000)],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   )
@@ -379,7 +396,6 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
       ),
     );
   }
-
 
   Widget _navArrow(VoidCallback onTap, IconData icon) {
     return GestureDetector(
@@ -490,8 +506,8 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
                 value < 0.33
                     ? Colors.green
                     : value < 0.66
-                        ? Colors.orange
-                        : Colors.red,
+                    ? Colors.orange
+                    : Colors.red,
               ),
             ),
           ),

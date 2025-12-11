@@ -90,12 +90,21 @@ BEGIN
         BLOCK "040904e4"
         BEGIN
             VALUE "CompanyName", "com.example" "\0"
+<<<<<<< HEAD
             VALUE "FileDescription", "uride" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
             VALUE "InternalName", "uride" "\0"
             VALUE "LegalCopyright", "Copyright (C) 2025 com.example. All rights reserved." "\0"
             VALUE "OriginalFilename", "uride.exe" "\0"
             VALUE "ProductName", "uride" "\0"
+=======
+            VALUE "FileDescription", "payment_page" "\0"
+            VALUE "FileVersion", VERSION_AS_STRING "\0"
+            VALUE "InternalName", "payment_page" "\0"
+            VALUE "LegalCopyright", "Copyright (C) 2025 com.example. All rights reserved." "\0"
+            VALUE "OriginalFilename", "payment_page.exe" "\0"
+            VALUE "ProductName", "payment_page" "\0"
+>>>>>>> 48401d6 (Initial commit of clean Flutter project)
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END
