@@ -297,8 +297,8 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                         height: 230,
                         child: FlutterMap(
                           options: MapOptions(
-                            center: LatLng(lat, lng),
-                            zoom: 16,
+                            initialCenter: LatLng(lat, lng),
+                            initialZoom: 16,
                           ),
                           children: [
                             TileLayer(

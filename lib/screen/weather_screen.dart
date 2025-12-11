@@ -20,6 +20,8 @@ class _WeatherScreenState extends State<WeatherScreen> {
   String? _address;
   bool _loading = true;
   String? _error;
+  String? _googleAddress;
+  String locationText = "Memuat lokasi...";
 
   @override
   void initState() {
@@ -27,27 +29,24 @@ class _WeatherScreenState extends State<WeatherScreen> {
     _init();
   }
 
+  void loadLocation() async {
+    final pos = await Geolocator.getCurrentPosition();
+    final loc = await getDistrictCityProvince(pos.latitude, pos.longitude);
+
+    setState(() {
+      locationText = loc;
+    });
+  }
+
   Future<void> _init() async {
     try {
       final pos = await _determinePosition();
+
       _pos = pos;
 
-      try {
-        final placemarks = await geocoding.placemarkFromCoordinates(
-          pos.latitude,
-          pos.longitude,
-        );
-        if (placemarks.isNotEmpty) {
-          final p = placemarks.first;
-          _address = [
-            p.street,
-            p.subLocality,
-            p.locality,
-            p.administrativeArea,
-            p.country,
-          ].where((e) => e != null && e!.isNotEmpty).join(', ');
-        }
-      } catch (_) {}
+      locationText = await getDistrictCityProvince(pos.latitude, pos.longitude);
+
+      _googleAddress = await reverseGeocode(pos.latitude, pos.longitude);
 
       _weather = await _fetchWeather(pos);
 
@@ -61,6 +60,66 @@ class _WeatherScreenState extends State<WeatherScreen> {
       }
     }
   }
+
+  // GOOGLE REVERSE GEOCODING
+  Future<String> reverseGeocode(double lat, double lng) async {
+    final apiKey = dotenv.env['MAPS_API_KEY'] ?? '';
+
+    if (apiKey.isEmpty) {
+      print("MAPS_API_KEY kosong / tidak terbaca dari .env");
+      return "Alamat tidak ditemukan";
+    }
+
+    final url = Uri.parse(
+      "https://maps.googleapis.com/maps/api/geocode/json?latlng=$lat,$lng&key=$apiKey",
+    );
+
+    try {
+      final res = await http.get(url);
+      final jsonData = jsonDecode(res.body);
+
+      if (jsonData["status"] == "OK") {
+        return jsonData["results"][0]["formatted_address"];
+      }
+    } catch (e) {
+      print("Reverse geocode error: $e");
+    }
+
+    return "Alamat tidak ditemukan";
+  }
+
+  Future<String> getDistrictCityProvince(double lat, double lng) async {
+    final apiKey = dotenv.env['MAPS_API_KEY'];
+
+    final url =
+        "https://maps.googleapis.com/maps/api/geocode/json?latlng=$lat,$lng&key=$apiKey";
+
+    final response = await http.get(Uri.parse(url));
+    final data = jsonDecode(response.body);
+
+    if (data["results"].isEmpty) return "Lokasi tidak diketahui";
+
+    List components = data["results"][0]["address_components"];
+
+    String? district;
+    String? city;
+    String? province;
+
+    for (var c in components) {
+      if (c["types"].contains("administrative_area_level_3")) {
+        district = c["long_name"]; // kecamatan
+      }
+      if (c["types"].contains("administrative_area_level_2")) {
+        city = c["long_name"]; // kabupaten/kota
+      }
+      if (c["types"].contains("administrative_area_level_1")) {
+        province = c["long_name"]; // provinsi
+      }
+    }
+
+    return "$district, $city, $province";
+  }
+
 
   Future<Position> _determinePosition() async {
     bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
@@ -220,8 +279,12 @@ class _WeatherScreenState extends State<WeatherScreen> {
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 30),
       decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Color(0xFFFFD93D), Color(0xFFFF9A3C)],
+        gradient: const LinearGradient(
+          colors: [
+            Color(0xFFF6F1E9),
+            Color(0xFFFFD93D),
+            Color(0xFFFF8400),
+          ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -280,10 +343,19 @@ class _WeatherScreenState extends State<WeatherScreen> {
     width: double.infinity,
     padding: const EdgeInsets.fromLTRB(20, 16, 20, 40),
     decoration: const BoxDecoration(
-      gradient: LinearGradient(
-        colors: [Color(0xFFFFD93D), Color(0xFFFF9A3C)],
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
+      gradient: const LinearGradient(
+        colors: [
+          Color(0xFFF6F1E9),
+          Color(0xFFFFD93D),
+          Color(0xFFFF8400),
+        ],
+        stops: [
+          0.0,   // 0%
+          0.23,  // 41%
+          1.0,   // 100%
+        ],
+        begin: Alignment.bottomCenter,
+        end: Alignment.topCenter,
       ),
       borderRadius: BorderRadius.vertical(
         bottom: Radius.circular(26),
@@ -314,6 +386,16 @@ class _WeatherScreenState extends State<WeatherScreen> {
         Center(
           child: Column(
             children: [
+              Text(
+                locationText,
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: small ? 16 : 18,
+                  fontWeight: FontWeight.w600,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 6),
               Icon(
                 conditionIcon,
                 size: small ? 70 : 90,
@@ -359,15 +441,10 @@ class _WeatherScreenState extends State<WeatherScreen> {
           ),
           const SizedBox(height: 12),
           Text(
-            _address ?? "Alamat tidak tersedia",
+            _googleAddress ?? "Alamat tidak ditemukan",
             style: const TextStyle(fontSize: 14),
           ),
           const SizedBox(height: 8),
-          Text(
-            "Latitude: ${_pos?.latitude.toStringAsFixed(6)}\n"
-            "Longitude: ${_pos?.longitude.toStringAsFixed(6)}",
-            style: const TextStyle(fontSize: 13, color: Colors.black54),
-          ),
         ],
       ),
     );
