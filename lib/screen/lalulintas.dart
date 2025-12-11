@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:location/location.dart';
-import 'package:uride/services/traffic_service.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:http/http.dart' as http;
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'dart:async';
+import 'dart:convert';
 
 class LaluLintasPage extends StatefulWidget {
   const LaluLintasPage({super.key});
@@ -11,99 +15,108 @@ class LaluLintasPage extends StatefulWidget {
 }
 
 class _LaluLintasPageState extends State<LaluLintasPage> {
-  GoogleMapController? mapController;
-  LatLng? userLocation;
-  LatLng? destinationLocation;
+  final Completer<GoogleMapController> _controller = Completer();
 
-  TrafficData? trafficData;
-  String errorMessage = '';
-  bool isLoading = true;
+  double? currentLat;
+  double? currentLng;
+  double? bengkelLat;
+  double? bengkelLng;
+  String bengkelName = "Bengkel Terdekat";
+  String currentAddress = "Memuat alamat...";
+  String bengkelAddress = "Memuat alamat...";
+
+  bool loading = true;
 
   @override
   void initState() {
     super.initState();
-    _initLocation();
+    _loadCurrentLocation();
   }
 
-  Future<void> _initLocation() async {
+  // GET CURRENT LOCATION
+  Future<void> _loadCurrentLocation() async {
     try {
-      Location location = Location();
-
-      bool serviceEnabled = await location.serviceEnabled();
-      if (!serviceEnabled) {
-        serviceEnabled = await location.requestService();
-      }
-
-      PermissionStatus permission = await location.hasPermission();
-      if (permission == PermissionStatus.denied) {
-        permission = await location.requestPermission();
-      }
-
-      if (permission == PermissionStatus.deniedForever) {
-        setState(() {
-          errorMessage = 'Izin lokasi ditolak permanen';
-          isLoading = false;
-        });
-        return;
-      }
-
-      final loc = await location.getLocation();
-      setState(() {
-        userLocation = LatLng(loc.latitude ?? -7.913521, loc.longitude ?? 113.8213);
-        // Default destination: pusat kota (misalnya)
-        destinationLocation = const LatLng(-7.9072, 113.8130);
-      });
-
-      // Load traffic data setelah lokasi didapat
-      _loadTrafficData();
-
-      // Refresh traffic setiap 10 detik
-      Future.delayed(const Duration(seconds: 10), () {
-        if (mounted) {
-          _loadTrafficData();
-        }
-      });
-    } catch (e) {
-      setState(() {
-        errorMessage = 'Error: ${e.toString()}';
-        isLoading = false;
-      });
-    }
-  }
-
-  Future<void> _loadTrafficData() async {
-    if (userLocation == null || destinationLocation == null) return;
-
-    try {
-      final data = await TrafficService.getTrafficData(
-        origin: userLocation!,
-        destination: destinationLocation!,
+      final pos = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
       );
 
       setState(() {
-        trafficData = data;
-        errorMessage = '';
-        isLoading = false;
+        currentLat = pos.latitude;
+        currentLng = pos.longitude;
+        // Default bengkel: 5km ke timur dari lokasi sekarang
+        bengkelLat = pos.latitude;
+        bengkelLng = pos.longitude + 0.05; // ~5km ke timur
       });
 
-      // Refresh lagi setelah 10 detik
-      Future.delayed(const Duration(seconds: 10), () {
-        if (mounted) {
-          _loadTrafficData();
-        }
-      });
+      // Get addresses
+      await _getAddresses();
+
+      setState(() => loading = false);
     } catch (e) {
-      setState(() {
-        errorMessage = 'Gagal load traffic: ${e.toString()}';
-        isLoading = false;
-      });
+      print("Error getLocation: $e");
+      setState(() => loading = false);
+    }
+  }
+
+  // GET ALAMAT FROM COORDINATES
+  Future<void> _getAddresses() async {
+    try {
+      final mapsApiKey = dotenv.env['MAPS_API_KEY'];
+      if (mapsApiKey == null) {
+        print("MAPS_API_KEY not found in .env");
+        return;
+      }
+
+      // Get current address
+      if (currentLat != null && currentLng != null) {
+        final currentUrl =
+            "https://maps.googleapis.com/maps/api/geocode/json?latlng=$currentLat,$currentLng&key=$mapsApiKey";
+        final currentRes = await http.get(Uri.parse(currentUrl));
+        if (currentRes.statusCode == 200) {
+          final data = jsonDecode(currentRes.body);
+          if (data['results'].isNotEmpty) {
+            setState(() {
+              currentAddress = data['results'][0]['formatted_address'];
+            });
+          }
+        }
+      }
+
+      // Get bengkel address
+      if (bengkelLat != null && bengkelLng != null) {
+        final bengkelUrl =
+            "https://maps.googleapis.com/maps/api/geocode/json?latlng=$bengkelLat,$bengkelLng&key=$mapsApiKey";
+        final bengkelRes = await http.get(Uri.parse(bengkelUrl));
+        if (bengkelRes.statusCode == 200) {
+          final data = jsonDecode(bengkelRes.body);
+          if (data['results'].isNotEmpty) {
+            setState(() {
+              bengkelAddress = data['results'][0]['formatted_address'];
+            });
+          }
+        }
+      }
+    } catch (e) {
+      print("Error getAddresses: $e");
+    }
+  }
+
+  // OPEN IN GOOGLE MAPS
+  Future<void> _openInGoogleMaps(double lat, double lng) async {
+    final url = Uri.parse("google.navigation:q=$lat,$lng&mode=d");
+
+    if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
+      final fallback = Uri.parse(
+        "https://www.google.com/maps/dir/?api=1&destination=$lat,$lng&travelmode=driving",
+      );
+      launchUrl(fallback, mode: LaunchMode.externalApplication);
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: const Color(0xffF6F6F6),
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
@@ -112,150 +125,95 @@ class _LaluLintasPageState extends State<LaluLintasPage> {
           onPressed: () => Navigator.pop(context),
         ),
         title: const Text(
-          "Lalu Lintas Real-Time",
-          style: TextStyle(color: Colors.black, fontSize: 18, fontWeight: FontWeight.bold),
+          "Lalu Lintas",
+          style: TextStyle(
+            color: Colors.black,
+            fontSize: 20,
+            fontWeight: FontWeight.w700,
+          ),
         ),
         centerTitle: true,
       ),
-      body: userLocation == null
+      body: loading
           ? const Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // === GOOGLE MAPS DENGAN REAL-TIME TRAFFIC ===
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(16),
-                    child: SizedBox(
-                      height: 280,
-                      child: GoogleMap(
-                        initialCameraPosition: CameraPosition(
-                          target: userLocation!,
-                          zoom: 13,
-                        ),
-                        trafficEnabled: true, // REAL-TIME TRAFFIC LAYER
-                        myLocationEnabled: true,
-                        myLocationButtonEnabled: true,
-                        zoomControlsEnabled: true,
-                        mapToolbarEnabled: true,
-                        onMapCreated: (controller) {
-                          mapController = controller;
-                        },
-                        markers: {
-                          // Marker lokasi user
-                          Marker(
-                            markerId: const MarkerId('user'),
-                            position: userLocation!,
-                            infoWindow: const InfoWindow(title: 'Lokasi Anda'),
-                            icon: BitmapDescriptor.defaultMarkerWithHue(
-                              BitmapDescriptor.hueBlue,
-                            ),
-                          ),
-                          // Marker destination
-                          if (destinationLocation != null)
-                            Marker(
-                              markerId: const MarkerId('destination'),
-                              position: destinationLocation!,
-                              infoWindow: const InfoWindow(title: 'Tujuan'),
-                              icon: BitmapDescriptor.defaultMarkerWithHue(
-                                BitmapDescriptor.hueRed,
-                              ),
-                            ),
-                        },
-                        polylines: {
-                          if (destinationLocation != null)
-                            Polyline(
-                              polylineId: const PolylineId('route'),
-                              points: [userLocation!, destinationLocation!],
-                              color: Colors.blue,
-                              width: 5,
-                            ),
-                        },
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(height: 24),
-
-                  // === STATUS TRAFFIC ===
-                  if (errorMessage.isNotEmpty)
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.red.shade100,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.red.shade300),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(Icons.error_outline, color: Colors.red.shade700),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Text(
-                              errorMessage,
-                              style: TextStyle(
-                                color: Colors.red.shade700,
-                                fontSize: 14,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    )
-                  else if (isLoading)
-                    const Center(child: CircularProgressIndicator())
-                  else if (trafficData != null)
-                    Column(
+          : currentLat == null
+              ? const Center(child: Text("Gagal mendapatkan lokasi"))
+              : SingleChildScrollView(
+                  child: Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Header Status
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text(
-                                  "Kondisi Lalu Lintas",
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    color: Colors.black54,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                                const SizedBox(height: 6),
-                                Text(
-                                  trafficData!.status,
-                                  style: TextStyle(
-                                    fontSize: 24,
-                                    fontWeight: FontWeight.bold,
-                                    color: trafficData!.statusColor,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            // Status Icon Circle
-                            Container(
-                              width: 80,
-                              height: 80,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: trafficData!.statusColor.withOpacity(0.1),
-                                border: Border.all(
-                                  color: trafficData!.statusColor,
-                                  width: 3,
-                                ),
+                        // GOOGLE MAPS
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(16),
+                          child: SizedBox(
+                            height: 300,
+                            child: GoogleMap(
+                              onMapCreated: (controller) {
+                                if (!_controller.isCompleted) {
+                                  _controller.complete(controller);
+                                }
+                              },
+                              initialCameraPosition: CameraPosition(
+                                target: LatLng(currentLat!, currentLng!),
+                                zoom: 13,
                               ),
-                              child: Center(
-                                child: Text(
-                                  "${(trafficData!.congestionLevel * 100).toStringAsFixed(0)}%",
-                                  style: TextStyle(
-                                    fontSize: 28,
-                                    fontWeight: FontWeight.bold,
-                                    color: trafficData!.statusColor,
+                              myLocationEnabled: true,
+                              myLocationButtonEnabled: true,
+                              zoomControlsEnabled: true,
+                              markers: {
+                                // Current location marker
+                                Marker(
+                                  markerId: const MarkerId('current'),
+                                  position: LatLng(currentLat!, currentLng!),
+                                  infoWindow:
+                                      const InfoWindow(title: 'Lokasi Anda'),
+                                  icon: BitmapDescriptor.defaultMarkerWithHue(
+                                    BitmapDescriptor.hueBlue,
                                   ),
                                 ),
+                                // Bengkel marker
+                                if (bengkelLat != null && bengkelLng != null)
+                                  Marker(
+                                    markerId: const MarkerId('bengkel'),
+                                    position:
+                                        LatLng(bengkelLat!, bengkelLng!),
+                                    infoWindow: InfoWindow(title: bengkelName),
+                                    icon: BitmapDescriptor.defaultMarkerWithHue(
+                                      BitmapDescriptor.hueRed,
+                                    ),
+                                  ),
+                              },
+                              polylines: {
+                                if (bengkelLat != null && bengkelLng != null)
+                                  Polyline(
+                                    polylineId: const PolylineId('route'),
+                                    points: [
+                                      LatLng(currentLat!, currentLng!),
+                                      LatLng(bengkelLat!, bengkelLng!),
+                                    ],
+                                    color: Colors.blue,
+                                    width: 5,
+                                  ),
+                              },
+                            ),
+                          ),
+                        ),
+
+                        const SizedBox(height: 30),
+
+                        // HEADER
+                        Row(
+                          children: [
+                            Icon(Icons.location_on,
+                                color: Colors.amber.shade700),
+                            const SizedBox(width: 8),
+                            const Text(
+                              "Rute ke Bengkel",
+                              style: TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.w700,
                               ),
                             ),
                           ],
@@ -263,142 +221,134 @@ class _LaluLintasPageState extends State<LaluLintasPage> {
 
                         const SizedBox(height: 20),
 
-                        // Progress Bar
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: LinearProgressIndicator(
-                            value: trafficData!.congestionLevel,
-                            minHeight: 8,
-                            backgroundColor: Colors.grey.shade300,
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              trafficData!.statusColor,
-                            ),
-                          ),
-                        ),
-
-                        const SizedBox(height: 24),
-
-                        // Durasi Perjalanan
+                        // CARD INFORMASI
                         Container(
-                          padding: const EdgeInsets.all(16),
+                          padding: const EdgeInsets.all(20),
                           decoration: BoxDecoration(
-                            color: Colors.grey.shade50,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: Colors.grey.shade200),
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Text(
-                                    "Waktu Tempuh Normal",
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: Colors.black54,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 6),
-                                  Text(
-                                    trafficData!.durationNormal,
-                                    style: const TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.green,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              Container(
-                                width: 1,
-                                height: 50,
-                                color: Colors.grey.shade300,
-                              ),
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.end,
-                                children: [
-                                  const Text(
-                                    "Waktu Sekarang",
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: Colors.black54,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 6),
-                                  Text(
-                                    trafficData!.durationTraffic,
-                                    style: TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold,
-                                      color: trafficData!.statusColor,
-                                    ),
-                                  ),
-                                ],
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(16),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.05),
+                                blurRadius: 10,
                               ),
                             ],
                           ),
-                        ),
-
-                        const SizedBox(height: 24),
-
-                        // Tips
-                        Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: Colors.blue.shade50,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: Colors.blue.shade200),
-                          ),
-                          child: Row(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Icon(
-                                Icons.info_outline,
-                                color: Colors.blue.shade700,
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Text(
-                                  trafficData!.congestionLevel >= 0.5
-                                      ? "⚠️ Pertimbangkan rute alternatif untuk menghindari kemacetan"
-                                      : trafficData!.congestionLevel >= 0.2
-                                          ? "💡 Lalu lintas padat, beri waktu lebih untuk perjalanan"
-                                          : "✅ Kondisi lalu lintas lancar, waktu perjalanan normal",
-                                  style: TextStyle(
-                                    color: Colors.blue.shade700,
-                                    fontSize: 13,
-                                    height: 1.5,
-                                  ),
+                              const Text(
+                                "Lokasi Saat Ini",
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.black54,
                                 ),
                               ),
+                              const SizedBox(height: 8),
+                              Row(
+                                children: [
+                                  const Icon(Icons.radio_button_checked,
+                                      color: Colors.blue, size: 18),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: Text(
+                                      currentAddress,
+                                      style: const TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 24),
+                              const Text(
+                                "Tujuan Bengkel",
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.black54,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Row(
+                                children: [
+                                  const Icon(Icons.location_on,
+                                      color: Colors.red, size: 18),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: Text(
+                                      bengkelAddress,
+                                      style: const TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ],
                           ),
                         ),
 
-                        const SizedBox(height: 24),
+                        const SizedBox(height: 20),
 
-                        // Last Updated
-                        Center(
-                          child: Text(
-                            "🔄 Update otomatis setiap 10 detik",
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.black45,
-                              fontStyle: FontStyle.italic,
+                        // BUTTON BUKA DI GMAPS
+                        Material(
+                          borderRadius: BorderRadius.circular(40),
+                          color: Colors.white,
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(40),
+                            onTap: () => _openInGoogleMaps(
+                              bengkelLat!,
+                              bengkelLng!,
+                            ),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 14,
+                                horizontal: 12,
+                              ),
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(40),
+                                border: Border.all(
+                                  color: const Color(0xffDCDCDC),
+                                ),
+                              ),
+                              alignment: Alignment.center,
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  const Flexible(
+                                    child: Text(
+                                      "Buka di Google Maps",
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.w700,
+                                        color: Colors.black,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Image.asset("assets/icons/arrow.png",
+                                      height: 18),
+                                ],
+                              ),
                             ),
                           ),
                         ),
                       ],
                     ),
-                ],
-              ),
-            ),
+                  ),
+                ),
     );
   }
 
   @override
   void dispose() {
-    mapController?.dispose();
     super.dispose();
   }
 }
