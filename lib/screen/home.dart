@@ -3,6 +3,10 @@ import 'package:uride/widgets/bottom_nav.dart';
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -14,13 +18,17 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   final supabase = Supabase.instance.client;
 
+  GoogleMapController? mapController;
+  static const LatLng _defaultLocation = LatLng(-6.200000, 106.816666);
   List<Map<String, dynamic>> workshops = [];
   List<Map<String, dynamic>> spbu = [];
-
+  String currentTrafficStatus = "Loading...";
+  String currentDuration = "N/A";
   bool isLoading = true;
   Position? userPosition;
   String locationError = '';
   String firstName = "";
+  String mapsApiKey = dotenv.env['MAPS_API_KEY'] ?? '';
 
   @override
   void initState() {
@@ -29,8 +37,17 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _initAll() async {
+    // 1. Ambil API Key dari .env sebelum digunakan
+    mapsApiKey = dotenv.env['MAPS_API_KEY'] ?? '';
+
+    // Peringatan jika kunci tidak ditemukan
+    if (mapsApiKey.isEmpty) {
+      debugPrint("ERROR: MAPS_API_KEY not found in environment variables.");
+    }
+
     await _loadFirstName();
     await _determinePosition();
+    await _fetchTrafficStatus();
     await fetchData();
   }
 
@@ -68,6 +85,110 @@ class _HomeScreenState extends State<HomeScreen> {
         setState(() {
           isLoading = false;
           locationError = 'Gagal mengambil data: $err';
+        });
+      }
+    }
+  }
+
+
+
+
+  Future<void> _fetchTrafficStatus() async {
+    if (userPosition == null) {
+      if (mounted) {
+        setState(() {
+          currentTrafficStatus = "Lokasi tidak tersedia";
+          currentDuration = "--";
+        });
+      }
+      return;
+    }
+
+    // Tambahkan cek kunci API
+    if (mapsApiKey.isEmpty) {
+      if (mounted) {
+        setState(() {
+          currentTrafficStatus = "Kunci API Hilang";
+          currentDuration = "N/A";
+        });
+      }
+      return;
+    }
+
+
+    final LatLng origin = LatLng(userPosition!.latitude, userPosition!.longitude);
+
+    // Tentukan tujuan yang RELEVAN (tetap gunakan contoh koordinat Monas)
+    const LatLng destination = LatLng(-6.214620, 106.845130);
+
+    // MENGGUNAKAN mapsApiKey dari State
+    final String url = 'https://maps.googleapis.com/maps/api/directions/json?'
+        'origin=${origin.latitude},${origin.longitude}'
+        '&destination=${destination.latitude},${destination.longitude}'
+        '&key=$mapsApiKey'
+        '&departure_time=now';
+
+    try {
+      final response = await http.get(Uri.parse(url));
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+
+        // Memastikan respons sukses dan memiliki rute
+        if (data['routes'] != null && data['routes'].isNotEmpty) {
+          final route = data['routes'][0];
+          final leg = route['legs'][0];
+
+          final String durationText = leg['duration']['text'] ?? 'N/A';
+          final int durationSeconds = leg['duration']['value'] ?? 0;
+
+          String trafficStatus = "Lancar";
+          String durationWithTraffic = durationText;
+
+          if (leg['duration_in_traffic'] != null) {
+            final int trafficDurationSeconds = leg['duration_in_traffic']['value'] ?? durationSeconds;
+            durationWithTraffic = leg['duration_in_traffic']['text'] ?? durationText;
+
+            // Logika sederhana untuk menentukan status
+            final double ratio = trafficDurationSeconds / durationSeconds;
+
+            if (ratio >= 1.5) {
+              trafficStatus = "Macet";
+            } else if (ratio >= 1.2) {
+              trafficStatus = "Padat";
+            } else {
+              trafficStatus = "Lancar";
+            }
+          }
+
+          if (mounted) {
+            setState(() {
+              currentTrafficStatus = trafficStatus;
+              currentDuration = durationWithTraffic;
+            });
+          }
+        } else {
+          if (mounted) {
+            setState(() {
+              currentTrafficStatus = "Rute tidak ditemukan";
+              currentDuration = "N/A";
+            });
+          }
+        }
+      } else {
+        debugPrint('Failed to load traffic data: ${response.statusCode}');
+        if (mounted) {
+          setState(() {
+            currentTrafficStatus = "Gagal mengambil data";
+            currentDuration = "N/A";
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint('Traffic API Error: $e');
+      if (mounted) {
+        setState(() {
+          currentTrafficStatus = "Error jaringan";
+          currentDuration = "N/A";
         });
       }
     }
@@ -378,6 +499,14 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildTrafficCard() {
+    // Tentukan posisi awal
+    final initialPosition = userPosition != null
+        ? LatLng(userPosition!.latitude, userPosition!.longitude)
+        : _defaultLocation;
+
+    final String status = currentTrafficStatus;
+    final String duration = currentDuration;
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -386,15 +515,33 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       child: Row(
         children: [
-          // Fake map image
           Container(
             width: 120,
             height: 120,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(12),
-              image: const DecorationImage(
-                image: AssetImage("assets/images/map.png"),
-                fit: BoxFit.cover,
+              border: Border.all(color: const Color(0xFFE0E0E0)),
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: GoogleMap(
+                initialCameraPosition: CameraPosition(
+                  target: initialPosition,
+                  zoom: 15,
+                ),
+                onMapCreated: (controller) {
+                  mapController = controller;
+                },
+                myLocationEnabled: true,
+                myLocationButtonEnabled: false,
+                zoomControlsEnabled: false,
+                scrollGesturesEnabled: false, // Nonaktifkan interaksi agar map terlihat statis di card
+                zoomGesturesEnabled: false,
+                tiltGesturesEnabled: false,
+                rotateGesturesEnabled: false,
+                trafficEnabled: true, //
+                mapType: MapType.normal,
+
               ),
             ),
           ),
@@ -403,7 +550,6 @@ class _HomeScreenState extends State<HomeScreen> {
           Expanded(
             child: LayoutBuilder(
               builder: (context, constraints) {
-                final String status = "Padat"; // <-- nanti bisa dynamic
                 final Color lineColor = _getTrafficColor(status);
                 final double lineWidth = _getTrafficLineWidth(
                   status,
@@ -432,7 +578,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       color: lineColor,
                     ),
                     const Text(
-                      "12.9 Kilometer",
+                      "12.9 Kilometer", // <-- Tetap statis, perlu API untuk data real
                       style: TextStyle(
                         fontSize: 20,
                         color: Color(0xff3d3d3d),
@@ -449,6 +595,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       alignment: Alignment.centerRight,
                       child: GestureDetector(
                         onTap: () {
+                          // Navigasi ke halaman detail atau buka Map full-screen
                           Navigator.pushNamed(context, '/lalulintas');
                         },
                         child: const Text(
@@ -470,6 +617,7 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
+
 
   Widget _buildWeatherRow(BuildContext context) {
     return Row(
@@ -496,14 +644,14 @@ class _HomeScreenState extends State<HomeScreen> {
     required String subtitle,
     required Widget icon,
     required bool isActive,
-    required BuildContext context, // tambahkan context
+    required BuildContext context,
   }) {
     return GestureDetector(
       onTap: () {
         Navigator.pushNamed(context, "/weather");
       },
       child: Container(
-        height: 120,
+        height: 150,
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: Colors.white,
@@ -533,11 +681,18 @@ class _HomeScreenState extends State<HomeScreen> {
                           color: Color(0xff292D32),
                           fontWeight: FontWeight.bold,
                         ),
-                        minFontSize: 8,
+                        minFontSize: 10,
                         maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 4),
-                      Text(title, style: const TextStyle(fontSize: 12)),
+                      AutoSizeText(
+                        title,
+                        style: const TextStyle(fontSize: 14),
+                        minFontSize: 8,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ],
                   ),
                 ),
@@ -583,9 +738,10 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
 
+
   Widget _menuCards(BuildContext context) {
     return Container(
-      height: 120,
+      height: 150,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -601,6 +757,7 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           _menuCard("Log Perjalanan", "assets/icons/log.png"),
           GestureDetector(
@@ -636,14 +793,18 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Image.asset(iconPath, width: 26, height: 26),
           ),
           const SizedBox(height: 6),
-          AutoSizeText(
-            title,
-            textAlign: TextAlign.center,
-            softWrap: true,
-            overflow: TextOverflow.fade,
-            style: const TextStyle(fontSize: 9),
-            maxLines: 2,
-            minFontSize: 8,
+
+          /// 🔥 AutoSizeText untuk title, max 2 baris
+          SizedBox(
+            width: 80, // supaya lebih stabil & tidak melebar
+            child: AutoSizeText(
+              title,
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 12),
+              maxLines: 2,
+              minFontSize: 8,
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
         ],
       ),
@@ -989,9 +1150,8 @@ Color _getTrafficColor(String status) {
       return Colors.red;
     case "padat":
       return Colors.orange;
-    case "normal":
-      return Colors.yellow.shade700;
     case "lancar":
+    case "normal":
       return Colors.blue;
     default:
       return Colors.grey;
