@@ -36,6 +36,8 @@ dev_dependencies:
     sdk: flutter
 
   flutter_lints: ^5.0.0
+  flutter_launcher_icons: ^0.13.1
+
 
 flutter:
   uses-material-design: true  
@@ -56,3 +58,11 @@ flutter:
           weight: 700
         - asset: assets/euclid-circular-a/Euclid Circular A Light.ttf
           weight: 300
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  web:
+    generate: true
+    image_path: "assets/icons/icons.png"
+  image_path: "assets/icons/icons.png"
