@@ -1,7 +1,11 @@
+import 'dart:io';
+import 'dart:typed_data';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:path/path.dart' as p;
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:uride/routes/app_routes.dart';
-import 'package:uride/screen/vehicle_detail_page.dart';
 
 class TambahKendaraanPage extends StatefulWidget {
   const TambahKendaraanPage({super.key});
@@ -16,42 +20,149 @@ class _TambahKendaraanPageState extends State<TambahKendaraanPage> {
   final TextEditingController kilometerC = TextEditingController();
   final TextEditingController lastServiceDateC = TextEditingController();
 
-  bool isMotor = false;
-  bool isMobil = true;
+  String selectedType = "motor";
 
-  Future<void> simpanKendaraan() async {
+  // IMAGE VARIABLES
+  File? vehicleImage; // mobile/desktop
+  Uint8List? _webImageBytes; // web
+  String? uploadedImageUrl;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final args =
+        ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>?;
+
+    if (args != null && args.containsKey("type")) {
+      selectedType = args["type"];
+    }
+  }
+
+  // =============================================================
+  //                     PICK IMAGE
+  // =============================================================
+  Future<void> pickImage() async {
+    final picker = ImagePicker();
+    final file = await picker.pickImage(source: ImageSource.gallery);
+
+    if (file == null) return;
+
+    if (kIsWeb) {
+      _webImageBytes = await file.readAsBytes();
+      setState(() {});
+    } else {
+      vehicleImage = File(file.path);
+      setState(() {});
+    }
+  }
+
+  // =============================================================
+  //    UPLOAD IMAGE TO SUPABASE (100% FIXED VERSION)
+  // =============================================================
+  Future<String?> uploadImage() async {
     final supabase = Supabase.instance.client;
 
-    // ambil user yg sedang login
-    final userId = 'ac2240e5-5bf9-4314-8892-0f925639bde8';
+    try {
+      // ---------- MOBILE / DESKTOP ----------
+      if (!kIsWeb && vehicleImage != null) {
+        final ext = p.extension(vehicleImage!.path);
+        final fileName = "${DateTime.now().millisecondsSinceEpoch}$ext";
+
+        final storagePath = "vehicles/$fileName";
+
+        await supabase.storage
+            .from("images")
+            .upload(
+              storagePath,
+              vehicleImage!,
+              fileOptions: const FileOptions(upsert: false),
+            );
+
+        // ❗ Ambil Public URL dari storagePath (bukan dari result)
+        final publicUrl = supabase.storage
+            .from("images")
+            .getPublicUrl(storagePath);
+
+        return publicUrl;
+      }
+
+      // ------------ WEB --------------
+      if (kIsWeb && _webImageBytes != null) {
+        final fileName = "${DateTime.now().millisecondsSinceEpoch}.jpg";
+        final storagePath = "vehicles/$fileName";
+
+        await supabase.storage
+            .from("images")
+            .uploadBinary(
+              storagePath,
+              _webImageBytes!,
+              fileOptions: const FileOptions(upsert: false),
+            );
+
+        final publicUrl = supabase.storage
+            .from("images")
+            .getPublicUrl(storagePath);
+
+        return publicUrl;
+      }
+
+      return null;
+    } catch (e) {
+      debugPrint("Upload Error: $e");
+      return null;
+    }
+  }
+
+  // =============================================================
+  //                   SAVE VEHICLE TO DB
+  // =============================================================
+  Future<void> simpanKendaraan() async {
+    final supabase = Supabase.instance.client;
+    final user = supabase.auth.currentUser;
+
+    if (user == null) return;
+
+    // Upload image first
+    final imageUrl = await uploadImage();
 
     final data = {
-      "userid": userId, // <<< tambahan penting
-      "vehicletype": isMotor ? "motor" : "mobil",
+      "userid": user.id,
+      "vehicletype": selectedType,
       "vehiclename": namaKendaraanC.text,
       "vehiclenumber": nomorPlatC.text,
       "kilometer": kilometerC.text,
       "lastservicedate": lastServiceDateC.text,
+      "img": imageUrl ?? "", // simpan public URL supabase
     };
 
-    final response = await supabase.from('vehicles').insert(data);
+    try {
+      final response = await supabase
+          .from('vehicles')
+          .insert(data)
+          .select()
+          .single();
 
-    if (response != null && response.isNotEmpty) {
-      // Clear form setelah berhasil save
-      namaKendaraanC.clear();
-      nomorPlatC.clear();
-      kilometerC.clear();
-      lastServiceDateC.clear();
+      final vehicleId = response['id'];
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Kendaraan berhasil disimpan!")),
       );
 
-      // Direct ke halaman VehicleDetailPage()
-      Navigator.pushReplacementNamed(context, AppRoutes.vehicle);
+      Navigator.pushNamed(
+        context,
+        '/vehicle',
+        arguments: {"id": vehicleId, "type": selectedType},
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Error: $e")));
     }
   }
 
+  // =============================================================
+  // UI
+  // =============================================================
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -60,9 +171,17 @@ class _TambahKendaraanPageState extends State<TambahKendaraanPage> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         centerTitle: true,
-        title: Text(
+        leading: GestureDetector(
+          onTap: () => Navigator.pop(context),
+          child: const Icon(
+            Icons.arrow_back,
+            size: 28,
+            color: Colors.black,
+          ),
+        ),
+        title: const Text(
           "Tambah Kendaraan",
-          style: const TextStyle(
+          style: TextStyle(
             fontFamily: "Euclid",
             fontSize: 18,
             fontWeight: FontWeight.w600,
@@ -74,121 +193,8 @@ class _TambahKendaraanPageState extends State<TambahKendaraanPage> {
         padding: const EdgeInsets.symmetric(horizontal: 20),
         child: Column(
           children: [
-            // TAB MOTOR - MOBIL
-            Container(
-              padding: const EdgeInsets.all(4),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(30),
-              ),
-              child: Row(
-                mainAxisAlignment:
-                    MainAxisAlignment.center, // ← BIAR TETAP DI TENGAH
-                children: [
-                  // ---------------- MOTOR ----------------
-                  SizedBox(
-                    width: 150,
-                    child: GestureDetector(
-                      onTap: () => setState(() {
-                        isMotor = true;
-                        isMobil = false;
-                      }),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(30),
-                          gradient: isMotor
-                              ? const LinearGradient(
-                                  colors: [
-                                    Color(0xFFFED46A),
-                                    Color(0xFFFFB000),
-                                  ],
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                )
-                              : null,
-                          color: isMotor ? null : const Color(0xffE3E3E3),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Image.asset(
-                              isMotor
-                                  ? "images/motor-clicked.png"
-                                  : "images/motor-default.png",
-                              width: 22,
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              "Motor",
-                              style: TextStyle(
-                                fontFamily: "Euclid",
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                                color: isMotor ? Colors.white : Colors.black,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
+            const SizedBox(height: 10),
 
-                  const SizedBox(width: 20),
-
-                  // ---------------- MOBIL ----------------
-                  SizedBox(
-                    width: 150,
-                    child: GestureDetector(
-                      onTap: () => setState(() {
-                        isMotor = false;
-                        isMobil = true;
-                      }),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(30),
-                          gradient: isMobil
-                              ? const LinearGradient(
-                                  colors: [
-                                    Color(0xFFFED46A),
-                                    Color(0xFFFFB000),
-                                  ],
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                )
-                              : null,
-                          color: isMobil ? null : const Color(0xffE3E3E3),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Image.asset(
-                              isMobil
-                                  ? "images/mobil-clicked.png"
-                                  : "images/mobil-default.png",
-                              width: 22,
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              "Mobil",
-                              style: TextStyle(
-                                fontFamily: "Euclid",
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                                color: isMobil ? Colors.white : Colors.black,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 25),
-
-            // FORM CARD
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
@@ -212,11 +218,46 @@ class _TambahKendaraanPageState extends State<TambahKendaraanPage> {
                   ),
 
                   const SizedBox(height: 15),
-                  buildLabel("Nomor plat"),
-                  buildField(
-                    "Masukkan nomor plat kendaraan",
-                    controller: nomorPlatC,
+                  buildLabel("Foto Kendaraan"),
+                  const SizedBox(height: 6),
+
+                  GestureDetector(
+                    onTap: pickImage,
+                    child: Container(
+                      height: 140,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: Colors.grey.shade300),
+                        color: const Color(0xFFF8F8F8),
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(16),
+                        child: _webImageBytes != null
+                            ? Image.memory(
+                                _webImageBytes!,
+                                fit: BoxFit.cover,
+                                width: double.infinity,
+                              )
+                            : vehicleImage != null
+                            ? Image.file(
+                                vehicleImage!,
+                                fit: BoxFit.cover,
+                                width: double.infinity,
+                              )
+                            : const Center(
+                                child: Icon(
+                                  Icons.camera_alt_outlined,
+                                  size: 32,
+                                  color: Colors.grey,
+                                ),
+                              ),
+                      ),
+                    ),
                   ),
+
+                  const SizedBox(height: 30),
+                  buildLabel("Nomor Plat"),
+                  buildField("Masukkan nomor plat", controller: nomorPlatC),
 
                   const SizedBox(height: 15),
                   buildLabel("Kilometer"),
@@ -234,47 +275,23 @@ class _TambahKendaraanPageState extends State<TambahKendaraanPage> {
 
                   const SizedBox(height: 20),
 
-                  Text(
-                    "Waktu berkendara",
-                    style: const TextStyle(
-                      fontFamily: "Euclid",
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    "Catatan : waktu berkendara akan mulai dihitung saat Anda memasukkan informasi kendaraan.",
-                    style: TextStyle(
-                      fontFamily: "Euclid",
-                      fontSize: 11,
-                      color: Colors.grey[600],
-                    ),
-                  ),
-
-                  const SizedBox(height: 25),
-
-                  // BUTTON SIMPAN
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
-                      onPressed: () {
-                        simpanKendaraan();
-                      },
+                      onPressed: simpanKendaraan,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xffFEB800),
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(30),
                         ),
-                        elevation: 0,
                       ),
-                      child: Text(
+                      child: const Text(
                         "Simpan",
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontFamily: "Euclid",
-                          fontWeight: FontWeight.w600,
                           fontSize: 15,
+                          fontWeight: FontWeight.w600,
                           color: Colors.white,
                         ),
                       ),
