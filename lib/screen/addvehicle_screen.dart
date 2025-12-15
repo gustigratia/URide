@@ -1,4 +1,10 @@
+import 'dart:io';
+import 'dart:typed_data';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:path/path.dart' as p;
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class TambahKendaraanPage extends StatefulWidget {
@@ -14,25 +20,104 @@ class _TambahKendaraanPageState extends State<TambahKendaraanPage> {
   final TextEditingController kilometerC = TextEditingController();
   final TextEditingController lastServiceDateC = TextEditingController();
 
-  String selectedType = "motor"; // default
+  String selectedType = "motor";
+
+  // IMAGE VARIABLES
+  File? vehicleImage; // mobile/desktop
+  Uint8List? _webImageBytes; // web
+  String? uploadedImageUrl;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-
     final args =
         ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>?;
 
     if (args != null && args.containsKey("type")) {
-      selectedType = args["type"]; // motor / mobil
+      selectedType = args["type"];
     }
   }
 
-  Future<void> simpanKendaraan() async {
+  // =============================================================
+  //                     PICK IMAGE
+  // =============================================================
+  Future<void> pickImage() async {
+    final picker = ImagePicker();
+    final file = await picker.pickImage(source: ImageSource.gallery);
+
+    if (file == null) return;
+
+    if (kIsWeb) {
+      _webImageBytes = await file.readAsBytes();
+      setState(() {});
+    } else {
+      vehicleImage = File(file.path);
+      setState(() {});
+    }
+  }
+
+  // =============================================================
+  //    UPLOAD IMAGE TO SUPABASE (100% FIXED VERSION)
+  // =============================================================
+  Future<String?> uploadImage() async {
     final supabase = Supabase.instance.client;
 
+    try {
+      // ---------- MOBILE / DESKTOP ----------
+      if (!kIsWeb && vehicleImage != null) {
+        final ext = p.extension(vehicleImage!.path);
+        final fileName = "${DateTime.now().millisecondsSinceEpoch}$ext";
+
+        final storagePath = "vehicles/$fileName";
+
+        await supabase.storage.from("images").upload(
+              storagePath,
+              vehicleImage!,
+              fileOptions: const FileOptions(upsert: false),
+            );
+
+        // ❗ Ambil Public URL dari storagePath (bukan dari result)
+        final publicUrl =
+            supabase.storage.from("images").getPublicUrl(storagePath);
+
+        return publicUrl;
+      }
+
+      // ------------ WEB --------------
+      if (kIsWeb && _webImageBytes != null) {
+        final fileName = "${DateTime.now().millisecondsSinceEpoch}.jpg";
+        final storagePath = "vehicles/$fileName";
+
+        await supabase.storage.from("images").uploadBinary(
+              storagePath,
+              _webImageBytes!,
+              fileOptions: const FileOptions(upsert: false),
+            );
+
+        final publicUrl =
+            supabase.storage.from("images").getPublicUrl(storagePath);
+
+        return publicUrl;
+      }
+
+      return null;
+    } catch (e) {
+      debugPrint("Upload Error: $e");
+      return null;
+    }
+  }
+
+  // =============================================================
+  //                   SAVE VEHICLE TO DB
+  // =============================================================
+  Future<void> simpanKendaraan() async {
+    final supabase = Supabase.instance.client;
     final user = supabase.auth.currentUser;
+
     if (user == null) return;
+
+    // Upload image first
+    final imageUrl = await uploadImage();
 
     final data = {
       "userid": user.id,
@@ -41,14 +126,12 @@ class _TambahKendaraanPageState extends State<TambahKendaraanPage> {
       "vehiclenumber": nomorPlatC.text,
       "kilometer": kilometerC.text,
       "lastservicedate": lastServiceDateC.text,
+      "img": imageUrl ?? "", // simpan public URL supabase
     };
 
     try {
-      final response = await supabase
-          .from('vehicles')
-          .insert(data)
-          .select()
-          .single();
+      final response =
+          await supabase.from('vehicles').insert(data).select().single();
 
       final vehicleId = response['id'];
 
@@ -56,19 +139,20 @@ class _TambahKendaraanPageState extends State<TambahKendaraanPage> {
         const SnackBar(content: Text("Kendaraan berhasil disimpan!")),
       );
 
-      // ➜ KIRIM TYPE + ID
       Navigator.pushNamed(
         context,
         '/vehicle',
         arguments: {"id": vehicleId, "type": selectedType},
       );
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text("Error: $e")));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text("Error: $e")));
     }
   }
 
+  // =============================================================
+  // UI
+  // =============================================================
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -81,11 +165,8 @@ class _TambahKendaraanPageState extends State<TambahKendaraanPage> {
           onTap: () => Navigator.pop(context),
           child: const Padding(
             padding: EdgeInsets.only(left: 10),
-            child: Icon(
-              Icons.arrow_back_ios_new,
-              color: Colors.black,
-              size: 20,
-            ),
+            child: Icon(Icons.arrow_back_ios_new,
+                color: Colors.black, size: 20),
           ),
         ),
         title: const Text(
@@ -104,7 +185,6 @@ class _TambahKendaraanPageState extends State<TambahKendaraanPage> {
           children: [
             const SizedBox(height: 10),
 
-            // FORM CARD
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
@@ -122,33 +202,55 @@ class _TambahKendaraanPageState extends State<TambahKendaraanPage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   buildLabel("Nama Kendaraan"),
-                  buildField(
-                    "Masukkan nama kendaraan",
-                    controller: namaKendaraanC,
-                  ),
+                  buildField("Masukkan nama kendaraan",
+                      controller: namaKendaraanC),
 
                   const SizedBox(height: 15),
-                  buildLabel("Nomor plat"),
-                  buildField(
-                    "Masukkan nomor plat kendaraan",
-                    controller: nomorPlatC,
-                  ),
+                  buildLabel("Foto Kendaraan"),
+                  const SizedBox(height: 6),
 
-                  const SizedBox(height: 15),
-                  buildLabel("Kilometer"),
-                  buildField(
-                    "Masukkan kilometer kendaraan",
-                    controller: kilometerC,
-                  ),
-
-                  const SizedBox(height: 15),
-                  buildLabel("Tanggal Servis Terakhir"),
-                  buildField(
-                    "Masukkan tanggal servis terakhir (YY-MM-DD)",
-                    controller: lastServiceDateC,
+                  GestureDetector(
+                    onTap: pickImage,
+                    child: Container(
+                      height: 140,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: Colors.grey.shade300),
+                        color: const Color(0xFFF8F8F8),
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(16),
+                        child: _webImageBytes != null
+                            ? Image.memory(_webImageBytes!,
+                                fit: BoxFit.cover, width: double.infinity)
+                            : vehicleImage != null
+                                ? Image.file(vehicleImage!,
+                                    fit: BoxFit.cover,
+                                    width: double.infinity)
+                                : const Center(
+                                    child: Icon(Icons.camera_alt_outlined,
+                                        size: 32, color: Colors.grey),
+                                  ),
+                      ),
+                    ),
                   ),
 
                   const SizedBox(height: 30),
+                  buildLabel("Nomor Plat"),
+                  buildField("Masukkan nomor plat",
+                      controller: nomorPlatC),
+
+                  const SizedBox(height: 15),
+                  buildLabel("Kilometer"),
+                  buildField("Masukkan kilometer kendaraan",
+                      controller: kilometerC),
+
+                  const SizedBox(height: 15),
+                  buildLabel("Tanggal Servis Terakhir"),
+                  buildField("Masukkan tanggal servis terakhir (YY-MM-DD)",
+                      controller: lastServiceDateC),
+
+                  const SizedBox(height: 20),
 
                   SizedBox(
                     width: double.infinity,

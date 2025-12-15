@@ -1,4 +1,10 @@
+import 'dart:io';
+import 'dart:typed_data';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:path/path.dart' as p;
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class EditKendaraanPage extends StatefulWidget {
@@ -16,6 +22,12 @@ class _EditKendaraanPageState extends State<EditKendaraanPage> {
   late Object vehicleId;
   int? vehicleIndex;
   bool hasVehicleId = false;
+
+  // ===================== IMAGE STATE ======================
+  String? currentImageUrl; // URL gambar lama
+  File? vehicleImage; // mobile/desktop
+  Uint8List? webImageBytes; // web
+  bool uploading = false;
 
   @override
   void didChangeDependencies() {
@@ -55,12 +67,101 @@ class _EditKendaraanPageState extends State<EditKendaraanPage> {
         namaC.text = data["vehiclename"] ?? "";
         platC.text = data["vehiclenumber"] ?? "";
         kilometerC.text = data["kilometer"]?.toString() ?? "";
+        currentImageUrl = data["img"] ?? "";
       });
     }
   }
 
   // ======================================================
-  //                 UPDATE DATA
+  //               PICK IMAGE (WEB & MOBILE)
+  // ======================================================
+  Future<void> pickImage() async {
+    final picker = ImagePicker();
+    final file = await picker.pickImage(source: ImageSource.gallery);
+
+    if (file == null) return;
+
+    if (kIsWeb) {
+      webImageBytes = await file.readAsBytes();
+      vehicleImage = null;
+    } else {
+      vehicleImage = File(file.path);
+      webImageBytes = null;
+    }
+
+    setState(() {});
+  }
+
+  // ======================================================
+  //     DELETE OLD IMAGE FROM SUPABASE STORAGE
+  // ======================================================
+  Future<void> deleteOldImage(String? imageUrl) async {
+    if (imageUrl == null || imageUrl.isEmpty) return;
+
+    try {
+      final supabase = Supabase.instance.client;
+
+      // base URL bucket
+      final bucketUrl = supabase.storage.from("images").getPublicUrl("");
+
+      // remove base URL → dapat path asli
+      String path = imageUrl.replaceFirst(bucketUrl, "");
+
+      // hapus "/" diawal jika ada
+      if (path.startsWith("/")) {
+        path = path.substring(1);
+      }
+
+      await supabase.storage.from("images").remove([path]);
+
+      debugPrint("Deleted old image: $path");
+    } catch (e) {
+      debugPrint("Delete image error: $e");
+    }
+  }
+
+  // ======================================================
+  //         UPLOAD NEW IMAGE TO SUPABASE STORAGE
+  // ======================================================
+  Future<String?> uploadImage() async {
+    final supabase = Supabase.instance.client;
+
+    try {
+      String fileName =
+          "${DateTime.now().millisecondsSinceEpoch}.jpg";
+      String storagePath = "vehicles/$fileName";
+
+      // WEB
+      if (kIsWeb && webImageBytes != null) {
+        await supabase.storage.from("images").uploadBinary(
+              storagePath,
+              webImageBytes!,
+              fileOptions: const FileOptions(upsert: false),
+            );
+
+        return supabase.storage.from("images").getPublicUrl(storagePath);
+      }
+
+      // MOBILE / DESKTOP
+      if (!kIsWeb && vehicleImage != null) {
+        await supabase.storage.from("images").upload(
+              storagePath,
+              vehicleImage!,
+              fileOptions: const FileOptions(upsert: false),
+            );
+
+        return supabase.storage.from("images").getPublicUrl(storagePath);
+      }
+
+      return null;
+    } catch (e) {
+      debugPrint("Upload Error: $e");
+      return null;
+    }
+  }
+
+  // ======================================================
+  //                    UPDATE VEHICLE
   // ======================================================
   Future<void> updateVehicle() async {
     if (!hasVehicleId) return;
@@ -70,12 +171,28 @@ class _EditKendaraanPageState extends State<EditKendaraanPage> {
 
     if (user == null) return;
 
+    String newImageUrl = currentImageUrl ?? "";
+
+    bool hasNewImage = (vehicleImage != null || webImageBytes != null);
+
+    if (hasNewImage) {
+      final uploadedUrl = await uploadImage();
+
+      if (uploadedUrl != null) {
+        // Hapus file lama dari storage
+        await deleteOldImage(currentImageUrl);
+
+        newImageUrl = uploadedUrl;
+      }
+    }
+
     await supabase
         .from("vehicles")
         .update({
           "vehiclename": namaC.text.trim(),
           "vehiclenumber": platC.text.trim(),
           "kilometer": int.tryParse(kilometerC.text.trim()) ?? 0,
+          "img": newImageUrl,
         })
         .eq("id", vehicleId)
         .eq("userid", user.id);
@@ -89,7 +206,7 @@ class _EditKendaraanPageState extends State<EditKendaraanPage> {
   }
 
   // ======================================================
-  //                 DELETE DATA
+  //                    DELETE VEHICLE
   // ======================================================
   Future<void> deleteVehicle() async {
     if (!hasVehicleId) return;
@@ -98,6 +215,9 @@ class _EditKendaraanPageState extends State<EditKendaraanPage> {
     final user = supabase.auth.currentUser;
 
     if (user == null) return;
+
+    // hapus gambar dulu
+    await deleteOldImage(currentImageUrl);
 
     await supabase
         .from("vehicles")
@@ -152,6 +272,7 @@ class _EditKendaraanPageState extends State<EditKendaraanPage> {
 
               const SizedBox(height: 25),
 
+              // FORM CARD
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(24),
@@ -169,188 +290,100 @@ class _EditKendaraanPageState extends State<EditKendaraanPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // ====================
-                    // INPUT NAMA
-                    // ====================
                     const Text(
-                      "Nama Kendaraan",
+                      "Foto Kendaraan",
                       style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
                     const SizedBox(height: 8),
+
+                    GestureDetector(
+                      onTap: pickImage,
+                      child: Container(
+                        height: 150,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: Colors.grey.shade300),
+                          color: const Color(0xFFF3F3F3),
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(16),
+                          child: webImageBytes != null
+                              ? Image.memory(webImageBytes!, fit: BoxFit.cover)
+                              : vehicleImage != null
+                                  ? Image.file(vehicleImage!, fit: BoxFit.cover)
+                                  : (currentImageUrl != null &&
+                                          currentImageUrl!.isNotEmpty)
+                                      ? Image.network(currentImageUrl!,
+                                          fit: BoxFit.cover)
+                                      : const Center(
+                                          child: Icon(
+                                            Icons.camera_alt_outlined,
+                                            color: Colors.grey,
+                                            size: 32,
+                                          ),
+                                        ),
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 25),
+
+                    _label("Nama Kendaraan"),
                     _inputField("Masukkan nama kendaraan", namaC),
-                    const SizedBox(height: 22),
+                    const SizedBox(height: 20),
 
-                    // ====================
-                    // INPUT PLAT
-                    // ====================
-                    const Text(
-                      "Nomor plat",
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
+                    _label("Nomor Plat"),
                     _inputField("Masukkan nomor plat kendaraan", platC),
-                    const SizedBox(height: 22),
+                    const SizedBox(height: 20),
 
-                    // ====================
-                    // INPUT KM
-                    // ====================
-                    const Text(
-                      "Kilometer",
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    _inputField("Masukkan kilometer kendaraan", kilometerC),
-
+                    _label("Kilometer"),
+                    _inputField("Masukkan kilometer", kilometerC),
                     const SizedBox(height: 28),
 
-                    // ======================================================
-                    //                 BUTTON HAPUS (Dialog Putih)
-                    // ======================================================
+                    // DELETE BUTTON
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
+                        onPressed: deleteVehicle,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.red.shade600,
+                          backgroundColor: Colors.red,
                           padding: const EdgeInsets.symmetric(vertical: 14),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(30),
                           ),
-                          elevation: 0,
                         ),
-                        onPressed: () async {
-                          final confirm = await showDialog<bool>(
-                            context: context,
-                            builder: (ctx) {
-                              return Dialog(
-                                backgroundColor: Colors.white,
-                                insetPadding: const EdgeInsets.all(40),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(16),
-                                ),
-                                child: Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 24, vertical: 22),
-                                  child: Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      const Text(
-                                        "Hapus Kendaraan",
-                                        style: TextStyle(
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.w700,
-                                          color: Colors.black,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 12),
-                                      const Text(
-                                        "Anda yakin ingin menghapus kendaraan ini? Tindakan ini tidak dapat dibatalkan.",
-                                        style: TextStyle(
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w400,
-                                          color: Colors.black87,
-                                          height: 1.4,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 24),
-
-                                      Row(
-                                        mainAxisAlignment: MainAxisAlignment.end,
-                                        children: [
-                                          TextButton(
-                                            onPressed: () =>
-                                                Navigator.pop(ctx, false),
-                                            child: const Text(
-                                              "Batal",
-                                              style: TextStyle(
-                                                fontSize: 14,
-                                                color: Colors.grey,
-                                                fontWeight: FontWeight.w500,
-                                              ),
-                                            ),
-                                          ),
-                                          const SizedBox(width: 8),
-                                          ElevatedButton(
-                                            style: ElevatedButton.styleFrom(
-                                              backgroundColor:
-                                                  Colors.red.shade600,
-                                              shape: RoundedRectangleBorder(
-                                                borderRadius:
-                                                    BorderRadius.circular(10),
-                                              ),
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                      horizontal: 18,
-                                                      vertical: 10),
-                                            ),
-                                            onPressed: () =>
-                                                Navigator.pop(ctx, true),
-                                            child: const Text(
-                                              "Hapus",
-                                              style: TextStyle(
-                                                fontSize: 14,
-                                                color: Colors.white,
-                                                fontWeight: FontWeight.w600,
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      )
-                                    ],
-                                  ),
-                                ),
-                              );
-                            },
-                          );
-
-                          if (confirm == true) {
-                            await deleteVehicle();
-                          }
-                        },
                         child: const Text(
                           "Hapus Kendaraan",
                           style: TextStyle(
-                            fontWeight: FontWeight.w600,
-                            fontSize: 15,
                             color: Colors.white,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
                       ),
                     ),
 
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 15),
 
-                    // ======================================================
-                    //                 BUTTON SIMPAN
-                    // ======================================================
+                    // SAVE BUTTON
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
+                        onPressed: updateVehicle,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFFFC107),
+                          backgroundColor: Colors.orange,
                           padding: const EdgeInsets.symmetric(vertical: 14),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(30),
                           ),
-                          elevation: 0,
                         ),
-                        onPressed: updateVehicle,
                         child: const Text(
                           "Simpan",
                           style: TextStyle(
-                            fontWeight: FontWeight.w600,
-                            fontSize: 15,
                             color: Colors.white,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
                       ),
@@ -367,12 +400,22 @@ class _EditKendaraanPageState extends State<EditKendaraanPage> {
     );
   }
 
+  Widget _label(String text) {
+    return Text(
+      text,
+      style: const TextStyle(
+        fontSize: 15,
+        fontWeight: FontWeight.w600,
+      ),
+    );
+  }
+
   Widget _inputField(String hint, TextEditingController controller) {
     return Container(
-      margin: const EdgeInsets.only(top: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 18),
+      margin: const EdgeInsets.only(top: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(14),
         border: Border.all(color: Colors.grey.shade300),
       ),
       child: TextField(
