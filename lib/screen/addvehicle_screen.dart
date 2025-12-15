@@ -70,15 +70,18 @@ class _TambahKendaraanPageState extends State<TambahKendaraanPage> {
 
         final storagePath = "vehicles/$fileName";
 
-        await supabase.storage.from("images").upload(
+        await supabase.storage
+            .from("images")
+            .upload(
               storagePath,
               vehicleImage!,
               fileOptions: const FileOptions(upsert: false),
             );
 
         // ❗ Ambil Public URL dari storagePath (bukan dari result)
-        final publicUrl =
-            supabase.storage.from("images").getPublicUrl(storagePath);
+        final publicUrl = supabase.storage
+            .from("images")
+            .getPublicUrl(storagePath);
 
         return publicUrl;
       }
@@ -88,14 +91,17 @@ class _TambahKendaraanPageState extends State<TambahKendaraanPage> {
         final fileName = "${DateTime.now().millisecondsSinceEpoch}.jpg";
         final storagePath = "vehicles/$fileName";
 
-        await supabase.storage.from("images").uploadBinary(
+        await supabase.storage
+            .from("images")
+            .uploadBinary(
               storagePath,
               _webImageBytes!,
               fileOptions: const FileOptions(upsert: false),
             );
 
-        final publicUrl =
-            supabase.storage.from("images").getPublicUrl(storagePath);
+        final publicUrl = supabase.storage
+            .from("images")
+            .getPublicUrl(storagePath);
 
         return publicUrl;
       }
@@ -130,8 +136,11 @@ class _TambahKendaraanPageState extends State<TambahKendaraanPage> {
     };
 
     try {
-      final response =
-          await supabase.from('vehicles').insert(data).select().single();
+      final response = await supabase
+          .from('vehicles')
+          .insert(data)
+          .select()
+          .single();
 
       final vehicleId = response['id'];
 
@@ -145,8 +154,9 @@ class _TambahKendaraanPageState extends State<TambahKendaraanPage> {
         arguments: {"id": vehicleId, "type": selectedType},
       );
     } catch (e) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text("Error: $e")));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Error: $e")));
     }
   }
 
@@ -163,10 +173,10 @@ class _TambahKendaraanPageState extends State<TambahKendaraanPage> {
         centerTitle: true,
         leading: GestureDetector(
           onTap: () => Navigator.pop(context),
-          child: const Padding(
-            padding: EdgeInsets.only(left: 10),
-            child: Icon(Icons.arrow_back_ios_new,
-                color: Colors.black, size: 20),
+          child: const Icon(
+            Icons.arrow_back,
+            size: 28,
+            color: Colors.black,
           ),
         ),
         title: const Text(
@@ -202,8 +212,10 @@ class _TambahKendaraanPageState extends State<TambahKendaraanPage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   buildLabel("Nama Kendaraan"),
-                  buildField("Masukkan nama kendaraan",
-                      controller: namaKendaraanC),
+                  buildField(
+                    "Masukkan nama kendaraan",
+                    controller: namaKendaraanC,
+                  ),
 
                   const SizedBox(height: 15),
                   buildLabel("Foto Kendaraan"),
@@ -221,34 +233,45 @@ class _TambahKendaraanPageState extends State<TambahKendaraanPage> {
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(16),
                         child: _webImageBytes != null
-                            ? Image.memory(_webImageBytes!,
-                                fit: BoxFit.cover, width: double.infinity)
+                            ? Image.memory(
+                                _webImageBytes!,
+                                fit: BoxFit.cover,
+                                width: double.infinity,
+                              )
                             : vehicleImage != null
-                                ? Image.file(vehicleImage!,
-                                    fit: BoxFit.cover,
-                                    width: double.infinity)
-                                : const Center(
-                                    child: Icon(Icons.camera_alt_outlined,
-                                        size: 32, color: Colors.grey),
-                                  ),
+                            ? Image.file(
+                                vehicleImage!,
+                                fit: BoxFit.cover,
+                                width: double.infinity,
+                              )
+                            : const Center(
+                                child: Icon(
+                                  Icons.camera_alt_outlined,
+                                  size: 32,
+                                  color: Colors.grey,
+                                ),
+                              ),
                       ),
                     ),
                   ),
 
                   const SizedBox(height: 30),
                   buildLabel("Nomor Plat"),
-                  buildField("Masukkan nomor plat",
-                      controller: nomorPlatC),
+                  buildField("Masukkan nomor plat", controller: nomorPlatC),
 
                   const SizedBox(height: 15),
                   buildLabel("Kilometer"),
-                  buildField("Masukkan kilometer kendaraan",
-                      controller: kilometerC),
+                  buildField(
+                    "Masukkan kilometer kendaraan",
+                    controller: kilometerC,
+                  ),
 
                   const SizedBox(height: 15),
                   buildLabel("Tanggal Servis Terakhir"),
-                  buildField("Masukkan tanggal servis terakhir (YY-MM-DD)",
-                      controller: lastServiceDateC),
+                  buildField(
+                    "Masukkan tanggal servis terakhir (YY-MM-DD)",
+                    controller: lastServiceDateC,
+                  ),
 
                   const SizedBox(height: 20),
 

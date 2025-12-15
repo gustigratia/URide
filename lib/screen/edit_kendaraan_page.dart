@@ -373,7 +373,7 @@ class _EditKendaraanPageState extends State<EditKendaraanPage> {
                       child: ElevatedButton(
                         onPressed: updateVehicle,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.orange,
+                          backgroundColor: const Color(0xffFEB800),
                           padding: const EdgeInsets.symmetric(vertical: 14),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(30),

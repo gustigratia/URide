@@ -547,6 +547,10 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
+<<<<<<< HEAD
+
+=======
+>>>>>>> 1fcfda282ba2bba04af911569d7e8141fec8f85b
 				PRODUCT_BUNDLE_IDENTIFIER = com.example.uride;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_OBJC_BRIDGING_HEADER = "Runner/Runner-Bridging-Header.h";

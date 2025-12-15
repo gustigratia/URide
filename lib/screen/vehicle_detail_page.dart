@@ -140,7 +140,7 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
                 ),
                 const SizedBox(height: 20),
                 _fullButton(
-                  icon: "images/edit.jpg",
+                  icon: "assets/images/edit.jpg",
                   title: "Tambah Kendaraan",
                   onTap: () {
                     Navigator.pushNamed(
@@ -286,7 +286,7 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
                 // BUTTON EDIT
                 // ============================
                 _fullButton(
-                  icon: "images/edit.jpg",
+                  icon: "assets/images/edit.jpg",
                   title: "Edit Informasi Kendaraan",
                   onTap: () async {
                     final result = await Navigator.pushNamed(
@@ -307,7 +307,7 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
                 const SizedBox(height: 10),
 
                 _fullButton(
-                  icon: "images/edit.jpg",
+                  icon: "assets/images/edit.jpg",
                   title: "Tambah Kendaraan",
                   onTap: () {
                     Navigator.pushNamed(

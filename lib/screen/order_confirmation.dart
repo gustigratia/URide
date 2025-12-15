@@ -12,7 +12,7 @@ class KonfirmasiAjuanScreen extends StatefulWidget {
   final String vehicleType;
   final String requestType;
   final bool isOnLocation;
-  final int price; // Tambahkan parameter price
+  final int price;
 
   const KonfirmasiAjuanScreen({
     Key? key,
@@ -75,6 +75,7 @@ class _KonfirmasiAjuanScreenState extends State<KonfirmasiAjuanScreen> {
             'price': totalFee,
             'orderdate': DateTime.now().toIso8601String(),
             'paymentstatus': 'pending',
+            'orderstatus': 'ongoing', // Penambahan value default ongoing
           })
           .select('id') // ambil ID yang baru dibuat
           .single(); // ambil satu record
@@ -439,6 +440,7 @@ class _KonfirmasiAjuanScreenState extends State<KonfirmasiAjuanScreen> {
                         'price': totalFee,
                         'orderdate': DateTime.now().toIso8601String(),
                         'paymentstatus': 'paid',
+                        'orderstatus': 'ongoing', // Penambahan value default ongoing
                       })
                       .select('id')
                       .single();
