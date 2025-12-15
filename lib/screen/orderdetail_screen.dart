@@ -1,34 +1,34 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_map/flutter_map.dart';
-import 'package:latlong2/latlong.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'cancelreason_screen.dart';
 
 class OrderDetailScreen extends StatefulWidget {
   final String title;
   final String address;
   final String fullAddress;
-  final String typeVehicle;
   final String typeCase;
+  final String typeVehicle;
   final bool statusOngoing;
   final String? date;
   final String orderId;
-
   final double lat;
   final double lng;
+  final int selectedRating;
 
   const OrderDetailScreen({
     super.key,
     required this.title,
     required this.address,
     required this.fullAddress,
-    required this.typeVehicle,
     required this.typeCase,
+    required this.typeVehicle,
     required this.statusOngoing,
     required this.lat,
     required this.lng,
     required this.orderId,
     this.date,
+    this.selectedRating = 0,
   });
 
   @override
@@ -39,12 +39,13 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   String title = "";
   String address = "";
   String fullAddress = "";
-  String typeVehicle = "";
   String typeCase = "";
+  String typeVehicle = "";
   String orderId = "";
   double lat = 0;
   double lng = 0;
   String? date = "";
+  int selectedRating = 0;
 
   // status : "ongoing" | "completed" | "cancelled"
   String orderStatus = "ongoing";
@@ -57,8 +58,8 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     title = widget.title;
     address = widget.address;
     fullAddress = widget.fullAddress;
-    typeVehicle = widget.typeVehicle;
     typeCase = widget.typeCase;
+    typeVehicle = widget.typeVehicle;
     orderId = widget.orderId;
     lat = widget.lat;
     lng = widget.lng;
@@ -233,7 +234,6 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                           ),
                         ),
                         const SizedBox(width: 8),
-                        _chip("Peta"),
                       ],
                     ),
                     const SizedBox(height: 20),
@@ -267,11 +267,6 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                       const SizedBox(height: 12),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.end,
-                        children: [
-                          _circleIcon("images/message.png"),
-                          const SizedBox(width: 18),
-                          _circleIcon("images/call.png"),
-                        ],
                       ),
                     ] else if (isCancelled) ...[
                       Text(
@@ -295,35 +290,27 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                       borderRadius: BorderRadius.circular(16),
                       child: SizedBox(
                         height: 230,
-                        child: FlutterMap(
-                          options: MapOptions(
-                            initialCenter: LatLng(lat, lng),
-                            initialZoom: 16,
+                        child: GoogleMap(
+                          initialCameraPosition: CameraPosition(
+                            target: LatLng(lat, lng),
+                            zoom: 16,
                           ),
-                          children: [
-                            TileLayer(
-                              urlTemplate:
-                                  "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
-                              userAgentPackageName: 'com.uride.app',
+                          markers: {
+                            Marker(
+                              markerId: const MarkerId("workshop_loc"),
+                              position: LatLng(lat, lng),
+                              icon: BitmapDescriptor.defaultMarkerWithHue(
+                                BitmapDescriptor.hueRed,
+                              ),
                             ),
-                            MarkerLayer(
-                              markers: [
-                                Marker(
-                                  point: LatLng(lat, lng),
-                                  width: 40,
-                                  height: 40,
-                                  child: const Icon(
-                                    Icons.location_on,
-                                    size: 40,
-                                    color: Colors.red,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
+                          },
+                          myLocationEnabled: false,
+                          zoomControlsEnabled: false,
+                          mapToolbarEnabled: true,
                         ),
                       ),
                     ),
+
                     const SizedBox(height: 20),
                     Row(
                       children: [
@@ -395,10 +382,10 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
       ),
       child: Row(
         children: [
-          Image.asset(_getIconForTag(text), width: 15, height: 15),
+          getTagIcon(text), 
           const SizedBox(width: 6),
           Text(
-            cleanText(text),
+            text,
             style: const TextStyle(
               fontFamily: "Euclid",
               fontSize: 11.5,
@@ -411,34 +398,52 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     );
   }
 
-  String _getIconForTag(String type) {
-    switch (type.toLowerCase()) {
+  Widget getTagIcon(String type) {
+    final t = type.toLowerCase();
+
+    switch (t) {
       case "motor":
-        return "images/motor-default.png";
+        return Image.asset(
+          "images/motor-default.png",
+          width: 15,
+          height: 15,
+          fit: BoxFit.contain,
+        );
+
       case "mobil":
-        return "images/mobil-default.png";
+        return Image.asset(
+          "images/mobil-default.png",
+          width: 15,
+          height: 15,
+          fit: BoxFit.contain,
+        );
+
+      case "santai":
+        return Icon(
+          Icons.circle,
+          size: 10,
+          color: const Color(0xFF61D54D), // hijau
+        );
+
       case "normal":
-        return "images/normal.png";
+        return Icon(
+          Icons.circle,
+          size: 10,
+          color: const Color(0xFFFFC727), // kuning
+        );
+
       case "emergency":
-        return "images/emergency.png";
-      case "peta":
-        return "images/arrow.png";
+        return Icon(
+          Icons.circle,
+          size: 10,
+          color: const Color(0xFFFF3B30), // merah
+        );
+
+      // ===== DEFAULT =====
       default:
-        return "images/derek.png";
+        return Image.asset("images/arrow.png", width: 15, height: 15);
     }
   }
-
-  Widget _circleIcon(String assetPath) {
-    return Container(
-      padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        border: Border.all(color: const Color(0xffEAEAEA)),
-      ),
-      child: Image.asset(assetPath, width: 20, height: 20),
-    );
-  }
-
   void _showCompleteModal(BuildContext context) {
     showModalBottomSheet(
       context: context,
@@ -507,7 +512,8 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                           orderStatus = "completed";
                         });
 
-                        _showSuccessDialog(context);
+                        // Tampilkan rating setelah selesai
+                        _showRatingModal();
                       },
                     ),
                   ),
@@ -647,6 +653,160 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
       ),
     );
   }
+
+  void _showSuccessDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  "Pesanan Berhasil Diselesaikan",
+                  style: const TextStyle(
+                    fontFamily: "Euclid",
+                    fontSize: 20,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFFE3B007),
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  "Pesanan Anda telah diselesaikan sesuai dengan permintaan. Terima kasih telah memilih layanan kami.",
+                  style: const TextStyle(fontFamily: "Euclid", fontSize: 14),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 26),
+                _filledButton(
+                  text: "Kembali",
+                  color: const Color(0xFFE3B007),
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.pop(context);
+                  },
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void _showRatingModal() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
+      ),
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text(
+                    "Berikan Rating",
+                    style: TextStyle(
+                      fontFamily: "Euclid",
+                      fontSize: 20,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFFE3B007),
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+
+                  const Text(
+                    "Seberapa puas Anda dengan layanan yang diberikan?",
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontFamily: "Euclid",
+                      fontSize: 14,
+                      color: Colors.black87,
+                    ),
+                  ),
+
+                  const SizedBox(height: 22),
+
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: List.generate(5, (index) {
+                      final starValue = index + 1;
+                      return GestureDetector(
+                        onTap: () {
+                          setModalState(() {
+                            selectedRating = starValue;
+                          });
+                        },
+                        child: Icon(
+                          selectedRating >= starValue
+                              ? Icons.star
+                              : Icons.star_border,
+                          size: 36,
+                          color: const Color(0xFFE3B007),
+                        ),
+                      );
+                    }),
+                  ),
+
+                  const SizedBox(height: 32),
+
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: selectedRating == 0
+                          ? null
+                          : () async {
+                              final supabase = Supabase.instance.client;
+
+                              await supabase
+                                  .from("orders")
+                                  .update({"rating": selectedRating})
+                                  .eq("id", orderId);
+
+                              Navigator.pop(context);
+                              _showSuccessDialog(context);
+                            },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFE3B007),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                      ),
+                      child: const Text(
+                        "Kirim",
+                        style: TextStyle(
+                          fontFamily: "Euclid",
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 20),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
 }
 
 String cleanText(String text) {
@@ -685,75 +845,4 @@ String formatDate(String rawDate) {
   ];
 
   return "${date.day} ${monthNames[date.month]} ${date.year}";
-}
-
-void _showSuccessDialog(BuildContext context) {
-  showDialog(
-    context: context,
-    barrierDismissible: false,
-    builder: (context) {
-      return Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                "Pesanan Berhasil Diselesaikan",
-                style: const TextStyle(
-                  fontFamily: "Euclid",
-                  fontSize: 20,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFFE3B007),
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 16),
-              Text(
-                "Pesanan Anda telah diselesaikan sesuai dengan permintaan. Terima kasih telah memilih layanan kami.",
-                style: const TextStyle(fontFamily: "Euclid", fontSize: 14),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 26),
-              _filledButton(
-                text: "Kembali",
-                color: const Color(0xFFE3B007),
-                onTap: () {
-                  Navigator.pop(context); // Close dialog
-                  Navigator.pop(context); // Back to previous page
-                },
-              ),
-            ],
-          ),
-        ),
-      );
-    },
-  );
-}
-
-Widget _filledButton({
-  required String text,
-  required Color color,
-  required VoidCallback onTap,
-}) {
-  return Container(
-    height: 48,
-    decoration: BoxDecoration(
-      borderRadius: BorderRadius.circular(30),
-      color: color,
-    ),
-    child: TextButton(
-      onPressed: onTap,
-      child: Text(
-        text,
-        style: const TextStyle(
-          fontFamily: "Euclid",
-          fontSize: 14,
-          fontWeight: FontWeight.w600,
-          color: Colors.white,
-        ),
-      ),
-    ),
-  );
 }

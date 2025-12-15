@@ -95,7 +95,7 @@ class _SplashScreenState extends State<SplashScreen> {
             child: Text(
               'Partner berkendara Anda!',
               style: TextStyle(
-                fontSize: screenWidth * 0.025, 
+                fontSize: 13, 
                 fontWeight: FontWeight.w400, 
                 fontFamily: 'Euclid', 
                 color: Color(int.parse(sloganColor)), 
@@ -238,7 +238,7 @@ class _SplashScreenState extends State<SplashScreen> {
                             TextSpan(
                               text: 'Belum mempunyai akun? ',
                               style: TextStyle(
-                                fontSize: 12,
+                                fontSize: 13, 
                                 fontFamily: 'Euclid',
                                 color: Colors.grey[600],
                               ),
