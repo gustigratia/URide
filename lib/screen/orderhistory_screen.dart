@@ -36,8 +36,8 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
 
     final response = await supabase
         .from('orders')
-        .select('*, workshops(*), vehicles(*)')
-        .eq('userid', userId) // filter sesuai user login
+        .select('*, workshops(*)')
+        .eq('userid', userId)
         .order('orderdate', ascending: false);
 
     setState(() {
@@ -51,9 +51,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
     return Scaffold(
       backgroundColor: const Color(0xffF9F9F9),
 
-      bottomNavigationBar: const CustomBottomNav(
-        currentIndex: 3,
-      ),
+      bottomNavigationBar: const CustomBottomNav(currentIndex: 3),
 
       body: SafeArea(
         child: loading
@@ -86,20 +84,17 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
     // filter order by search
     final filtered = orders.where((o) {
       final workshop = o['workshops'];
-      final vehicle = o['vehicles'];
+      final vehicle = o['vehicletype'];
 
       final bengkelName =
           workshop?['bengkelname']?.toString().toLowerCase() ?? "";
       final orderType = o['ordertype']?.toString().toLowerCase() ?? "";
-      final vehicleType =
-          vehicle?['vehicletype']?.toString().toLowerCase() ?? "";
 
       // format tanggal: "15 Januari 2025"
       final formattedDate = formatDate(o['orderdate'].toString()).toLowerCase();
 
       return bengkelName.contains(keyword) ||
           orderType.contains(keyword) ||
-          vehicleType.contains(keyword) ||
           formattedDate.contains(keyword);
     }).toList();
 
@@ -121,12 +116,9 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
         bool cancelled = status == "cancelled";
 
         final workshop = o['workshops'];
-        final vehicle = o['vehicles'];
 
-        double lat =
-            double.tryParse(workshop?['latitude']?.toString() ?? "") ?? 0;
-        double lng =
-            double.tryParse(workshop?['longitude']?.toString() ?? "") ?? 0;
+        double lat = double.tryParse(o?['latitude']?.toString() ?? "") ?? 0;
+        double lng = double.tryParse(o?['longitude']?.toString() ?? "") ?? 0;
 
         widgets.add(
           _orderCard(
@@ -135,9 +127,9 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
             statusCancelled: cancelled,
             title: cleanText(workshop?['bengkelname'] ?? "-"),
             address: cleanText(workshop?['address'] ?? "-"),
-            fullAddress: cleanText(workshop?['address'] ?? "-"),
-            typeVehicle: cleanText(vehicle?['vehicletype'] ?? "-"),
+            fullAddress: cleanText(o?['addressdetail'] ?? "-"),
             typeCase: cleanText(o['ordertype'] ?? "-"),
+            typeVehicle: cleanText(o?['vehicletype'] ?? "-"),
             onTap: () {
               Navigator.push(
                 context,
@@ -147,9 +139,9 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
                     statusOngoing: ongoing,
                     title: cleanText(workshop?['bengkelname'] ?? "-"),
                     address: cleanText(workshop?['address'] ?? "-"),
-                    fullAddress: workshop?['address'] ?? "-",
-                    typeVehicle: cleanText(vehicle?['vehicletype'] ?? "-"),
+                    fullAddress: o['addressdetail'] ?? "-",
                     typeCase: cleanText(o['ordertype'] ?? "-"),
+                    typeVehicle: cleanText(o?['vehicletype'] ?? "-"),
                     lat: lat,
                     lng: lng,
                     orderId: o['id'].toString(),
@@ -224,8 +216,8 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
     required String title,
     required String address,
     required String fullAddress,
-    required String typeVehicle,
     required String typeCase,
+    required String typeVehicle,
     required VoidCallback onTap,
   }) {
     return GestureDetector(
@@ -399,14 +391,6 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
                   color: Colors.grey,
                 ),
               ),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  _circleIcon("images/message.png"),
-                  const SizedBox(width: 18),
-                  _circleIcon("images/call.png"),
-                ],
-              ),
             ] else if (statusCancelled) ...[
               Text(
                 "Pesanan ini telah dibatalkan.",
@@ -438,7 +422,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
       ),
       child: Row(
         children: [
-          Image.asset(_getIconForTag(text), width: 15, height: 15),
+          getTagIcon(text), 
           const SizedBox(width: 6),
           Text(
             text,
@@ -454,37 +438,53 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
     );
   }
 
-  String _getIconForTag(String type) {
-    switch (type.toLowerCase()) {
+  Widget getTagIcon(String type) {
+    final t = type.toLowerCase();
+
+    switch (t) {
       case "motor":
-        return "images/motor-default.png";
-      case "normal":
-        return "images/normal.png";
-      case "emergency":
-        return "images/emergency.png";
-      case "derek kendaraan":
-        return "images/derek.png";
-      case "servis di lokasi":
-        return "images/derek.png";
+        return Image.asset(
+          "images/motor-default.png",
+          width: 15,
+          height: 15,
+          fit: BoxFit.contain,
+        );
+
       case "mobil":
-        return "images/mobil-default.png";
-      case "peta":
-        return "images/arrow.png";
+        return Image.asset(
+          "images/mobil-default.png",
+          width: 15,
+          height: 15,
+          fit: BoxFit.contain,
+        );
+
+      case "santai":
+        return Icon(
+          Icons.circle,
+          size: 10,
+          color: const Color(0xFF61D54D), // hijau
+        );
+
+      case "normal":
+        return Icon(
+          Icons.circle,
+          size: 10,
+          color: const Color(0xFFFFC727), // kuning
+        );
+
+      case "emergency":
+        return Icon(
+          Icons.circle,
+          size: 10,
+          color: const Color(0xFFFF3B30), // merah
+        );
+
+      // ===== DEFAULT =====
       default:
-        return "images/derek.png";
+        return Image.asset("images/arrow.png", width: 15, height: 15);
     }
   }
 
-  Widget _circleIcon(String assetPath) {
-    return Container(
-      padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        border: Border.all(color: Color(0xffEAEAEA)),
-      ),
-      child: Image.asset(assetPath, width: 20, height: 20, fit: BoxFit.contain),
-    );
-  }
 
   String formatDate(String rawDate) {
     final date = DateTime.parse(rawDate);
