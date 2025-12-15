@@ -27,7 +27,7 @@ dependencies:
   google_generative_ai: ^0.4.4
   flutter_markdown: ^0.6.17
   midtrans_sdk: ^1.2.0
-  image_picker: ^1.1.1  
+  image_picker: ^1.1.1
 
   
 
