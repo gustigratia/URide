@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:uride/widgets/bottom_nav.dart';
 import 'package:auto_size_text/auto_size_text.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:uride/routes/app_routes.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
@@ -32,6 +34,7 @@ class _HomeScreenState extends State<HomeScreen> {
   String mapsApiKey = dotenv.env['MAPS_API_KEY'] ?? '';
   Map<String, dynamic>? _weather;
   bool _isLoadingWeather = true;
+  String? currentAddress;
 
   @override
   void initState() {
@@ -157,6 +160,21 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  Future<void> openGoogleMaps(double lat, double lng) async {
+    final Uri googleMapsUri = Uri.parse(
+      'https://www.google.com/maps/search/?api=1&query=$lat,$lng',
+    );
+
+    if (await canLaunchUrl(googleMapsUri)) {
+      await launchUrl(
+        googleMapsUri,
+        mode: LaunchMode.externalApplication,
+      );
+    } else {
+      throw 'Tidak bisa membuka Google Maps';
+    }
+  }
+
   LatLng offsetPosition(LatLng origin, double distanceMeters, double bearingDegrees) {
     const double earthRadius = 6371000; // meters
     final double bearing = bearingDegrees * pi / 180;
@@ -177,6 +195,47 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return LatLng(lat2 * 180 / pi, lon2 * 180 / pi);
   }
+
+  Future<String> _reverseGeocode(double lat, double lng) async {
+    final apiKey = dotenv.env['MAPS_API_KEY'] ?? '';
+    final url = Uri.parse(
+      "https://maps.googleapis.com/maps/api/geocode/json?latlng=$lat,$lng&key=$apiKey",
+    );
+
+    final res = await http.get(url);
+    final data = jsonDecode(res.body);
+
+    if (data["status"] == "OK") {
+      final components = data["results"][0]["address_components"] as List;
+
+      String? city;
+      String? province;
+
+      for (final c in components) {
+        final types = List<String>.from(c["types"]);
+
+        // Kabupaten / Kota
+        if (types.contains("administrative_area_level_2") ||
+            types.contains("locality")) {
+          city = c["long_name"];
+        }
+
+        // Provinsi
+        if (types.contains("administrative_area_level_1")) {
+          province = c["long_name"];
+        }
+      }
+
+      if (city != null && province != null) {
+        return "$city, $province";
+      } else if (province != null) {
+        return province;
+      }
+    }
+
+    return "Lokasi tidak diketahui";
+  }
+
 
   Future<void> _fetchTrafficStatus() async {
     if (userPosition == null) {
@@ -430,11 +489,17 @@ class _HomeScreenState extends State<HomeScreen> {
       final pos = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high,
       );
-      if (mounted) {
-        setState(() {
-          userPosition = pos;
-        });
-      }
+      if (!mounted) return;
+
+      final address = await _reverseGeocode(
+        pos.latitude,
+        pos.longitude,
+      );
+
+      setState(() {
+        userPosition = pos;
+        currentAddress = address;
+      });
     } catch (e) {
       debugPrint('Error getting location: $e');
       locationError = 'Gagal mendapatkan lokasi: $e';
@@ -481,11 +546,11 @@ class _HomeScreenState extends State<HomeScreen> {
                   const SizedBox(height: 20),
                   _buildWeatherRow(context),
                   const SizedBox(height: 20),
-                  _buildNearestWorkshopTitle(),
+                  _buildSectionTitle(title: "Bengkel Terdekat", routeName: '/workshop'),
                   const SizedBox(height: 12),
                   buildWorkshopCarousel(),
                   const SizedBox(height: 20),
-                  _buildNearestSpbuTitle(),
+                  _buildSectionTitle(title: "SPBU Terdekat", routeName: '/spbu-list'),
                   const SizedBox(height: 12),
                   buildSpbuCarousel(),
                   const SizedBox(height: 80),
@@ -666,17 +731,19 @@ class _HomeScreenState extends State<HomeScreen> {
                       width: lineWidth,
                       color: lineColor,
                     ),
-                    const Text(
-                      "12.9 Kilometer", // <-- Tetap statis, perlu API untuk data real
-                      style: TextStyle(
+                    Text(
+                      currentAddress ?? "Menentukan lokasi...",
+                      style: const TextStyle(
                         fontSize: 20,
                         color: Color(0xff3d3d3d),
                         fontWeight: FontWeight.bold,
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 5),
                     const Text(
-                      "Perjalanan anda hari ini",
+                      "Lokasi anda saat ini",
                       style: TextStyle(fontSize: 12),
                     ),
                     const SizedBox(height: 8),
@@ -720,19 +787,28 @@ class _HomeScreenState extends State<HomeScreen> {
     return Row(
       children: [
         Expanded(
+          flex: 2, // 75%
           child: _weatherCard(
             percent: precipPercent ?? 0,
             subtitle: conditionText,
             title: "Presipitasi",
-            icon: Icon(conditionIcon, size: 36, color: Colors.white,),
+            icon: Icon(
+              conditionIcon,
+              size: 36,
+              color: Colors.white,
+            ),
             isActive: true,
             context: context,
           ),
         ),
         const SizedBox(width: 12),
-        Expanded(child: _menuCards(context)),
+        Expanded(
+          flex: 2, // 25%
+          child: _menuCards(context),
+        ),
       ],
     );
+
   }
 
 
@@ -854,69 +930,93 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          _menuCard("Log Perjalanan", "assets/icons/log.png"),
-          GestureDetector(
-            onTap: () {
-              Navigator.pushNamed(context, '/parking');
-            },
-            child: _menuCard("Lokasi Parkir", "assets/icons/parkir.png"),
-          ),
-        ],
+      child: GestureDetector(
+        onTap: () {
+          Navigator.pushNamed(context, '/parking');
+        },
+        child: Row(
+          children: [
+            Expanded(
+              child: _menuCard(
+                "Lokasi Parkir",
+                "assets/icons/parkir.png",
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
+
 
   Widget _menuCard(String title, String iconPath, {VoidCallback? onTap}) {
     return GestureDetector(
       onTap: onTap,
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(7),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0xFFE0E0E0)),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black12.withOpacity(0.08),
-                  blurRadius: 6,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Image.asset(iconPath, width: 26, height: 26),
-          ),
-          const SizedBox(height: 6),
+      child: Container(
+        width: double.infinity,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
 
-          SizedBox(
-            width: 60,
-            child: AutoSizeText(
-              title,
-              textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 11),
-              maxLines: 2,
-              minFontSize: 8,
-              overflow: TextOverflow.ellipsis,
-            ),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween, // Agar Teks di kiri, Icon di kanan mentok
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              // TEXT (KIRI)
+              Expanded(
+                child: AutoSizeText(
+                  title,
+                  textAlign: TextAlign.left,
+                  style: const TextStyle(
+                    fontSize: 16, // Sedikit diperbesar agar terlihat "penuh"
+                    fontWeight: FontWeight.w700,
+                    height: 1.2, // Mengatur jarak antar baris jika 2 baris
+                  ),
+                  maxLines: 2,
+                  minFontSize: 12, // Batas minimum font agar tidak terlalu kecil
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+
+              const SizedBox(width: 12),
+
+              // ICON (KANAN)
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF8F8F8), // Sedikit abu-abu biar kontras dengan BG putih
+                  borderRadius: BorderRadius.circular(14),
+                  // Border dihapus atau ditipiskan agar lebih bersih
+                ),
+                child: Image.asset(
+                  iconPath,
+                  width: 28,
+                  height: 28,
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
 
-  Widget _buildNearestWorkshopTitle() {
+
+
+
+  Widget _buildSectionTitle({
+    required String title,
+    required String routeName,
+  }) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(
-          "Bengkel terdekat",
-          style: TextStyle(
+          title,
+          style: const TextStyle(
             fontSize: 17,
             color: Color(0xff3d3d3d),
             fontWeight: FontWeight.bold,
@@ -924,32 +1024,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         GestureDetector(
           onTap: () {
-            Navigator.pushNamed(context, '/workshop');
-          },
-          child: const Text(
-            "Lihat Semua",
-            style: TextStyle(color: Colors.orange),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildNearestSpbuTitle() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        const Text(
-          "SPBU terdekat",
-          style: TextStyle(
-            fontSize: 17,
-            color: Color(0xff3d3d3d),
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        GestureDetector(
-          onTap: () {
-            Navigator.pushNamed(context, '/spbu-list'); // Ganti sesuai route kamu
+            Navigator.pushNamed(context, routeName);
           },
           child: const Text(
             "Lihat Semua",
@@ -963,122 +1038,135 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+
   Widget _buildWorkshopCard({
+    required int workshopId,
     required String name,
     required String distance,
     required String rating,
     required String image,
     required String status,
   }) {
-    return SizedBox(
-      height: 230,
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          Container(
-            height: 200,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(18),
-              image: DecorationImage(
-                image: NetworkImage(image),
-                fit: BoxFit.cover,
-                onError: (exception, stackTrace) {
-                  debugPrint('Image error: $exception');
-                },
-              ),
-            ),
-          ),
-          // Card info
-          Positioned(
-            left: 16,
-            right: 16,
-            bottom: 0,
-            child: Container(
-              padding: const EdgeInsets.all(16),
+    return GestureDetector(
+      onTap: () {
+        Navigator.pushNamed(
+          context,
+          AppRoutes.workshopDetail,
+          arguments: {'workshopId': workshopId},
+        );
+      },
+      child: SizedBox(
+        height: 230,
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            // IMAGE
+            Container(
+              height: 200,
               decoration: BoxDecoration(
-                color: Colors.white,
                 borderRadius: BorderRadius.circular(18),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black12.withOpacity(0.2),
-                    blurRadius: 10,
-                    offset: const Offset(0, 6),
-                  ),
-                ],
-              ),
-              child: Row(
-                children: [
-                  // Info kiri
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          name,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xff3d3d3d),
-                            fontSize: 16,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          softWrap: false,
-                        ),
-                        const SizedBox(height: 6),
-                        Row(
-                          children: [
-                            const Icon(
-                              Icons.location_on,
-                              size: 16,
-                              color: Colors.grey,
-                            ),
-                            const SizedBox(width: 4),
-                            Flexible(
-                              child: Text(
-                                distance,
-                                style: const TextStyle(fontSize: 13),
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            const Icon(
-                              Icons.star,
-                              size: 16,
-                              color: Colors.amber,
-                            ),
-                            const SizedBox(width: 4),
-                            Flexible(
-                              child: Text(
-                                rating,
-                                style: const TextStyle(fontSize: 13),
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                  // Status
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 8,
-                    ),
-                    decoration: BoxDecoration(
-                      color: status == "Buka" ? Colors.green : Colors.red,
-                      borderRadius: BorderRadius.circular(30),
-                    ),
-                    child: Text(
-                      status,
-                      style: const TextStyle(color: Colors.white),
-                    ),
-                  ),
-                ],
+                image: DecorationImage(
+                  image: NetworkImage(image),
+                  fit: BoxFit.cover,
+                  onError: (exception, stackTrace) {
+                    debugPrint('Image error: $exception');
+                  },
+                ),
               ),
             ),
-          ),
-        ],
+
+            // INFO CARD
+            Positioned(
+              left: 16,
+              right: 16,
+              bottom: 0,
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(18),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black12.withOpacity(0.2),
+                      blurRadius: 10,
+                      offset: const Offset(0, 6),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    // LEFT INFO
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            name,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xff3d3d3d),
+                              fontSize: 16,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 6),
+                          Row(
+                            children: [
+                              const Icon(
+                                Icons.location_on,
+                                size: 16,
+                                color: Colors.grey,
+                              ),
+                              const SizedBox(width: 4),
+                              Flexible(
+                                child: Text(
+                                  distance,
+                                  style: const TextStyle(fontSize: 13),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              const Icon(
+                                Icons.star,
+                                size: 16,
+                                color: Colors.amber,
+                              ),
+                              const SizedBox(width: 4),
+                              Flexible(
+                                child: Text(
+                                  rating,
+                                  style: const TextStyle(fontSize: 13),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    // STATUS
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 8,
+                      ),
+                      decoration: BoxDecoration(
+                        color: status == "Buka" ? Colors.green : Colors.red,
+                        borderRadius: BorderRadius.circular(30),
+                      ),
+                      child: Text(
+                        status,
+                        style: const TextStyle(color: Colors.white),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -1099,7 +1187,11 @@ class _HomeScreenState extends State<HomeScreen> {
               distance: item["distance"] ?? '--',
               rating: item["rating"]?.toString() ?? '0.0',
               image: item["image"] ?? 'assets/images/workshop.png',
-              status: (item["is_open"] == true) ? 'Buka' : 'Tutup',
+              status: getStatus(
+                item["open_time"],
+                item["close_time"],
+              ),
+              workshopId: item["id"],
             ),
           );
         },
@@ -1113,117 +1205,124 @@ class _HomeScreenState extends State<HomeScreen> {
     required String rating,
     required String image,
     required String status,
+    required double latitude,
+    required double longitude,
   }) {
-    return SizedBox(
-      height: 230,
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          // Gambar
-          Container(
-            height: 200,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(18),
-              image: DecorationImage(
-                image: NetworkImage(image),
-                fit: BoxFit.cover,
-                onError: (exception, stackTrace) {
-                  debugPrint('Image error: $exception');
-                },
-              ),
-            ),
-          ),
-          // Card info
-          Positioned(
-            left: 16,
-            right: 16,
-            bottom: -12,
-            child: Container(
-              padding: const EdgeInsets.all(16),
+    return GestureDetector(
+      onTap: () {
+        openGoogleMaps(latitude, longitude);
+      },
+      child: SizedBox(
+        height: 230,
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            // Gambar
+            Container(
+              height: 200,
               decoration: BoxDecoration(
-                color: Colors.white,
                 borderRadius: BorderRadius.circular(18),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black12.withOpacity(0.2),
-                    blurRadius: 18,
-                    offset: const Offset(0, 6),
-                  ),
-                ],
-              ),
-              child: Row(
-                children: [
-                  // Info kiri
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          name,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xff3d3d3d),
-                            fontSize: 16,
-                          ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          softWrap: false,
-                        ),
-                        const SizedBox(height: 6),
-                        Row(
-                          children: [
-                            const Icon(
-                              Icons.location_on,
-                              size: 16,
-                              color: Colors.grey,
-                            ),
-                            const SizedBox(width: 4),
-                            Flexible(
-                              child: Text(
-                                distance,
-                                style: const TextStyle(fontSize: 13),
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            const Icon(
-                              Icons.star,
-                              size: 16,
-                              color: Colors.amber,
-                            ),
-                            const SizedBox(width: 4),
-                            Flexible(
-                              child: Text(
-                                rating,
-                                style: const TextStyle(fontSize: 13),
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                  // Status
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 8,
-                    ),
-                    decoration: BoxDecoration(
-                      color: status == "Buka" ? Colors.green : Colors.red,
-                      borderRadius: BorderRadius.circular(30),
-                    ),
-                    child: Text(
-                      status,
-                      style: const TextStyle(color: Colors.white),
-                    ),
-                  ),
-                ],
+                image: DecorationImage(
+                  image: NetworkImage(image),
+                  fit: BoxFit.cover,
+                  onError: (exception, stackTrace) {
+                    debugPrint('Image error: $exception');
+                  },
+                ),
               ),
             ),
-          ),
-        ],
+            // Card info
+            Positioned(
+              left: 16,
+              right: 16,
+              bottom: -12,
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(18),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black12.withOpacity(0.2),
+                      blurRadius: 18,
+                      offset: const Offset(0, 6),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    // Info kiri
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            name,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xff3d3d3d),
+                              fontSize: 16,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            softWrap: false,
+                          ),
+                          const SizedBox(height: 6),
+                          Row(
+                            children: [
+                              const Icon(
+                                Icons.location_on,
+                                size: 16,
+                                color: Colors.grey,
+                              ),
+                              const SizedBox(width: 4),
+                              Flexible(
+                                child: Text(
+                                  distance,
+                                  style: const TextStyle(fontSize: 13),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              const Icon(
+                                Icons.star,
+                                size: 16,
+                                color: Colors.amber,
+                              ),
+                              const SizedBox(width: 4),
+                              Flexible(
+                                child: Text(
+                                  rating,
+                                  style: const TextStyle(fontSize: 13),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    // Status
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 8,
+                      ),
+                      decoration: BoxDecoration(
+                        color: status == "Buka" ? Colors.green : Colors.red,
+                        borderRadius: BorderRadius.circular(30),
+                      ),
+                      child: Text(
+                        status,
+                        style: const TextStyle(color: Colors.white),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -1244,7 +1343,12 @@ class _HomeScreenState extends State<HomeScreen> {
               distance: item["distance"] ?? '--',
               rating: item["rating"]?.toString() ?? '0.0',
               image: item["image_url"] ?? 'assets/images/spbu.png',
-              status: (item["is_open"] == true) ? 'Buka' : 'Tutup',
+              status: getStatus(
+                item["open_time"],
+                item["close_time"],
+              ),
+              latitude: item["latitude"],
+              longitude: item["longitude"],
             ),
           );
         },
@@ -1282,3 +1386,66 @@ double _getTrafficLineWidth(String status, double maxWidth) {
       return maxWidth * 0.40;
   }
 }
+
+String getStatus(String? openTime, String? closeTime) {
+  print('=== getStatus CALLED ===');
+  print('openTime  : $openTime');
+  print('closeTime : $closeTime');
+
+  if (openTime == null || closeTime == null) {
+    print('❌ openTime / closeTime NULL → Tutup');
+    return 'Tutup';
+  }
+
+  try {
+    final now = DateTime.now();
+    print('⏰ now      : $now');
+
+    DateTime parseTime(String time) {
+      final parts = time.split(':');
+      print('Parsing time "$time" → $parts');
+
+      final parsed = DateTime(
+        now.year,
+        now.month,
+        now.day,
+        int.parse(parts[0]),
+        int.parse(parts[1]),
+        parts.length > 2 ? int.parse(parts[2]) : 0,
+      );
+
+      print('Parsed DateTime: $parsed');
+      return parsed;
+    }
+
+    final open = parseTime(openTime);
+    final close = parseTime(closeTime);
+
+    print('🟢 open  : $open');
+    print('🔴 close : $close');
+
+    // Kasus normal
+    if (close.isAfter(open)) {
+      print('📌 Normal hours detected');
+
+      final isOpen = now.isAfter(open) && now.isBefore(close);
+      print('isOpen (normal) = $isOpen');
+
+      return isOpen ? 'Buka' : 'Tutup';
+    }
+
+    // Kasus lintas hari
+    print('🌙 Overnight hours detected');
+
+    final isOpen = now.isAfter(open) || now.isBefore(close);
+    print('isOpen (overnight) = $isOpen');
+
+    return isOpen ? 'Buka' : 'Tutup';
+  } catch (e, stack) {
+    print('🔥 ERROR in getStatus');
+    print(e);
+    print(stack);
+    return 'Tutup';
+  }
+}
+

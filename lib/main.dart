@@ -3,7 +3,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uride/routes/app_routes.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:uride/services/gemini_service.dart';
-import 'env.dart';
 
 // Global Supabase instance
 final supabase = Supabase.instance.client;
@@ -14,8 +13,8 @@ Future<void> main() async {
   await dotenv.load(fileName: ".env");
   await GeminiService.initialize();
   await Supabase.initialize(
-    url: Env.supabaseUrl,
-    anonKey: Env.supabaseAnonKey,
+    url: dotenv.env['SUPABASE_URL']!,
+    anonKey: dotenv.env['SUPABASE_ANON_KEY']!,
     authOptions: const FlutterAuthClientOptions(),
   );
 

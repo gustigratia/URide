@@ -3,7 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uride/screen/workshop.dart';
 
 class InvoiceScreen extends StatefulWidget {
-  final int orderId; // ubah jadi int supaya sesuai tabel orders
+  final int orderId;
   final String workshopName;
   final String workshopAddress;
   final String userAddress;
