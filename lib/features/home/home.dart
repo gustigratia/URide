@@ -769,22 +769,24 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Expanded(
-          flex: 2,
+          flex: 3,
           child: _weatherCard(
             percent: precipPercent ?? 0,
             subtitle: conditionText,
             title: "Presipitasi",
             icon: Icon(
               conditionIcon,
-              size: 36,
+              size: 30,
               color: Colors.white,
             ),
             isActive: true,
             context: context,
           ),
         ),
+
         const SizedBox(width: 12),
         Expanded(
           flex: 2,
@@ -792,7 +794,6 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ],
     );
-
   }
 
 
@@ -809,8 +810,7 @@ class _HomeScreenState extends State<HomeScreen> {
         Navigator.pushNamed(context, "/weather");
       },
       child: Container(
-        height: 150,
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(18),
@@ -824,12 +824,13 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                Expanded(
+                Flexible(
+                  fit: FlexFit.loose,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -840,7 +841,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           color: Color(0xff292D32),
                           fontWeight: FontWeight.bold,
                         ),
-                        minFontSize: 10,
+                        minFontSize: 5,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -848,15 +849,16 @@ class _HomeScreenState extends State<HomeScreen> {
                       AutoSizeText(
                         title,
                         style: const TextStyle(fontSize: 14),
-                        minFontSize: 8,
-                        maxLines: 2,
+                        minFontSize: 5,
+                        maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
                     ],
                   ),
                 ),
+
+                const SizedBox(width: 16),
                 Column(
-                  mainAxisSize: MainAxisSize.min,
                   children: [
                     Container(
                       padding: const EdgeInsets.all(10),
@@ -872,7 +874,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     const SizedBox(height: 8),
                     SizedBox(
-                      width: 90,
+                      width: 80,
                       child: AutoSizeText(
                         subtitle,
                         textAlign: TextAlign.center,
@@ -882,7 +884,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           fontWeight: FontWeight.w600,
                         ),
                         maxLines: 2,
-                        minFontSize: 8,
+                        minFontSize: 10,
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
@@ -897,11 +899,10 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
 
-
   Widget _menuCards(BuildContext context) {
     return Container(
-      height: 150,
-      padding: const EdgeInsets.all(16),
+      height: 140,
+      padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
@@ -914,75 +915,109 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
-      child: GestureDetector(
+      child: _menuCard(
+        "Lokasi Parkir",
+        "assets/icons/parkir.png",
         onTap: () {
           Navigator.pushNamed(context, '/parking');
         },
-        child: Row(
-          children: [
-            Expanded(
-              child: _menuCard(
-                "Lokasi Parkir",
-                "assets/icons/parkir.png",
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }
 
-
   Widget _menuCard(String title, String iconPath, {VoidCallback? onTap}) {
     return GestureDetector(
       onTap: onTap,
-      child: Container(
-        width: double.infinity,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          bool isWide = constraints.maxWidth > 200;
 
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Expanded(
-                child: AutoSizeText(
-                  title,
-                  textAlign: TextAlign.left,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                    height: 1.2,
-                  ),
-                  maxLines: 2,
-                  minFontSize: 12,
-                  overflow: TextOverflow.ellipsis,
-                ),
+          return Container(
+            width: double.infinity,
+            height: double.infinity,
+            color: Colors.transparent,
+            padding: EdgeInsets.symmetric(horizontal: isWide ? 16 : 0),
+
+            child: isWide
+                ? _buildHorizontalLayout(title, iconPath)
+                : _buildVerticalLayout(title, iconPath),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildVerticalLayout(String title, String iconPath) {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Expanded(
+          flex: 3,
+          child: FractionallySizedBox(
+            heightFactor: 0.6,
+            child: Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF8F8F8),
+                borderRadius: BorderRadius.circular(14),
               ),
-
-              const SizedBox(width: 12),
-
-
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF8F8F8),
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: Image.asset(
-                  iconPath,
-                  width: 28,
-                  height: 28,
-                ),
-              ),
-            ],
+              child: Image.asset(iconPath, fit: BoxFit.contain),
+            ),
           ),
         ),
-      ),
+        const SizedBox(height: 8),
+        Expanded(
+          flex: 1,
+          child: Center(
+            child: AutoSizeText(
+              title,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+                height: 1.2,
+                color: Color(0xff292D32),
+              ),
+              maxLines: 2,
+              minFontSize: 8,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildHorizontalLayout(String title, String iconPath) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        AspectRatio(
+          aspectRatio: 1,
+          child: Container(
+            margin: const EdgeInsets.symmetric(vertical: 24),
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF8F8F8),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Image.asset(iconPath, fit: BoxFit.contain),
+          ),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          child: AutoSizeText(
+            title,
+            textAlign: TextAlign.start,
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              color: Color(0xff292D32),
+            ),
+            maxLines: 2,
+            minFontSize: 10,
+          ),
+        ),
+      ],
     );
   }
 
