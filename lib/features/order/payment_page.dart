@@ -1,12 +1,6 @@
-// lib/screens/payment_page.dart
-
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'orderhistory_screen.dart';
-
-// ==========================================================
-//                  CONSTANTS & PAYMENT MODELS
-// ==========================================================
 
 const Color kPrimaryYellow = Color(0xFFFDC000);
 const Color kDarkGrey = Color(0xFF4A4A4A);
@@ -62,9 +56,6 @@ final List<PaymentMethod> transferBankOptions = [
 ];
 
 
-// ==========================================================
-//                    GLOBAL HELPER WIDGETS
-// ==========================================================
 
 Widget _buildSuccessButton({
   required String text,
@@ -203,10 +194,6 @@ Widget _buildPaymentRow(PaymentMethod method, PaymentMethod? selectedMethod,
 }
 
 
-// ==========================================================
-//                   SCREEN 3 – SUCCESS PAGE
-// ==========================================================
-
 class SuccessPage extends StatelessWidget {
   final VoidCallback onGoHome;
   final int newOrderId;
@@ -278,7 +265,6 @@ class SuccessPage extends StatelessWidget {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          // newOrderId harus diteruskan (sudah tersedia di SuccessPage)
                           builder: (context) => OrderHistoryScreen(newOrderId: newOrderId), 
                         ),
                       );
@@ -302,10 +288,6 @@ class SuccessPage extends StatelessWidget {
   }
 }
 
-
-// ==========================================================
-//                   SCREEN 1 – PAYMENT PAGE
-// ==========================================================
 
 class PaymentPage extends StatefulWidget {
   final Map<String, dynamic> orderInput;
@@ -538,7 +520,6 @@ class _PaymentPageState extends State<PaymentPage> {
       setState(() {
         selectedPaymentMethod = result;
 
-        // tampilkan paling atas
         if (!visibleDefaultOptions.contains(result)) {
           visibleDefaults = [result, ...visibleDefaultOptions];
         }
@@ -729,10 +710,6 @@ class _PaymentPageState extends State<PaymentPage> {
   }
 }
 
-
-// ==========================================================
-//             SCREEN 2 – PAYMENT SELECTION PAGE
-// ==========================================================
 
 class PaymentSelectionPage extends StatefulWidget {
   final PaymentMethod? initialSelection;

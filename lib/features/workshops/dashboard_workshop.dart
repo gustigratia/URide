@@ -21,9 +21,6 @@ class _DashboardWorkshopState extends State<DashboardWorkshop> {
     loadWorkshop();
   }
 
-  // =============================================================
-  // FETCH WORKSHOP BY USER ID
-  // =============================================================
   Future<void> loadWorkshop() async {
     final userId = supabase.auth.currentUser!.id;
 
@@ -244,9 +241,6 @@ class _DashboardWorkshopState extends State<DashboardWorkshop> {
     );
   }
 
-  // =============================================================
-  // DATE FORMAT
-  // =============================================================
   String _formatDate(String raw) {
     final date = DateTime.parse(raw);
     const bulan = [
@@ -308,9 +302,6 @@ class OrderCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ========================================================
-          // 1. STATUS (PINDAH KE PALING ATAS)
-          // ========================================================
           Container(
             padding: const EdgeInsets.symmetric(
               horizontal: 14,
@@ -331,15 +322,12 @@ class OrderCard extends StatelessWidget {
             ),
           ),
 
-          const SizedBox(height: 12), // Jarak antara Status dan Nama
+          const SizedBox(height: 12),
 
-          // ========================================================
-          // 2. ORDER ID & NAMA
-          // ========================================================
           Text(
             "$orderId - $name",
             style: const TextStyle(
-              fontSize: 16, // Sedikit diperbesar agar jelas
+              fontSize: 16,
               fontWeight: FontWeight.w700,
               fontFamily: "Euclid",
             ),
@@ -347,9 +335,6 @@ class OrderCard extends StatelessWidget {
           
           const SizedBox(height: 4),
 
-          // ========================================================
-          // 3. TANGGAL
-          // ========================================================
           Text(
             date,
             style: const TextStyle(
@@ -361,9 +346,6 @@ class OrderCard extends StatelessWidget {
 
           const SizedBox(height: 12),
 
-          // ========================================================
-          // 4. ALAMAT
-          // ========================================================
           Row(
             children: [
               const Icon(Icons.location_on, color: Colors.orange, size: 20),
@@ -384,9 +366,6 @@ class OrderCard extends StatelessWidget {
 
           const SizedBox(height: 16),
 
-          // ========================================================
-          // 5. TAGS (Tipe Kendaraan & Order Type)
-          // ========================================================
           Row(
             children: [
               TagChip(
@@ -456,9 +435,6 @@ class OrderTypeChip extends StatelessWidget {
   }
 }
 
-// ==================================================================
-//                          TAG CHIP
-// ==================================================================
 
 class TagChip extends StatelessWidget {
   final IconData icon;

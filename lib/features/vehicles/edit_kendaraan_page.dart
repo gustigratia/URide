@@ -17,13 +17,12 @@ class _EditKendaraanPageState extends State<EditKendaraanPage> {
   final namaC = TextEditingController();
   final platC = TextEditingController();
   final kilometerC = TextEditingController();
-  final lastServiceDateC = TextEditingController(); // ✅ NEW
+  final lastServiceDateC = TextEditingController();
 
   late Object vehicleId;
   int? vehicleIndex;
   bool hasVehicleId = false;
 
-  // ===================== IMAGE STATE ======================
   String? currentImageUrl;
   File? vehicleImage;
   Uint8List? webImageBytes;
@@ -41,9 +40,6 @@ class _EditKendaraanPageState extends State<EditKendaraanPage> {
     }
   }
 
-  // ======================================================
-  //                 FETCH DATA
-  // ======================================================
   Future<void> fetchVehicleData() async {
     if (!hasVehicleId) return;
 
@@ -63,15 +59,12 @@ class _EditKendaraanPageState extends State<EditKendaraanPage> {
         namaC.text = data["vehiclename"] ?? "";
         platC.text = data["vehiclenumber"] ?? "";
         kilometerC.text = data["kilometer"]?.toString() ?? "";
-        lastServiceDateC.text = data["lastservicedate"] ?? ""; // ✅ NEW
+        lastServiceDateC.text = data["lastservicedate"] ?? "";
         currentImageUrl = data["img"] ?? "";
       });
     }
   }
 
-  // ======================================================
-  //               PICK IMAGE
-  // ======================================================
   Future<void> pickImage() async {
     final picker = ImagePicker();
     final file = await picker.pickImage(source: ImageSource.gallery);
@@ -87,9 +80,6 @@ class _EditKendaraanPageState extends State<EditKendaraanPage> {
     setState(() {});
   }
 
-  // ======================================================
-  //     DELETE OLD IMAGE FROM SUPABASE STORAGE
-  // ======================================================
   Future<void> deleteOldImage(String? imageUrl) async {
     if (imageUrl == null || imageUrl.isEmpty) return;
 
@@ -102,9 +92,6 @@ class _EditKendaraanPageState extends State<EditKendaraanPage> {
     } catch (_) {}
   }
 
-  // ======================================================
-  //         UPLOAD NEW IMAGE
-  // ======================================================
   Future<String?> uploadImage() async {
     final supabase = Supabase.instance.client;
     try {
@@ -134,9 +121,6 @@ class _EditKendaraanPageState extends State<EditKendaraanPage> {
     }
   }
 
-  // ======================================================
-  //                    UPDATE VEHICLE
-  // ======================================================
   Future<void> updateVehicle() async {
     if (!hasVehicleId) return;
 
@@ -157,7 +141,7 @@ class _EditKendaraanPageState extends State<EditKendaraanPage> {
       "vehiclename": namaC.text.trim(),
       "vehiclenumber": platC.text.trim(),
       "kilometer": int.tryParse(kilometerC.text.trim()) ?? 0,
-      "lastservicedate": lastServiceDateC.text.trim(), // ✅ NEW
+      "lastservicedate": lastServiceDateC.text.trim(),
       "img": newImageUrl,
     }).eq("id", vehicleId).eq("userid", user.id);
 
@@ -169,9 +153,6 @@ class _EditKendaraanPageState extends State<EditKendaraanPage> {
     });
   }
 
-  // ======================================================
-  //                    DELETE VEHICLE
-  // ======================================================
   Future<void> deleteVehicle() async {
     if (!hasVehicleId) return;
 
@@ -193,9 +174,6 @@ class _EditKendaraanPageState extends State<EditKendaraanPage> {
     });
   }
 
-  // ======================================================
-  //                         UI
-  // ======================================================
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -207,7 +185,6 @@ class _EditKendaraanPageState extends State<EditKendaraanPage> {
             children: [
               const SizedBox(height: 10),
 
-              // HEADER
               Row(
                 children: [
                   GestureDetector(

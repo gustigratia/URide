@@ -52,14 +52,11 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   bool isLoadingMap = true;
   bool isLoadingImage = true;
 
-  // status : "ongoing" | "completed" | "cancelled"
   String orderStatus = "ongoing";
 
   @override
   void initState() {
     super.initState();
-
-    // copy data dari widget ke state
     title = widget.title;
     address = widget.address;
     fullAddress = widget.fullAddress;
@@ -350,7 +347,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                         Expanded(
                           child: ElevatedButton(
                             onPressed: isCompleted
-                                ? null // disable jika sudah selesai
+                                ? null
                                 : _showCancelModal,
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xffD9534F),
@@ -477,24 +474,23 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
         return Icon(
           Icons.circle,
           size: 10,
-          color: const Color(0xFF61D54D), // hijau
+          color: const Color(0xFF61D54D),
         );
 
       case "normal":
         return Icon(
           Icons.circle,
           size: 10,
-          color: const Color(0xFFFFC727), // kuning
+          color: const Color(0xFFFFC727),
         );
 
       case "emergency":
         return Icon(
           Icons.circle,
           size: 10,
-          color: const Color(0xFFFF3B30), // merah
+          color: const Color(0xFFFF3B30),
         );
 
-      // ===== DEFAULT =====
       default:
         return Image.asset("assets/images/arrow.png", width: 15, height: 15);
     }
@@ -566,8 +562,6 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                         setState(() {
                           orderStatus = "completed";
                         });
-
-                        // Tampilkan rating setelah selesai
                         _showRatingModal();
                       },
                     ),

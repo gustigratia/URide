@@ -35,7 +35,6 @@ class _ChatbotPageState extends State<ChatbotPage> {
     _controller.clear();
     _scrollToBottom();
 
-    // KIRIM KE GEMINI (automatic initialize jika belum)
     final reply = await GeminiService.chat(userInput);
 
     setState(() {
@@ -182,7 +181,7 @@ class _ChatbotPageState extends State<ChatbotPage> {
                   ), 
                   child: Image.asset(
                     "assets/images/uride.png",
-                    fit: BoxFit.contain, // menjaga proporsi gambar
+                    fit: BoxFit.contain,
                   ),
                 ),
               ),
@@ -219,7 +218,6 @@ class _ChatbotPageState extends State<ChatbotPage> {
             ),
           ),
 
-          // ================= INPUT BAR ==================
           Container(
             padding: const EdgeInsets.fromLTRB(14, 10, 14, 18),
             decoration: BoxDecoration(

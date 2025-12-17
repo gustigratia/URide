@@ -51,7 +51,6 @@ class _BuatPasswordBaruPageState extends State<BuatPasswordBaruPage> {
     setState(() => isLoading = true);
 
     try {
-      //Update password ke Supabase
       final res = await Supabase.instance.client.auth.updateUser(
         UserAttributes(password: newPass),
       );
@@ -63,10 +62,7 @@ class _BuatPasswordBaruPageState extends State<BuatPasswordBaruPage> {
           ),
         );
 
-        // logout session lama
         await Supabase.instance.client.auth.signOut();
-
-        // Redirect → Sign In
         Navigator.pushNamedAndRemoveUntil(
           context,
           AppRoutes.signin,

@@ -155,9 +155,7 @@ class SchedulePage extends StatelessWidget {
     );
   }
 
-  /// ------------------------------------------------------
-  /// Reusable input field
-  /// ------------------------------------------------------
+
   Widget _inputField({required String hint}) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -178,7 +176,6 @@ class SchedulePage extends StatelessWidget {
     );
   }
 
-  /// Input field with trailing icon
   Widget _inputWithIcon({required String hint, required String icon}) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20),

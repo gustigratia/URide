@@ -10,19 +10,14 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreenState extends State<SplashScreen> {
-  // Logic transisi state/page
-  int _currentPageIndex = 0; 
-
-  // Definisikan warna-warna yang digunakan
+  int _currentPageIndex = 0;
   static const Color kPrimaryOrange = Color(0xFFFF9800); 
-  static const Color kPrimaryShadow = Color(0x33000000); 
-  // Warna tombol yang seimbang (tidak terlalu oranye/kuning)
+  static const Color kPrimaryShadow = Color(0x33000000);
   static const Color kPrimaryButtonBalancedOrange = Color(0xFFFFB000); 
 
   @override
   void initState() {
     super.initState();
-    // Jeda 5 detik untuk transisi ke Screen 2
     Timer(const Duration(seconds: 5), () { 
       if (mounted) {
         setState(() {
@@ -37,7 +32,6 @@ class _SplashScreenState extends State<SplashScreen> {
     super.dispose();
   }
 
-  // Fungsi Navigasi
   void _navigateToSignIn() {
     Navigator.of(context).pushReplacementNamed(AppRoutes.signin); 
   }
@@ -63,8 +57,6 @@ class _SplashScreenState extends State<SplashScreen> {
     );
   }
 
-  // --- WIDGET LOGO (Asset Gambar Gabungan) ---
-  // Menampilkan satu Image.asset yang berisi teks 'URide' dan logo
   Widget _buildLogoImage({required String logoAsset, required double screenWidth}) {
     return Image.asset(
       logoAsset,
@@ -73,8 +65,6 @@ class _SplashScreenState extends State<SplashScreen> {
     );
   }
 
-  // --- WIDGET CONTENT LOGO DAN SLOGAN ---
-  // Menggabungkan logo dan slogan. Ini adalah tempat perbaikan jarak
   Widget _buildLogoContent({required String sloganColor, required String logoAsset, required double screenWidth, required double screenHeight, required double topSpacingFactor}) {
     return Center( 
       child: Column(
@@ -82,16 +72,14 @@ class _SplashScreenState extends State<SplashScreen> {
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           SizedBox(height: screenHeight * topSpacingFactor), 
-          
-          // Logo/Teks URide (dari asset)
+
           _buildLogoImage(
             logoAsset: logoAsset, 
             screenWidth: screenWidth,
           ),
-          
-          // SOLUSI MERAPATKAN JARAK: Menaikkan teks slogan 8.0 unit ke atas
+
           Transform.translate(
-            offset: const Offset(0, -8.0), // <-- DIGESER KE ATAS
+            offset: const Offset(0, -8.0),
             child: Text(
               'Partner berkendara Anda!',
               style: TextStyle(
@@ -119,17 +107,14 @@ class _SplashScreenState extends State<SplashScreen> {
         backgroundColor: Colors.white,
         body: Stack(
           children: [
-            // 1. Logo Content (Menggunakan uride.png)
             _buildLogoContent(
               sloganColor: '0xFF616161',
-              // Asset untuk Screen 1
               logoAsset: 'assets/images/uride.png',
               screenWidth: screenWidth,
               screenHeight: screenHeight,
               topSpacingFactor: 0.28,
             ),
 
-            // 2. Gambar Wave di Bawah
             Align(
               alignment: Alignment.bottomCenter,
               child: Image.asset(
@@ -145,9 +130,6 @@ class _SplashScreenState extends State<SplashScreen> {
     );
   }
 
-  // =========================================================
-  // --- TAMPILAN 2: WELCOME SCREEN (WAVE DI ATAS + TOMBOL) ---
-  // =========================================================
   Widget _buildSplashPage2(BuildContext context) {
     final screenHeight = MediaQuery.of(context).size.height;
     final screenWidth = MediaQuery.of(context).size.width;
@@ -163,8 +145,8 @@ class _SplashScreenState extends State<SplashScreen> {
               duration: Duration(milliseconds: 800),
               curve: Curves.easeOut,
               top: _currentPageIndex == 0
-                  ? screenHeight   // start invisible below
-                  : screenHeight * -0.05, // slide upward
+                  ? screenHeight
+                  : screenHeight * -0.05,
               left: 0,
               right: 0,
               child: Image.asset(
@@ -175,12 +157,10 @@ class _SplashScreenState extends State<SplashScreen> {
               ),
             ),
 
-            // 2. Konten Utama
             SizedBox(
               height: screenHeight,
               child: Column(
                 children: [
-                  // Logo dan Teks
                   Padding(
                     padding: EdgeInsets.only(top: screenHeight * 0.12),
                     child: _buildLogoContent(
@@ -195,7 +175,6 @@ class _SplashScreenState extends State<SplashScreen> {
 
                   const Spacer(),
 
-                  // 4. Area Tombol MASUK dan Daftar
                   Padding(
                     padding: EdgeInsets.only(
                       bottom: screenHeight * 0.25,
@@ -204,7 +183,6 @@ class _SplashScreenState extends State<SplashScreen> {
                     ),
                     child: Column(
                       children: [
-                        // Tombol "Masuk"
                         Container(
                           width: double.infinity,
                           height: 50,
@@ -231,7 +209,6 @@ class _SplashScreenState extends State<SplashScreen> {
                         ),
                         SizedBox(height: screenHeight * 0.02),
 
-                        // Teks "Belum mempunyai akun? Daftar"
                         GestureDetector(
                           onTap: _navigateToSignUp,
                           child: Text.rich(

@@ -17,7 +17,6 @@ class GabungMitraPage extends StatefulWidget {
 class _GabungMitraPageState extends State<GabungMitraPage> {
   final supabase = Supabase.instance.client;
 
-  // Controllers
   final TextEditingController nameC = TextEditingController();
   final TextEditingController descC = TextEditingController();
   final TextEditingController contactC = TextEditingController();
@@ -30,7 +29,7 @@ class _GabungMitraPageState extends State<GabungMitraPage> {
   TimeOfDay? closeTime;
 
   File? workshopImage;
-  Uint8List? _webImageBytes; // UNTUK WEB
+  Uint8List? _webImageBytes;
 
   final List<String> days = ["Sen", "Sel", "Rab", "Kam", "Jum", "Sab", "Ming"];
   final Set<String> selectedDays = {};
@@ -64,7 +63,7 @@ class _GabungMitraPageState extends State<GabungMitraPage> {
     final result = await showTimePicker(
       context: context,
       initialTime: TimeOfDay.now(),
-      initialEntryMode: TimePickerEntryMode.input, // KEYBOARD MODE
+      initialEntryMode: TimePickerEntryMode.input,
       builder: (BuildContext context, Widget? child) {
         return Theme(
           data: Theme.of(context).copyWith(
@@ -209,13 +208,11 @@ class _GabungMitraPageState extends State<GabungMitraPage> {
     bool serviceEnabled;
     LocationPermission permission;
 
-    // Service aktif?
     serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {
       return null;
     }
 
-    // Izin lokasi
     permission = await Geolocator.checkPermission();
     if (permission == LocationPermission.denied) {
       permission = await Geolocator.requestPermission();
@@ -228,7 +225,6 @@ class _GabungMitraPageState extends State<GabungMitraPage> {
       return null;
     }
 
-    // Ambil lokasi device sekarang
     return await Geolocator.getCurrentPosition(
       desiredAccuracy: LocationAccuracy.high,
     );
@@ -263,18 +259,16 @@ class _GabungMitraPageState extends State<GabungMitraPage> {
     try {
       String? imageUrl;
 
-      // UPLOAD WORKSHOP IMAGE
       if (!kIsWeb && workshopImage != null) {
         final fileName =
             "${DateTime.now().millisecondsSinceEpoch}_${p.basename(workshopImage!.path)}";
 
         final pathInBucket = "workshops/$fileName";
 
-        // 1. Upload file ke Supabase
         final result = await supabase.storage
             .from("images")
             .upload(
-          pathInBucket,  // <-- Hanya path relatif, bukan bucket + path
+          pathInBucket,
           workshopImage!,
           fileOptions: const FileOptions(upsert: false),
         );
@@ -283,9 +277,7 @@ class _GabungMitraPageState extends State<GabungMitraPage> {
           throw Exception("Upload gagal! File tidak masuk ke storage.");
         }
 
-        // 2. Ambil URL
         final publicUrl = supabase.storage.from("images").getPublicUrl(pathInBucket);
-        // <-- Hanya path relatif di bucket
 
         if (publicUrl.isEmpty) {
           throw Exception("Public URL gagal dibuat. Cek bucket.");
@@ -294,7 +286,6 @@ class _GabungMitraPageState extends State<GabungMitraPage> {
         imageUrl = publicUrl;
       }
 
-      // ----------- WEB VERSION --------------
       if (kIsWeb && _webImageBytes != null) {
         final fileName = "${DateTime.now().millisecondsSinceEpoch}.jpg";
 
@@ -452,7 +443,6 @@ class _GabungMitraPageState extends State<GabungMitraPage> {
       body: LayoutBuilder(
         builder: (BuildContext context, BoxConstraints constraints) {
           return SingleChildScrollView(
-            // Hanya scroll jika overflow
             physics: const BouncingScrollPhysics(),
             child: ConstrainedBox(
               constraints: BoxConstraints(minHeight: constraints.maxHeight),
@@ -798,7 +788,6 @@ class _GabungMitraPageState extends State<GabungMitraPage> {
                     ),
                     const SizedBox(height: 30),
 
-                    // ================= AGREEMENT =================
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -813,7 +802,6 @@ class _GabungMitraPageState extends State<GabungMitraPage> {
 
                         const SizedBox(width: 6),
 
-                        // Text "Saya setuju ..."
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -850,7 +838,6 @@ class _GabungMitraPageState extends State<GabungMitraPage> {
 
                     const SizedBox(height: 16),
 
-                    // ================= GRAY BOX — diposisikan sejajar checkbox =================
                     Container(
                       width: double.infinity,
                       padding: const EdgeInsets.symmetric(

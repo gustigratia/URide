@@ -55,7 +55,6 @@ class _CancelReasonPageState extends State<CancelReasonPage> {
 
             const SizedBox(height: 20),
 
-            // RADIO LIST
             ...reasons.map((reason) {
               return Column(
                 children: [

@@ -23,7 +23,7 @@ class KonfirmasiAjuanScreen extends StatefulWidget {
     required this.vehicleType,
     required this.requestType,
     this.isOnLocation = false,
-    required this.price, // pastikan diterima di constructor
+    required this.price,
   }) : super(key: key);
 
   @override
@@ -75,10 +75,10 @@ class _KonfirmasiAjuanScreenState extends State<KonfirmasiAjuanScreen> {
             'price': totalFee,
             'orderdate': DateTime.now().toIso8601String(),
             'paymentstatus': 'pending',
-            'orderstatus': 'ongoing', // Penambahan value default ongoing
+            'orderstatus': 'ongoing',
           })
-          .select('id') // ambil ID yang baru dibuat
-          .single(); // ambil satu record
+          .select('id')
+          .single();
 
       final orderId = response['id'] as int;
 
@@ -128,7 +128,6 @@ class _KonfirmasiAjuanScreenState extends State<KonfirmasiAjuanScreen> {
           children: [
             const SizedBox(height: 16),
 
-            // WORKSHOP INFO CARD
             Container(
               margin: const EdgeInsets.symmetric(horizontal: 16),
               padding: const EdgeInsets.all(16),
@@ -197,7 +196,6 @@ class _KonfirmasiAjuanScreenState extends State<KonfirmasiAjuanScreen> {
 
             const SizedBox(height: 16),
 
-            // AJUAN ANDA
             Container(
               margin: const EdgeInsets.symmetric(horizontal: 16),
               padding: const EdgeInsets.all(16),
@@ -267,17 +265,15 @@ class _KonfirmasiAjuanScreenState extends State<KonfirmasiAjuanScreen> {
                   const SizedBox(height: 16),
 
                   Wrap(
-                    spacing: 8.0,    // Jarak horizontal otomatis antar elemen
-                    runSpacing: 8.0, // Jarak vertikal otomatis jika elemen turun ke baris baru
+                    spacing: 8.0,
+                    runSpacing: 8.0,
                     children: [
                       _buildTag(
                         icon: _getVehicleIcon(),
                         label: widget.vehicleType,
                         color: Colors.amber,
                       ),
-                      
-                      // SizedBox(width: 8) dihapus karena sudah digantikan oleh 'spacing'
-                      
+
                       _buildTag(
                         icon: Icons.circle,
                         label: widget.requestType,
@@ -312,7 +308,6 @@ class _KonfirmasiAjuanScreenState extends State<KonfirmasiAjuanScreen> {
 
             const SizedBox(height: 16),
 
-            // BIAYA
             Container(
               margin: const EdgeInsets.symmetric(horizontal: 16),
               padding: const EdgeInsets.all(16),
@@ -334,7 +329,7 @@ class _KonfirmasiAjuanScreenState extends State<KonfirmasiAjuanScreen> {
                       style:
                           TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
                   const SizedBox(height: 16),
-                  _buildCostRow('Biaya Panggilan', travelFee), // pakai widget.price
+                  _buildCostRow('Biaya Panggilan', travelFee),
                   const SizedBox(height: 12),
                   const Divider(),
                   const SizedBox(height: 12),
@@ -345,7 +340,7 @@ class _KonfirmasiAjuanScreenState extends State<KonfirmasiAjuanScreen> {
 
             const SizedBox(height: 16),
 
-            // PAYMENT
+
             Container(
               margin: const EdgeInsets.symmetric(horizontal: 16),
               padding: const EdgeInsets.all(16),
@@ -426,7 +421,6 @@ class _KonfirmasiAjuanScreenState extends State<KonfirmasiAjuanScreen> {
                 final user = Supabase.instance.client.auth.currentUser;
                 if (user == null) throw 'User belum login';
 
-                // CASH
                 if (selectedPayment == 'cash') {
                   final response = await Supabase.instance.client
                       .from('orders')
@@ -440,7 +434,7 @@ class _KonfirmasiAjuanScreenState extends State<KonfirmasiAjuanScreen> {
                         'price': totalFee,
                         'orderdate': DateTime.now().toIso8601String(),
                         'paymentstatus': 'paid',
-                        'orderstatus': 'ongoing', // Penambahan value default ongoing
+                        'orderstatus': 'ongoing',
                       })
                       .select('id')
                       .single();
@@ -465,13 +459,11 @@ class _KonfirmasiAjuanScreenState extends State<KonfirmasiAjuanScreen> {
                   return;
                 }
 
-                // TRANSFER
-                final orderId = await submitToSupabase(); // status pending
+                final orderId = await submitToSupabase();
                 if (orderId == null) return;
 
                 final redirectUrl = await createMidtransTransaction(totalFee, orderId);
 
-                // Buka Midtrans
                 if (await canLaunchUrl(Uri.parse(redirectUrl))) {
                   await launchUrl(
                     Uri.parse(redirectUrl),
@@ -479,7 +471,6 @@ class _KonfirmasiAjuanScreenState extends State<KonfirmasiAjuanScreen> {
                   );
                 }
 
-                // Setelah membuka Midtrans, tetap redirect ke invoice
                 Navigator.push(
                   context,
                   MaterialPageRoute(

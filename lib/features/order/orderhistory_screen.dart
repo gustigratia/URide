@@ -21,19 +21,14 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
   @override
   void initState() {
     super.initState();
-    // Anda bisa menambahkan logika untuk newOrderId di sini jika perlu
     fetchOrders();
   }
-
-  // ==========================================================
-  //                  HELPER FUNCTIONS (DIPINDAHKAN KE SINI)
-  // ==========================================================
 
   String formatDate(String rawDate) {
     final date = DateTime.parse(rawDate);
 
     const monthNames = [
-      "", // dummy biar index mulai dari 1
+      "",
       "Januari",
       "Februari",
       "Maret",
@@ -99,7 +94,6 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
       bottomNavigationBar: CustomBottomNav(
         currentIndex: 3,
         onTap: (index) {
-          // handle bottom nav tap if needed
         },
       ),
 
@@ -131,7 +125,6 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
   List<Widget> _buildOrderGroups(String keyword) {
     keyword = keyword.toLowerCase();
 
-    // filter order by search
     final filtered = orders.where((o) {
       final workshop = o['workshops'];
       final vehicle = o['vehicletype'];
@@ -140,7 +133,6 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
           workshop?['bengkelname']?.toString().toLowerCase() ?? "";
       final orderType = o['ordertype']?.toString().toLowerCase() ?? "";
 
-      // format tanggal: "15 Januari 2025"
       final formattedDate = formatDate(o['orderdate'].toString()).toLowerCase();
 
       return bengkelName.contains(keyword) ||
@@ -148,7 +140,6 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
           formattedDate.contains(keyword);
     }).toList();
 
-    // group by date
     Map<String, List<dynamic>> grouped = {};
 
     for (var order in filtered) {
@@ -210,10 +201,6 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
     return widgets;
   }
 
-  // ==========================================================
-  //                       WIDGET BUILDERS
-  // ==========================================================
-
   Widget _header() {
     return Center(
       child: Text(
@@ -246,7 +233,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
       child: TextField(
         controller: searchC,
         onChanged: (value) {
-          setState(() {}); // real-time update
+          setState(() {});
         },
         style: GoogleFonts.poppins(fontSize: 13),
         decoration: InputDecoration(
@@ -293,7 +280,6 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // date + status (card utama)
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -333,7 +319,6 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
 
             const SizedBox(height: 16),
 
-            // foto bengkel + nama + alamat (card kecil)
             Container(
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
@@ -394,8 +379,6 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
             ),
 
             const SizedBox(height: 20),
-
-            // Alamat + Map
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -414,7 +397,6 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
 
             const SizedBox(height: 20),
 
-            // chip
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: Row(
@@ -428,7 +410,6 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
 
             const SizedBox(height: 16),
 
-            // status text
             if (statusOngoing) ...[
               Text(
                 "Mekanik sedang menuju lokasi Anda...",
@@ -497,21 +478,21 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
         return Icon(
           Icons.circle,
           size: 10,
-          color: const Color(0xFF61D54D), // hijau
+          color: const Color(0xFF61D54D),
         );
 
       case "normal":
         return Icon(
           Icons.circle,
           size: 10,
-          color: const Color(0xFFFFC727), // kuning
+          color: const Color(0xFFFFC727),
         );
 
       case "emergency":
         return Icon(
           Icons.circle,
           size: 10,
-          color: const Color(0xFFFF3B30), // merah
+          color: const Color(0xFFFF3B30),
         );
 
       default:
@@ -524,7 +505,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
     final date = DateTime.parse(rawDate);
 
     const monthNames = [
-      "", // dummy biar index mulai dari 1
+      "",
       "Januari",
       "Februari",
       "Maret",

@@ -174,13 +174,6 @@ class _AjukanLayananScreenState extends State<AjukanLayananScreen> {
                                   ),
                                 },
                               ),
-                              // Center(
-                              //   child: Icon(
-                              //     Icons.location_on,
-                              //     color: Colors.red,
-                              //     size: 50,
-                              //   ),
-                              // ),
                               Positioned(
                                 top: 8,
                                 right: 8,
@@ -208,7 +201,6 @@ class _AjukanLayananScreenState extends State<AjukanLayananScreen> {
               ),
             ),
 
-            // Detail Alamat
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Column(
@@ -246,7 +238,6 @@ class _AjukanLayananScreenState extends State<AjukanLayananScreen> {
 
             const SizedBox(height: 24),
 
-            // Kendaraan
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Column(
@@ -269,7 +260,6 @@ class _AjukanLayananScreenState extends State<AjukanLayananScreen> {
 
             const SizedBox(height: 24),
 
-            // Jenis Ajuan
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Column(

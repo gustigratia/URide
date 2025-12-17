@@ -22,9 +22,8 @@ class _TambahKendaraanPageState extends State<TambahKendaraanPage> {
 
   String selectedType = "motor";
 
-  // IMAGE VARIABLES
-  File? vehicleImage; // mobile/desktop
-  Uint8List? _webImageBytes; // web
+  File? vehicleImage;
+  Uint8List? _webImageBytes;
   String? uploadedImageUrl;
 
   @override
@@ -38,9 +37,6 @@ class _TambahKendaraanPageState extends State<TambahKendaraanPage> {
     }
   }
 
-  // =============================================================
-  //                     PICK IMAGE
-  // =============================================================
   Future<void> pickImage() async {
     final picker = ImagePicker();
     final file = await picker.pickImage(source: ImageSource.gallery);
@@ -56,14 +52,10 @@ class _TambahKendaraanPageState extends State<TambahKendaraanPage> {
     }
   }
 
-  // =============================================================
-  //    UPLOAD IMAGE TO SUPABASE (100% FIXED VERSION)
-  // =============================================================
   Future<String?> uploadImage() async {
     final supabase = Supabase.instance.client;
 
     try {
-      // ---------- MOBILE / DESKTOP ----------
       if (!kIsWeb && vehicleImage != null) {
         final ext = p.extension(vehicleImage!.path);
         final fileName = "${DateTime.now().millisecondsSinceEpoch}$ext";
@@ -78,7 +70,6 @@ class _TambahKendaraanPageState extends State<TambahKendaraanPage> {
               fileOptions: const FileOptions(upsert: false),
             );
 
-        // ❗ Ambil Public URL dari storagePath (bukan dari result)
         final publicUrl = supabase.storage
             .from("images")
             .getPublicUrl(storagePath);
@@ -86,7 +77,6 @@ class _TambahKendaraanPageState extends State<TambahKendaraanPage> {
         return publicUrl;
       }
 
-      // ------------ WEB --------------
       if (kIsWeb && _webImageBytes != null) {
         final fileName = "${DateTime.now().millisecondsSinceEpoch}.jpg";
         final storagePath = "vehicles/$fileName";
@@ -113,16 +103,12 @@ class _TambahKendaraanPageState extends State<TambahKendaraanPage> {
     }
   }
 
-  // =============================================================
-  //                   SAVE VEHICLE TO DB
-  // =============================================================
   Future<void> simpanKendaraan() async {
     final supabase = Supabase.instance.client;
     final user = supabase.auth.currentUser;
 
     if (user == null) return;
 
-    // Upload image first
     final imageUrl = await uploadImage();
 
     final data = {
@@ -132,7 +118,7 @@ class _TambahKendaraanPageState extends State<TambahKendaraanPage> {
       "vehiclenumber": nomorPlatC.text,
       "kilometer": kilometerC.text,
       "lastservicedate": lastServiceDateC.text,
-      "img": imageUrl ?? "", // simpan public URL supabase
+      "img": imageUrl ?? "",
     };
 
     try {
@@ -160,9 +146,6 @@ class _TambahKendaraanPageState extends State<TambahKendaraanPage> {
     }
   }
 
-  // =============================================================
-  // UI
-  // =============================================================
   @override
   Widget build(BuildContext context) {
     return Scaffold(

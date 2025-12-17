@@ -69,11 +69,9 @@ class _HomeScreenState extends State<HomeScreen> {
           .order('id');
       final spbuData = await supabase.from('spbu').select().order('id');
 
-      // Convert to List<Map<String,dynamic>>
       final w = List<Map<String, dynamic>>.from(workshopData);
       final s = List<Map<String, dynamic>>.from(spbuData);
 
-      // Compute distance string for each item (if we have userPosition)
       final updatedW = w.map((e) => _withDistance(e)).toList();
       final updatedS = s.map((e) => _withDistance(e)).toList();
 
@@ -211,13 +209,11 @@ class _HomeScreenState extends State<HomeScreen> {
       for (final c in components) {
         final types = List<String>.from(c["types"]);
 
-        // Kabupaten / Kota
         if (types.contains("administrative_area_level_2") ||
             types.contains("locality")) {
           city = c["long_name"];
         }
 
-        // Provinsi
         if (types.contains("administrative_area_level_1")) {
           province = c["long_name"];
         }
@@ -245,7 +241,6 @@ class _HomeScreenState extends State<HomeScreen> {
       return;
     }
 
-    // Tambahkan cek kunci API
     if (mapsApiKey.isEmpty) {
       if (mounted) {
         setState(() {
@@ -290,7 +285,6 @@ class _HomeScreenState extends State<HomeScreen> {
             final int trafficDurationSeconds = leg['duration_in_traffic']['value'] ?? durationSeconds;
             durationWithTraffic = leg['duration_in_traffic']['text'] ?? durationText;
 
-            // Logika sederhana untuk menentukan status
             final double ratio = trafficDurationSeconds / durationSeconds;
             print("DEBUG ratio: $ratio");
             print("DEBUG duration: $durationSeconds | traffic: $trafficDurationSeconds");
@@ -342,7 +336,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
     final user = supabase.auth.currentUser;
 
-    // Debug cek user
     if (user == null) {
       print("User is NULL (belum login)");
       return;
@@ -430,7 +423,6 @@ class _HomeScreenState extends State<HomeScreen> {
       item['distance'] = '--';
     }
 
-    // DEBUG rating
     print("Raw rating: ${item['rating']}");
 
     try {
@@ -460,7 +452,7 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  // Geolocator helpers
+
   Future<void> _determinePosition() async {
     try {
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
@@ -503,7 +495,6 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  // UI building below (kept similar to original file, but using fetched data)
   @override
   Widget build(BuildContext context) {
     if (isLoading) {
@@ -515,7 +506,6 @@ class _HomeScreenState extends State<HomeScreen> {
       bottomNavigationBar: CustomBottomNav(
         currentIndex: 0,
         onTap: (index) {
-          // handle bottom nav tap if needed
         },
       ),
 
@@ -650,7 +640,6 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildTrafficCard() {
-    // Tentukan posisi awal
     final initialPosition = userPosition != null
         ? LatLng(userPosition!.latitude, userPosition!.longitude)
         : _defaultLocation;
@@ -690,14 +679,13 @@ class _HomeScreenState extends State<HomeScreen> {
                 zoomGesturesEnabled: false,
                 tiltGesturesEnabled: false,
                 rotateGesturesEnabled: false,
-                trafficEnabled: true, //
+                trafficEnabled: true,
                 mapType: MapType.normal,
 
               ),
             ),
           ),
           const SizedBox(width: 15),
-          // Traffic info
           Expanded(
             child: LayoutBuilder(
               builder: (context, constraints) {
@@ -748,7 +736,6 @@ class _HomeScreenState extends State<HomeScreen> {
                       alignment: Alignment.centerRight,
                       child: GestureDetector(
                         onTap: () {
-                          // Navigasi ke halaman detail atau buka Map full-screen
                           Navigator.pushNamed(context, '/lalulintas');
                         },
                         child: const Text(
@@ -784,7 +771,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return Row(
       children: [
         Expanded(
-          flex: 2, // 75%
+          flex: 2,
           child: _weatherCard(
             percent: precipPercent ?? 0,
             subtitle: conditionText,
@@ -800,7 +787,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         const SizedBox(width: 12),
         Expanded(
-          flex: 2, // 25%
+          flex: 2,
           child: _menuCards(context),
         ),
       ],
@@ -959,34 +946,32 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween, // Agar Teks di kiri, Icon di kanan mentok
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // TEXT (KIRI)
               Expanded(
                 child: AutoSizeText(
                   title,
                   textAlign: TextAlign.left,
                   style: const TextStyle(
-                    fontSize: 16, // Sedikit diperbesar agar terlihat "penuh"
+                    fontSize: 16,
                     fontWeight: FontWeight.w700,
-                    height: 1.2, // Mengatur jarak antar baris jika 2 baris
+                    height: 1.2,
                   ),
                   maxLines: 2,
-                  minFontSize: 12, // Batas minimum font agar tidak terlalu kecil
+                  minFontSize: 12,
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
 
               const SizedBox(width: 12),
 
-              // ICON (KANAN)
+
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF8F8F8), // Sedikit abu-abu biar kontras dengan BG putih
+                  color: const Color(0xFFF8F8F8),
                   borderRadius: BorderRadius.circular(14),
-                  // Border dihapus atau ditipiskan agar lebih bersih
                 ),
                 child: Image.asset(
                   iconPath,
@@ -1057,7 +1042,6 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Stack(
           clipBehavior: Clip.none,
           children: [
-            // IMAGE
             Container(
               height: 200,
               decoration: BoxDecoration(
@@ -1072,7 +1056,6 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
 
-            // INFO CARD
             Positioned(
               left: 16,
               right: 16,
@@ -1092,7 +1075,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 child: Row(
                   children: [
-                    // LEFT INFO
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1143,7 +1125,6 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     ),
 
-                    // STATUS
                     Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 14,
@@ -1214,7 +1195,6 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Stack(
           clipBehavior: Clip.none,
           children: [
-            // Gambar
             Container(
               height: 200,
               decoration: BoxDecoration(
@@ -1228,7 +1208,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
             ),
-            // Card info
             Positioned(
               left: 16,
               right: 16,
@@ -1248,7 +1227,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 child: Row(
                   children: [
-                    // Info kiri
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1299,7 +1277,6 @@ class _HomeScreenState extends State<HomeScreen> {
                         ],
                       ),
                     ),
-                    // Status
                     Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 14,
@@ -1354,7 +1331,6 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
-// Helper functions outside the class
 Color _getTrafficColor(String status) {
   switch (status.toLowerCase()) {
     case "macet":
@@ -1421,7 +1397,6 @@ String getStatus(String? openTime, String? closeTime) {
     print('🟢 open  : $open');
     print('🔴 close : $close');
 
-    // Kasus normal
     if (close.isAfter(open)) {
       print('📌 Normal hours detected');
 
@@ -1431,7 +1406,6 @@ String getStatus(String? openTime, String? closeTime) {
       return isOpen ? 'Buka' : 'Tutup';
     }
 
-    // Kasus lintas hari
     print('🌙 Overnight hours detected');
 
     final isOpen = now.isAfter(open) || now.isBefore(close);

@@ -12,7 +12,6 @@ class BengkelListScreen extends StatefulWidget {
 }
 
 class _BengkelListScreenState extends State<BengkelListScreen> {
-  // 1. Ubah default filter menjadi 'Terdekat'
   String selectedFilter = 'Terdekat'; 
   List<Map<String, dynamic>> bengkelList = [];
   TextEditingController searchController = TextEditingController();
@@ -73,8 +72,7 @@ class _BengkelListScreenState extends State<BengkelListScreen> {
       if (mounted) {
         setState(() {
           bengkelList = response.map<Map<String, dynamic>>((item) {
-            
-            // 2. Hitung jarak mentah (double) dan format string
+
             double? meters;
             String distanceString = '--';
 
@@ -99,8 +97,8 @@ class _BengkelListScreenState extends State<BengkelListScreen> {
               'id': item['id'],
               'name': item['bengkelname'],
               'is_open': item['is_open'],
-              'distance_m': meters, // SIMPAN JARAK MENTAH (double) UNTUK SORTING
-              'distance': distanceString, // Simpan String untuk UI
+              'distance_m': meters,
+              'distance': distanceString,
               'rating': item['rating'] ?? 0.0,
               'image': item["image"] ?? 'assets/images/workshop.png',
               'save': item['save'] ?? false,
@@ -124,16 +122,13 @@ class _BengkelListScreenState extends State<BengkelListScreen> {
   }
 
   List<Map<String, dynamic>> getFilteredList() {
-    // Buat salinan list agar tidak mengubah list asli secara permanen saat sorting
     List<Map<String, dynamic>> filtered = List.from(bengkelList);
 
-    // 3. Logika Sorting Berdasarkan Filter
     if (selectedFilter == 'Terdekat') {
-      // Sort berdasarkan distance_m (jarak meter)
       filtered.sort((a, b) {
-        double distA = a['distance_m'] ?? double.infinity; // Jika null anggap sangat jauh
+        double distA = a['distance_m'] ?? double.infinity;
         double distB = b['distance_m'] ?? double.infinity;
-        return distA.compareTo(distB); // Kecil ke Besar (Ascending)
+        return distA.compareTo(distB);
       });
     } else if (selectedFilter == 'Favorit') {
       filtered = filtered.where((b) => b['save'] == true).toList();
@@ -143,7 +138,6 @@ class _BengkelListScreenState extends State<BengkelListScreen> {
       filtered = filtered.where((b) => b['is_open'] == true).toList();
     }
 
-    // Filter Search Text
     String query = searchController.text.toLowerCase();
     if (query.isNotEmpty) {
       filtered = filtered
@@ -196,7 +190,6 @@ class _BengkelListScreenState extends State<BengkelListScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 16.0),
             child: Row(
               children: [
-                // 4. Update UI Chip dari 'All' ke 'Terdekat'
                 Expanded(child: _buildFilterChip('Terdekat')),
                 const SizedBox(width: 8),
                 Expanded(child: _buildFilterChip('Favorit')),

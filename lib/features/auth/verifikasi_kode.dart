@@ -23,7 +23,6 @@ class _VerifikasiKodePageState extends State<VerifikasiKodePage> {
 
   Widget _otpBox(BuildContext context, TextEditingController c) {
     return Container(
-      // width dihapus, biar ikut lebar Expanded
       height: scale(context, 55),
       alignment: Alignment.center,
       decoration: BoxDecoration(
@@ -142,7 +141,6 @@ class _VerifikasiKodePageState extends State<VerifikasiKodePage> {
 
               SizedBox(height: scale(context, 32)),
 
-              // OTP BOXES (pakai Expanded biar ga overflow)
               Row(
                 children: List.generate(
                   _controllers.length,
@@ -183,7 +181,6 @@ class _VerifikasiKodePageState extends State<VerifikasiKodePage> {
 
               SizedBox(height: scale(context, 20)),
 
-              // RESEND
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [

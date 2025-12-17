@@ -25,9 +25,6 @@ class _SearchPageState extends State<SearchPage> {
     _determinePosition();
   }
 
-  // =============================
-  // GET USER LOCATION
-  // =============================
   Future<void> _determinePosition() async {
     try {
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
@@ -51,9 +48,6 @@ class _SearchPageState extends State<SearchPage> {
     }
   }
 
-  // =============================
-  // FORMAT DISTANCE
-  // =============================
   String _formatDistance(double meters) {
     if (meters < 1000) {
       return '${meters.toStringAsFixed(0)} m';
@@ -63,9 +57,6 @@ class _SearchPageState extends State<SearchPage> {
     }
   }
 
-  // =============================
-  // ADD DISTANCE TO DATA
-  // =============================
   Map<String, dynamic> _withDistance(Map<String, dynamic> item) {
     try {
       final lat = item['latitude'];
@@ -99,9 +90,6 @@ class _SearchPageState extends State<SearchPage> {
     return item;
   }
 
-  // =============================
-  // SEARCH FROM DB WITH DISTANCE
-  // =============================
   Future<Map<String, List<Map<String, dynamic>>>> searchFromDatabase(
       String keyword) async {
     final supabase = Supabase.instance.client;
@@ -113,13 +101,11 @@ class _SearchPageState extends State<SearchPage> {
       };
     }
 
-    // QUERY BENGKEL
     final bengkelResult = await supabase
         .from('workshops')
         .select()
         .ilike('bengkelname', '%$keyword%');
 
-    // QUERY SPBU
     final spbuResult =
     await supabase.from('spbu').select().ilike('name', '%$keyword%');
 
@@ -128,7 +114,6 @@ class _SearchPageState extends State<SearchPage> {
     final List<Map<String, dynamic>> s =
     List<Map<String, dynamic>>.from(spbuResult);
 
-    // Tambahkan distance ke tiap item
     final updatedB = b.map((e) => _withDistance({...e, 'type': 'bengkel'})).toList();
     final updatedS = s.map((e) => _withDistance({...e, 'type': 'spbu'})).toList();
 
@@ -138,9 +123,6 @@ class _SearchPageState extends State<SearchPage> {
     };
   }
 
-  // =============================
-  // ADD HISTORY
-  // =============================
   void addHistory(String query) {
     if (query.trim().isEmpty) return;
 
@@ -152,9 +134,6 @@ class _SearchPageState extends State<SearchPage> {
     _controller.clear();
   }
 
-  // =============================
-  // UI BUILD
-  // =============================
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -257,9 +236,6 @@ class _SearchPageState extends State<SearchPage> {
     );
   }
 
-  // =============================
-  // HEADER
-  // =============================
   Widget _buildHeader(BuildContext context) {
     return Container(
       padding: EdgeInsets.only(
@@ -301,9 +277,7 @@ class _SearchPageState extends State<SearchPage> {
     );
   }
 
-  // =============================
-  // SEARCH BAR
-  // =============================
+
   Widget _buildSearchBar() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16),

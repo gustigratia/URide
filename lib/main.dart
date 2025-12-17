@@ -3,7 +3,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uride/routes/app_routes.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
-// Global Supabase instance
 final supabase = Supabase.instance.client;
 
 Future<void> main() async {
@@ -34,7 +33,6 @@ class MyApp extends StatelessWidget {
         useMaterial3: true,
       ),
 
-      // route awal
       initialRoute: AppRoutes.splash,
 
       routes: AppRoutes.routes,

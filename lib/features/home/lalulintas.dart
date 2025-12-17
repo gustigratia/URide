@@ -34,10 +34,8 @@ class _LaluLintasPageState extends State<LaluLintasPage> {
     _initializeMap();
   }
 
-  // INITIALIZE MAP & LOCATION
   Future<void> _initializeMap() async {
     try {
-      // Get current position
       final pos = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high,
       );
@@ -47,7 +45,6 @@ class _LaluLintasPageState extends State<LaluLintasPage> {
         currentLng = pos.longitude;
       });
 
-      // Get address & traffic status
       await Future.wait([
         _getAddress(),
         _fetchTrafficStatus(),
@@ -63,7 +60,6 @@ class _LaluLintasPageState extends State<LaluLintasPage> {
     }
   }
 
-  // GET ADDRESS VIA REVERSE GEOCODING
   Future<void> _getAddress() async {
     try {
       final mapsApiKey = dotenv.env['MAPS_API_KEY'];
@@ -81,7 +77,6 @@ class _LaluLintasPageState extends State<LaluLintasPage> {
           if (data['results'].isNotEmpty) {
             setState(() {
               currentAddress = data['results'][0]['formatted_address'];
-              // Create marker for current location
               markers = {
                 Marker(
                   markerId: const MarkerId('current'),
@@ -101,7 +96,6 @@ class _LaluLintasPageState extends State<LaluLintasPage> {
     }
   }
 
-  // FETCH REAL-TIME TRAFFIC STATUS (RADIUS 5KM)
   Future<void> _fetchTrafficStatus() async {
     try {
       if (currentLat == null || currentLng == null) {
@@ -122,9 +116,7 @@ class _LaluLintasPageState extends State<LaluLintasPage> {
       LatLng userLatLng = LatLng(currentLat!, currentLng!);
       final LatLng origin = LatLng(currentLat!, currentLng!);
 
-      // Generate random bearing (0-360 degrees)
       final randomBearing = Random().nextInt(360).toDouble();
-      // 1km offset untuk traffic check
       LatLng destination = _offsetPosition(userLatLng, 1000, randomBearing);
 
       final String url =
@@ -152,7 +144,6 @@ class _LaluLintasPageState extends State<LaluLintasPage> {
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
 
-        // Check for API errors in response
         if (data['status'] != 'OK') {
           print("❌ API Error: ${data['status']} - ${data['error_message'] ?? 'Unknown error'}");
           setState(() {
@@ -177,7 +168,6 @@ class _LaluLintasPageState extends State<LaluLintasPage> {
                 leg['duration_in_traffic']['value'] ?? durationSeconds;
             duration = leg['duration_in_traffic']['text'] ?? durationText;
 
-            // Logika untuk menentukan status
             final double ratio =
                 durationSeconds > 0 ? trafficDurationSeconds / durationSeconds : 1.0;
 
@@ -193,13 +183,11 @@ class _LaluLintasPageState extends State<LaluLintasPage> {
             }
           }
 
-          // Update UI
           if (mounted) {
             setState(() {
               trafficStatus = status;
               trafficDuration = duration;
 
-              // Set color based on status
               if (status == "Macet") {
                 trafficColor = Colors.red;
               } else if (status == "Padat") {
@@ -243,7 +231,6 @@ class _LaluLintasPageState extends State<LaluLintasPage> {
     }
   }
 
-  // OFFSET POSITION USING BEARING & DISTANCE
   LatLng _offsetPosition(LatLng origin, double distanceMeters, double bearingDegrees) {
     const double earthRadius = 6371000; // meters
     final double bearing = bearingDegrees * pi / 180;
@@ -265,7 +252,6 @@ class _LaluLintasPageState extends State<LaluLintasPage> {
     return LatLng(lat2 * 180 / pi, lon2 * 180 / pi);
   }
 
-  // OPEN GOOGLE MAPS (USER SEARCH SENDIRI)
   Future<void> _openGoogleMaps() async {
     final url = Uri.parse("https://www.google.com/maps");
     await launchUrl(url, mode: LaunchMode.externalApplication);
@@ -300,7 +286,6 @@ class _LaluLintasPageState extends State<LaluLintasPage> {
             )
           : Column(
             children: [
-              // GOOGLE MAPS - LOKASI SAAT INI DENGAN TRAFFIC
               Container(
                 height: 250,
                 decoration: BoxDecoration(
@@ -330,13 +315,11 @@ class _LaluLintasPageState extends State<LaluLintasPage> {
                 ),
               ),
 
-              // CONTENT BELOW MAP
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // TRAFFIC STATUS CARD - PREMIUM DESIGN
                     Container(
                       width: double.infinity,
                       padding: const EdgeInsets.all(20),
@@ -428,7 +411,6 @@ class _LaluLintasPageState extends State<LaluLintasPage> {
 
                     const SizedBox(height: 12),
 
-                    // LOCATION INFO SECTION
                     const Text(
                       "Lokasi Anda",
                       style: TextStyle(
@@ -440,7 +422,6 @@ class _LaluLintasPageState extends State<LaluLintasPage> {
 
                     const SizedBox(height: 12),
 
-                    // LOCATION CARD
                     _buildPremiumLocationCard(
                       icon: Icons.location_on_rounded,
                       color: const Color(0xFF2196F3),
@@ -449,7 +430,6 @@ class _LaluLintasPageState extends State<LaluLintasPage> {
 
                     const SizedBox(height: 14),
 
-                    // ACTION BUTTONS
                     Container(
                       width: double.infinity,
                       padding: const EdgeInsets.all(16),
@@ -509,7 +489,6 @@ class _LaluLintasPageState extends State<LaluLintasPage> {
     );
   }
 
-  // PREMIUM LOCATION CARD
   Widget _buildPremiumLocationCard({
     required IconData icon,
     required Color color,

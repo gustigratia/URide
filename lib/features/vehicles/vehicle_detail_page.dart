@@ -95,7 +95,6 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
             children: [
               const SizedBox(height: 10),
 
-              // TAB MOTOR / MOBIL
               Container(
                 padding: const EdgeInsets.all(4),
                 child: Row(
@@ -202,7 +201,6 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
 
                 const SizedBox(height: 15),
 
-                // TOTAL PERJALANAN
                 Container(
                   padding: const EdgeInsets.all(20),
                   margin: const EdgeInsets.only(bottom: 15),
@@ -290,9 +288,6 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
 
                 const SizedBox(height: 20),
 
-                // ============================
-                // GANTI OLI & SERVIS RUTIN
-                // ============================
                 Row(
                   children: [
                     Expanded(
@@ -324,9 +319,6 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
     );
   }
 
-  // ============================
-  // COMPONENTS
-  // ============================
   Widget _tabButton(String type, String activeIcon, String inactiveIcon) {
     final active = selectedType == type;
     return SizedBox(

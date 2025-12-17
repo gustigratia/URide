@@ -45,8 +45,6 @@ class SearchResultPage extends StatelessWidget {
     );
   }
 
-  // ========================= HEADER =========================
-
   Widget _buildHeader(BuildContext context, String query) {
     return Container(
       padding: EdgeInsets.only(
@@ -137,9 +135,6 @@ class SearchResultPage extends StatelessWidget {
     );
   }
 
-  // ========================= LIST =========================
-
-  // ================= WORKSHOP LIST =================
   Widget _buildWorkshopList(List data) {
     if (data.isEmpty) {
       return const Center(
@@ -232,7 +227,7 @@ class SearchResultPage extends StatelessWidget {
       onTap: () {
         Navigator.pushNamed(
           context,
-          '/spbu_detail', // route ke detail SPBU
+          '/spbu_detail',
           arguments: {'spbuId': id},
         );
       },
@@ -271,7 +266,7 @@ class SearchResultPage extends StatelessWidget {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    // NAME + DISTANCE + RATING
+
                     Flexible(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -307,7 +302,6 @@ class SearchResultPage extends StatelessWidget {
                       ),
                     ),
 
-                    // STATUS BADGE
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 10),
                       decoration: BoxDecoration(
@@ -383,7 +377,6 @@ class SearchResultPage extends StatelessWidget {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    // NAME + DISTANCE + RATING
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -409,8 +402,7 @@ class SearchResultPage extends StatelessWidget {
                         ),
                       ],
                     ),
-      
-                    // STATUS BADGE
+
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 10),
                       decoration: BoxDecoration(

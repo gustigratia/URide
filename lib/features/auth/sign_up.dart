@@ -89,9 +89,6 @@ class _SignUpPageState extends State<SignUpPage> {
               ),
               SizedBox(height: scale(context, 50)),
 
-              // =============================
-              // NAMA DEPAN
-              // =============================
               Align(
                 alignment: Alignment.centerLeft,
                 child: Text(
@@ -190,9 +187,6 @@ class _SignUpPageState extends State<SignUpPage> {
               ),
               SizedBox(height: scale(context, 20)),
 
-              // =============================
-              // PASSWORD
-              // =============================
               Align(
                 alignment: Alignment.centerLeft,
                 child: Text(
@@ -264,9 +258,6 @@ class _SignUpPageState extends State<SignUpPage> {
 
               SizedBox(height: scale(context, 26)),
 
-              // =============================
-              // BUTTON DAFTAR
-              // =============================
               GestureDetector(
                 onTap: isLoading ? null : _signUp,
                 child: Container(
@@ -290,9 +281,6 @@ class _SignUpPageState extends State<SignUpPage> {
 
               SizedBox(height: scale(context, 26)),
 
-              // =============================
-              // PUNYA AKUN? LOGIN
-              // =============================
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -327,9 +315,6 @@ class _SignUpPageState extends State<SignUpPage> {
     );
   }
 
-  // =============================
-  // UI COMPONENTS
-  // =============================
 
   Widget _inputBox(BuildContext context, Widget child) {
     return Container(

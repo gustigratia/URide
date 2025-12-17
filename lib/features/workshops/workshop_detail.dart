@@ -1,28 +1,24 @@
 import 'package:flutter/material.dart';
-import 'package:uride/main.dart'; // supabase
+import 'package:uride/main.dart';
 import 'package:uride/routes/app_routes.dart';
 import 'package:share_plus/share_plus.dart';
-import 'package:geolocator/geolocator.dart'; // Tambahkan import ini
+import 'package:geolocator/geolocator.dart';
 
 class BengkelDetailScreen extends StatelessWidget {
   final int workshopId;
 
   const BengkelDetailScreen({super.key, required this.workshopId});
 
-  // Gabungkan pengambilan data bengkel + lokasi user
   Future<Map<String, dynamic>?> getWorkshopDetailWithDistance() async {
     try {
-      // 1. Ambil data bengkel
       final data = await supabase
           .from('workshops')
           .select()
           .eq('id', workshopId)
           .single();
 
-      // 2. Ambil Lokasi User & Hitung Jarak
       String distanceStr = '-- km';
       try {
-        // Cek permission sederhana (asumsi sudah dihandle di screen sebelumnya, tapi tetap safe check)
         LocationPermission permission = await Geolocator.checkPermission();
         if (permission == LocationPermission.denied) {
           permission = await Geolocator.requestPermission();
@@ -49,8 +45,6 @@ class BengkelDetailScreen extends StatelessWidget {
               latD,
               lngD,
             );
-
-            // Format jarak
             if (meters < 1000) {
               distanceStr = '${meters.toStringAsFixed(0)} m';
             } else {
@@ -63,7 +57,6 @@ class BengkelDetailScreen extends StatelessWidget {
         debugPrint("Error calculating distance: $e");
       }
 
-      // 3. Masukkan formatted distance ke dalam data map
       final Map<String, dynamic> result = Map.from(data);
       result['formatted_distance'] = distanceStr;
       
@@ -85,7 +78,7 @@ class BengkelDetailScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<Map<String, dynamic>?>(
-      future: getWorkshopDetailWithDistance(), // Panggil fungsi baru
+      future: getWorkshopDetailWithDistance(),
       builder: (context, snap) {
         if (snap.connectionState == ConnectionState.waiting) {
           return const Scaffold(
@@ -131,7 +124,6 @@ class BengkelDetailScreen extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const SizedBox(height: 16),
-                      // Gambar (Diperbarui mengambil dari w['image'] atau w['image_url'])
                       Container(
                         margin: const EdgeInsets.symmetric(vertical: 16),
                         height: 200,
@@ -146,8 +138,7 @@ class BengkelDetailScreen extends StatelessWidget {
                           ),
                         ),
                       ),
-                      
-                      // Nama Bengkel
+
                       Text(
                         w['bengkelname'] ?? 'Nama tidak tersedia',
                         style: const TextStyle(
@@ -156,26 +147,20 @@ class BengkelDetailScreen extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 8),
-
-                      // --- BARIS RATING & DISTANCE (DIPERBARUI) ---
                       Row(
                         children: [
-                          // Icon & Text Jarak
                           const Icon(Icons.location_on, size: 16, color: Colors.grey),
                           const SizedBox(width: 4),
                           Text(
-                            distance, // Hasil hitungan geolocator
+                            distance,
                             style: TextStyle(
                               fontSize: 14,
                               color: Colors.grey[700],
                               fontWeight: FontWeight.w500,
                             ),
                           ),
-                          
-                          // Pemisah
                           const SizedBox(width: 16),
 
-                          // Icon & Text Rating
                           const Icon(Icons.star, size: 16, color: Colors.amber),
                           const SizedBox(width: 4),
                           Text(
@@ -187,10 +172,8 @@ class BengkelDetailScreen extends StatelessWidget {
                           ),
                         ],
                       ),
-                      // -------------------------------------------
 
                       const SizedBox(height: 16),
-                      // Alamat
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
@@ -199,7 +182,7 @@ class BengkelDetailScreen extends StatelessWidget {
                         ),
                         child: Row(
                           children: [
-                            Icon(Icons.map, // Ganti icon map biar beda dikit dari pin jarak
+                            Icon(Icons.map,
                                 color: Colors.amber.shade700, size: 20),
                             const SizedBox(width: 8),
                             Expanded(
@@ -212,7 +195,6 @@ class BengkelDetailScreen extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 12),
-                      // Deskripsi
                       Text(
                         w['description'] ?? 'Tidak ada deskripsi',
                         style: const TextStyle(
@@ -222,7 +204,6 @@ class BengkelDetailScreen extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 16),
-                      // Tombol aksi (Save, Share, Ulas)
                       Row(
                         children: [
                           _SaveButton(workshopId: workshopId),
@@ -246,7 +227,6 @@ class BengkelDetailScreen extends StatelessWidget {
                         ],
                       ),
                       const SizedBox(height: 24),
-                      // Layanan pilihan
                       const Text(
                         'Layanan pilihan',
                         style: TextStyle(
@@ -282,7 +262,6 @@ class BengkelDetailScreen extends StatelessWidget {
                         },
                       ),
                       const SizedBox(height: 24),
-                      // Kontak darurat
                       const Text(
                         'Kontak Darurat :',
                         style: TextStyle(
@@ -306,7 +285,6 @@ class BengkelDetailScreen extends StatelessWidget {
                   ),
                 ),
               ),
-              // Tombol Ajukan Layanan
               Positioned(
                 left: 0,
                 right: 0,
@@ -371,7 +349,6 @@ class BengkelDetailScreen extends StatelessWidget {
   }
 }
 
-// Save Button
 class _SaveButton extends StatefulWidget {
   final int workshopId;
   const _SaveButton({super.key, required this.workshopId});
@@ -409,7 +386,6 @@ class _SaveButtonState extends State<_SaveButton> {
           isLoading = false;
         });
       }
-      // Silent fail or simple log
       debugPrint('Error load save status: $e');
     }
   }
@@ -489,7 +465,6 @@ class _SaveButtonState extends State<_SaveButton> {
   }
 }
 
-// Action Button
 class _ActionButton extends StatelessWidget {
   final IconData icon;
   final String label;
@@ -536,7 +511,6 @@ class _ActionButton extends StatelessWidget {
   }
 }
 
-// Service Item
 class _ServiceItem extends StatelessWidget {
   final IconData icon;
   final String label;

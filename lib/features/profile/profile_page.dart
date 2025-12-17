@@ -10,8 +10,7 @@ class ProfilePage extends StatefulWidget {
 
 class _ProfilePageState extends State<ProfilePage> {
   bool isEditing = false;
-  
-  // Variabel untuk status apakah user punya bengkel
+
   bool hasWorkshop = false;
 
   final TextEditingController nameC = TextEditingController();
@@ -38,7 +37,6 @@ class _ProfilePageState extends State<ProfilePage> {
 
       emailC.text = currentUser!.email ?? "";
 
-      // 1. Ambil data User
       final userData = await supabase
           .from("users")
           .select()
@@ -52,15 +50,12 @@ class _ProfilePageState extends State<ProfilePage> {
         phoneC.text = userData["phone"] ?? "";
       }
 
-      // 2. Cek apakah user ini sudah punya workshop (bengkel)
-      // Kita query ke tabel workshops dimana userid = current user id
       final workshopData = await supabase
           .from("workshops")
-          .select("id") // Kita hanya butuh ID untuk memastikan datanya ada
+          .select("id")
           .eq("userid", currentUser!.id)
           .maybeSingle();
 
-      // Jika workshopData tidak null, berarti user punya bengkel
       if (workshopData != null) {
         hasWorkshop = true;
       } else {
@@ -136,7 +131,6 @@ class _ProfilePageState extends State<ProfilePage> {
                     ),
                     child: const CircleAvatar(
                       radius: 32,
-                      // Pastikan aset gambar ada
                       backgroundImage: AssetImage("assets/images/profile.jpg"),
                     ),
                   ),
@@ -187,8 +181,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                 ),
                         ),
                         const SizedBox(height: 8),
-                        
-                        // --- BAGIAN TOMBOL MITRA / BENGKEL SAYA ---
+
                         GestureDetector(
                           onTap: () {
                             if (hasWorkshop) {
@@ -207,7 +200,6 @@ class _ProfilePageState extends State<ProfilePage> {
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Text(
-                              // Logika text tombol
                               hasWorkshop ? "Bengkel Saya" : "Gabung Jadi Mitra",
                               style: const TextStyle(
                                 fontSize: 12,
@@ -217,8 +209,6 @@ class _ProfilePageState extends State<ProfilePage> {
                             ),
                           ),
                         ),
-                        // ------------------------------------------
-
                       ],
                     ),
                   ),
@@ -267,8 +257,6 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  // ... (Sisa kode _profileCard dan _logoutCard sama seperti sebelumnya)
-  
   Widget _profileCard({
     required IconData icon,
     required String title,
@@ -286,35 +274,29 @@ class _ProfilePageState extends State<ProfilePage> {
           BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8),
         ],
       ),
-      // UBAH DARI COLUMN KE ROW AGAR ICON DI KIRI DAN TEXT DI KANAN
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center, // PENTING: Ini yang bikin icon di tengah vertikal
-        children: [
-          // 1. BAGIAN ICON
-          Icon(icon, color: Colors.black54, size: 24),
-          
-          const SizedBox(width: 16), // Jarak antara icon dan teks
 
-          // 2. BAGIAN TEXT (JUDUL + ISI)
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Icon(icon, color: Colors.black54, size: 24),
+          const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // Judul (Email/Phone)
                 Text(
                   title,
                   style: const TextStyle(
-                    fontSize: 12, // Sedikit dikecilkan agar proporsional
+                    fontSize: 12,
                     fontWeight: FontWeight.bold,
                     color: Colors.grey,
                   ),
                 ),
-                const SizedBox(height: 4), // Jarak kecil ke input field
+                const SizedBox(height: 4),
 
-                // Input Field / Text Value
                 SizedBox(
-                  height: 24, // Tinggi area input
+                  height: 24,
                   child: isEditing
                       ? TextField(
                           controller: controller,

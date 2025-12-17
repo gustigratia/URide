@@ -40,7 +40,6 @@ class _UbahKataSandiPageState extends State<UbahKataSandiPage> {
         ),
       );
 
-      //Arahkan ke halaman verifikasi kode + bawa email
       Navigator.pushNamed(
         context,
         AppRoutes.verifikasiKode,

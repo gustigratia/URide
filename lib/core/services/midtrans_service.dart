@@ -7,7 +7,7 @@ Future<String> createMidtransTransaction(int totalFee, int orderId) async {
     headers: {'Content-Type': 'application/json'},
     body: jsonEncode({
       'totalFee': totalFee,
-      'flutterOrderId': orderId, // kirim ID record Supabase dari Flutter
+      'flutterOrderId': orderId,
     }),
   );
 

@@ -45,7 +45,6 @@ class _LokasiParkirPageState extends State<LokasiParkirPage> {
     super.dispose();
   }
 
-  // GOOGLE REVERSE GEOCODING
   Future<String> reverseGeocode(double lat, double lng) async {
     final apiKey = dotenv.env['MAPS_API_KEY'] ?? '';
 
@@ -70,7 +69,6 @@ class _LokasiParkirPageState extends State<LokasiParkirPage> {
     return "Alamat tidak ditemukan";
   }
 
-  // GET CURRENT LOCATION
   Future<void> loadPreviewLocation() async {
     try {
       final pos = await Geolocator.getCurrentPosition(
@@ -84,7 +82,6 @@ class _LokasiParkirPageState extends State<LokasiParkirPage> {
     } catch (e) {}
   }
 
-  // LOAD DATA PARKIR
   Future<void> loadParkingData() async {
     try {
       final client = Supabase.instance.client;
@@ -119,7 +116,6 @@ class _LokasiParkirPageState extends State<LokasiParkirPage> {
     }
   }
 
-  // SAVE NEW PARKING LOCATION
   Future<void> saveParkingLocation() async {
     if (namaParkirController.text.trim().isEmpty) {
       ScaffoldMessenger.of(
@@ -175,7 +171,6 @@ class _LokasiParkirPageState extends State<LokasiParkirPage> {
     } catch (e) {}
   }
 
-  // END PARKING SESSION
   Future<void> endParkingSession(int id) async {
     try {
       await supabase.from('parking').update({"status": false}).eq('id', id);
@@ -191,7 +186,6 @@ class _LokasiParkirPageState extends State<LokasiParkirPage> {
     } catch (e) {}
   }
 
-  // OPEN IN GOOGLE MAPS
   Future<void> openInGoogleMaps(double lat, double lng) async {
     final url = Uri.parse("google.navigation:q=$lat,$lng&mode=d");
 
@@ -203,7 +197,6 @@ class _LokasiParkirPageState extends State<LokasiParkirPage> {
     }
   }
 
-  // FILTERING
   bool _matchSearch(data) {
     if (searchQuery.isEmpty) return true;
     final nama = (data["nama_parkir"] ?? "").toString().toLowerCase();
@@ -248,7 +241,6 @@ class _LokasiParkirPageState extends State<LokasiParkirPage> {
     return _matchSearch(m) && _matchFilter(m);
   }
 
-  // UI: SEARCH BAR 
   Widget buildSearchBar() {
     return Container(
       margin: const EdgeInsets.fromLTRB(22, 12, 22, 10),

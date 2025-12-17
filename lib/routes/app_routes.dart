@@ -114,7 +114,7 @@ class AppRoutes {
             vehicleType: args?['vehicleType'] ?? '',
             requestType: args?['requestType'] ?? '',
             isOnLocation: args?['isOnLocation'] ?? false,
-            price: args?['price'] ?? 0, // pastikan price dikirim
+            price: args?['price'] ?? 0,
           ),
         );
 

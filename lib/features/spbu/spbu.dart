@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uride/routes/app_routes.dart';
-import 'package:geolocator/geolocator.dart'; // 1. Import Geolocator
+import 'package:geolocator/geolocator.dart';
 
 class SPBUListScreen extends StatefulWidget {
   const SPBUListScreen({Key? key}) : super(key: key);
@@ -12,12 +12,10 @@ class SPBUListScreen extends StatefulWidget {
 }
 
 class _SPBUListScreenState extends State<SPBUListScreen> {
-  // 2. Ubah default filter atau biarkan 'Buka', di sini saya ubah ke 'Terdekat' agar langsung terlihat
   String selectedFilter = 'Terdekat'; 
   List<SPBUModel> _allSpbuList = [];
   bool _isLoading = true;
-  
-  // 3. Variable untuk Lokasi User
+
   Position? _userPosition;
 
   TextEditingController searchController = TextEditingController();
@@ -25,7 +23,7 @@ class _SPBUListScreenState extends State<SPBUListScreen> {
   @override
   void initState() {
     super.initState();
-    _initData(); // 4. Panggil init data gabungan
+    _initData();
     
     searchController.addListener(() {
       setState(() {});
@@ -38,13 +36,11 @@ class _SPBUListScreenState extends State<SPBUListScreen> {
     super.dispose();
   }
 
-  // 5. Fungsi inisialisasi urut: Cari Lokasi -> Ambil Data SPBU
   Future<void> _initData() async {
     await _determinePosition();
     await _fetchSPBU();
   }
 
-  // 6. Logika mendapatkan lokasi user (Geolocator)
   Future<void> _determinePosition() async {
     try {
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
@@ -72,7 +68,6 @@ class _SPBUListScreenState extends State<SPBUListScreen> {
     }
   }
 
-  // 7. Fetch Data & Hitung Jarak
   Future<void> _fetchSPBU() async {
     try {
       final response = await Supabase.instance.client
@@ -85,7 +80,6 @@ class _SPBUListScreenState extends State<SPBUListScreen> {
             .map<SPBUModel>((data) => SPBUModel.fromJson(data))
             .toList();
 
-        // Hitung jarak jika lokasi user ditemukan
         if (_userPosition != null) {
           for (var spbu in tempList) {
             double dist = Geolocator.distanceBetween(
@@ -94,7 +88,7 @@ class _SPBUListScreenState extends State<SPBUListScreen> {
               spbu.latitude,
               spbu.longitude,
             );
-            spbu.distanceMeters = dist; // Set jarak ke model
+            spbu.distanceMeters = dist;
           }
         }
 
@@ -113,15 +107,12 @@ class _SPBUListScreenState extends State<SPBUListScreen> {
     }
   }
 
-  // 8. Logika Filtering & Sorting Updated
   List<SPBUModel> getFilteredList() {
     List<SPBUModel> filtered = List.from(_allSpbuList);
 
-    // Filter Logic
     if (selectedFilter == 'Buka') {
       filtered = filtered.where((e) => e.isCurrentlyOpen).toList();
-    } else if (selectedFilter == 'Terdekat') { 
-      // LOGIC BARU: Sorting berdasarkan jarak
+    } else if (selectedFilter == 'Terdekat') {
       filtered.sort((a, b) {
         double distA = a.distanceMeters ?? double.infinity;
         double distB = b.distanceMeters ?? double.infinity;
@@ -133,7 +124,6 @@ class _SPBUListScreenState extends State<SPBUListScreen> {
       filtered = filtered.where((e) => e.hasMusholla).toList();
     }
 
-    // Search Logic
     String query = searchController.text.toLowerCase();
     if (query.isNotEmpty) {
       filtered = filtered.where((e) {
@@ -170,7 +160,6 @@ class _SPBUListScreenState extends State<SPBUListScreen> {
       ),
       body: Column(
         children: [
-          // SEARCH BAR
           Padding(
             padding: const EdgeInsets.all(16.0),
             child: TextField(
@@ -191,12 +180,11 @@ class _SPBUListScreenState extends State<SPBUListScreen> {
             ),
           ),
 
-          // FILTER CHIPS (Update 'Rating' ke 'Terdekat')
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16.0),
             child: Row(
               children: [
-                Expanded(child: _buildFilterChip('Terdekat')), // Ganti Rating jadi Terdekat
+                Expanded(child: _buildFilterChip('Terdekat')),
                 const SizedBox(width: 8),
                 Expanded(child: _buildFilterChip('Buka')),
                 const SizedBox(width: 8),
@@ -208,8 +196,6 @@ class _SPBUListScreenState extends State<SPBUListScreen> {
           ),
 
           const SizedBox(height: 16),
-
-          // LIST VIEW
           Expanded(
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator())
@@ -281,7 +267,6 @@ class SPBUCard extends StatelessWidget {
         child: Stack(
           clipBehavior: Clip.none,
           children: [
-            // IMAGE
             ClipRRect(
               borderRadius: BorderRadius.circular(12),
               child: Container(
@@ -321,7 +306,6 @@ class SPBUCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // --- NAMA & STATUS ---
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       crossAxisAlignment: CrossAxisAlignment.start, 
@@ -368,14 +352,12 @@ class SPBUCard extends StatelessWidget {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              // --- UPDATE: Menampilkan Jarak dan Rating ---
                               Row(
                                 children: [
-                                  // Jarak
                                   Icon(Icons.location_on, size: 16, color: Colors.grey[600]),
                                   const SizedBox(width: 4),
                                   Text(
-                                    spbu.formattedDistance, // Menggunakan getter helper
+                                    spbu.formattedDistance,
                                     style: TextStyle(
                                       fontSize: 13,
                                       color: Colors.grey[600],
@@ -384,8 +366,7 @@ class SPBUCard extends StatelessWidget {
                                   ),
                                   
                                   const SizedBox(width: 16),
-                                  
-                                  // Rating
+
                                   const Icon(Icons.star,
                                       size: 16, color: Colors.amber),
                                   const SizedBox(width: 4),
@@ -399,8 +380,7 @@ class SPBUCard extends StatelessWidget {
                                 ],
                               ),
                               const SizedBox(height: 8),
-                              
-                              // Fasilitas Toilet
+
                               Row(
                                 children: [
                                   Icon(Icons.wc,
@@ -426,7 +406,6 @@ class SPBUCard extends StatelessWidget {
                               ),
                               const SizedBox(height: 8),
 
-                              // Fasilitas Musholla
                               Row(
                                 children: [
                                   Icon(Icons.mosque,
@@ -466,7 +445,6 @@ class SPBUCard extends StatelessWidget {
   }
 }
 
-// 9. UPDATE MODEL CLASS
 class SPBUModel {
   final String name;
   final double rating;
@@ -476,10 +454,9 @@ class SPBUModel {
   final String address;
   final String openTime;
   final String closeTime;
-  final double latitude;  // New
-  final double longitude; // New
-  
-  // Field mutable untuk menyimpan jarak yang dihitung
+  final double latitude;
+  final double longitude;
+
   double? distanceMeters; 
 
   SPBUModel({
@@ -506,14 +483,11 @@ class SPBUModel {
       address: json['address'] ?? '',
       openTime: json['open_time'] ?? '00:00',
       closeTime: json['close_time'] ?? '00:00',
-      // Pastikan field latitude/longitude ada di tabel Supabase kamu
-      // Jika tipe datanya text, gunakan double.parse
       latitude: (json['latitude'] as num?)?.toDouble() ?? 0.0,
       longitude: (json['longitude'] as num?)?.toDouble() ?? 0.0,
     );
   }
 
-  // Helper untuk format display jarak
   String get formattedDistance {
     if (distanceMeters == null) return '--';
     if (distanceMeters! < 1000) {
