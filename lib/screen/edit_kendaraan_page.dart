@@ -4,7 +4,6 @@ import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:path/path.dart' as p;
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class EditKendaraanPage extends StatefulWidget {
@@ -18,28 +17,26 @@ class _EditKendaraanPageState extends State<EditKendaraanPage> {
   final namaC = TextEditingController();
   final platC = TextEditingController();
   final kilometerC = TextEditingController();
+  final lastServiceDateC = TextEditingController(); // ✅ NEW
 
   late Object vehicleId;
   int? vehicleIndex;
   bool hasVehicleId = false;
 
   // ===================== IMAGE STATE ======================
-  String? currentImageUrl; // URL gambar lama
-  File? vehicleImage; // mobile/desktop
-  Uint8List? webImageBytes; // web
+  String? currentImageUrl;
+  File? vehicleImage;
+  Uint8List? webImageBytes;
   bool uploading = false;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-
     final args = ModalRoute.of(context)!.settings.arguments as Map?;
-
     if (args != null && args["id"] != null) {
       vehicleId = args["id"];
       vehicleIndex = args["index"];
       hasVehicleId = true;
-
       fetchVehicleData();
     }
   }
@@ -52,7 +49,6 @@ class _EditKendaraanPageState extends State<EditKendaraanPage> {
 
     final supabase = Supabase.instance.client;
     final user = supabase.auth.currentUser;
-
     if (user == null) return;
 
     final data = await supabase
@@ -67,18 +63,18 @@ class _EditKendaraanPageState extends State<EditKendaraanPage> {
         namaC.text = data["vehiclename"] ?? "";
         platC.text = data["vehiclenumber"] ?? "";
         kilometerC.text = data["kilometer"]?.toString() ?? "";
+        lastServiceDateC.text = data["lastservicedate"] ?? ""; // ✅ NEW
         currentImageUrl = data["img"] ?? "";
       });
     }
   }
 
   // ======================================================
-  //               PICK IMAGE (WEB & MOBILE)
+  //               PICK IMAGE
   // ======================================================
   Future<void> pickImage() async {
     final picker = ImagePicker();
     final file = await picker.pickImage(source: ImageSource.gallery);
-
     if (file == null) return;
 
     if (kIsWeb) {
@@ -88,7 +84,6 @@ class _EditKendaraanPageState extends State<EditKendaraanPage> {
       vehicleImage = File(file.path);
       webImageBytes = null;
     }
-
     setState(() {});
   }
 
@@ -100,62 +95,41 @@ class _EditKendaraanPageState extends State<EditKendaraanPage> {
 
     try {
       final supabase = Supabase.instance.client;
-
-      // base URL bucket
       final bucketUrl = supabase.storage.from("images").getPublicUrl("");
-
-      // remove base URL → dapat path asli
       String path = imageUrl.replaceFirst(bucketUrl, "");
-
-      // hapus "/" diawal jika ada
-      if (path.startsWith("/")) {
-        path = path.substring(1);
-      }
-
+      if (path.startsWith("/")) path = path.substring(1);
       await supabase.storage.from("images").remove([path]);
-
-      debugPrint("Deleted old image: $path");
-    } catch (e) {
-      debugPrint("Delete image error: $e");
-    }
+    } catch (_) {}
   }
 
   // ======================================================
-  //         UPLOAD NEW IMAGE TO SUPABASE STORAGE
+  //         UPLOAD NEW IMAGE
   // ======================================================
   Future<String?> uploadImage() async {
     final supabase = Supabase.instance.client;
-
     try {
-      String fileName =
-          "${DateTime.now().millisecondsSinceEpoch}.jpg";
-      String storagePath = "vehicles/$fileName";
+      final fileName = "${DateTime.now().millisecondsSinceEpoch}.jpg";
+      final storagePath = "vehicles/$fileName";
 
-      // WEB
       if (kIsWeb && webImageBytes != null) {
         await supabase.storage.from("images").uploadBinary(
               storagePath,
               webImageBytes!,
               fileOptions: const FileOptions(upsert: false),
             );
-
         return supabase.storage.from("images").getPublicUrl(storagePath);
       }
 
-      // MOBILE / DESKTOP
       if (!kIsWeb && vehicleImage != null) {
         await supabase.storage.from("images").upload(
               storagePath,
               vehicleImage!,
               fileOptions: const FileOptions(upsert: false),
             );
-
         return supabase.storage.from("images").getPublicUrl(storagePath);
       }
-
       return null;
-    } catch (e) {
-      debugPrint("Upload Error: $e");
+    } catch (_) {
       return null;
     }
   }
@@ -168,34 +142,24 @@ class _EditKendaraanPageState extends State<EditKendaraanPage> {
 
     final supabase = Supabase.instance.client;
     final user = supabase.auth.currentUser;
-
     if (user == null) return;
 
     String newImageUrl = currentImageUrl ?? "";
-
-    bool hasNewImage = (vehicleImage != null || webImageBytes != null);
-
-    if (hasNewImage) {
+    if (vehicleImage != null || webImageBytes != null) {
       final uploadedUrl = await uploadImage();
-
       if (uploadedUrl != null) {
-        // Hapus file lama dari storage
         await deleteOldImage(currentImageUrl);
-
         newImageUrl = uploadedUrl;
       }
     }
 
-    await supabase
-        .from("vehicles")
-        .update({
-          "vehiclename": namaC.text.trim(),
-          "vehiclenumber": platC.text.trim(),
-          "kilometer": int.tryParse(kilometerC.text.trim()) ?? 0,
-          "img": newImageUrl,
-        })
-        .eq("id", vehicleId)
-        .eq("userid", user.id);
+    await supabase.from("vehicles").update({
+      "vehiclename": namaC.text.trim(),
+      "vehiclenumber": platC.text.trim(),
+      "kilometer": int.tryParse(kilometerC.text.trim()) ?? 0,
+      "lastservicedate": lastServiceDateC.text.trim(), // ✅ NEW
+      "img": newImageUrl,
+    }).eq("id", vehicleId).eq("userid", user.id);
 
     if (!mounted) return;
 
@@ -213,12 +177,9 @@ class _EditKendaraanPageState extends State<EditKendaraanPage> {
 
     final supabase = Supabase.instance.client;
     final user = supabase.auth.currentUser;
-
     if (user == null) return;
 
-    // hapus gambar dulu
     await deleteOldImage(currentImageUrl);
-
     await supabase
         .from("vehicles")
         .delete()
@@ -226,7 +187,6 @@ class _EditKendaraanPageState extends State<EditKendaraanPage> {
         .eq("userid", user.id);
 
     if (!mounted) return;
-
     Navigator.pop(context, {
       "deleted": true,
       "index": vehicleIndex,
@@ -244,7 +204,6 @@ class _EditKendaraanPageState extends State<EditKendaraanPage> {
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 20),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const SizedBox(height: 10),
 
@@ -272,9 +231,7 @@ class _EditKendaraanPageState extends State<EditKendaraanPage> {
 
               const SizedBox(height: 25),
 
-              // FORM CARD
               Container(
-                width: double.infinity,
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
                   color: Colors.white,
@@ -290,13 +247,7 @@ class _EditKendaraanPageState extends State<EditKendaraanPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      "Foto Kendaraan",
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
+                    _label("Foto Kendaraan"),
                     const SizedBox(height: 8),
 
                     GestureDetector(
@@ -306,7 +257,6 @@ class _EditKendaraanPageState extends State<EditKendaraanPage> {
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(color: Colors.grey.shade300),
-                          color: const Color(0xFFF3F3F3),
                         ),
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(16),
@@ -319,31 +269,33 @@ class _EditKendaraanPageState extends State<EditKendaraanPage> {
                                       ? Image.network(currentImageUrl!,
                                           fit: BoxFit.cover)
                                       : const Center(
-                                          child: Icon(
-                                            Icons.camera_alt_outlined,
-                                            color: Colors.grey,
-                                            size: 32,
-                                          ),
+                                          child: Icon(Icons.camera_alt_outlined),
                                         ),
                         ),
                       ),
                     ),
 
                     const SizedBox(height: 25),
-
                     _label("Nama Kendaraan"),
                     _inputField("Masukkan nama kendaraan", namaC),
-                    const SizedBox(height: 20),
 
+                    const SizedBox(height: 20),
                     _label("Nomor Plat"),
                     _inputField("Masukkan nomor plat kendaraan", platC),
-                    const SizedBox(height: 20),
 
+                    const SizedBox(height: 20),
                     _label("Kilometer"),
                     _inputField("Masukkan kilometer", kilometerC),
+
+                    const SizedBox(height: 20),
+                    _label("Tanggal Servis Terakhir"),
+                    _inputField(
+                      "Masukkan tanggal servis terakhir (YYYY-MM-DD)",
+                      lastServiceDateC,
+                    ),
+
                     const SizedBox(height: 28),
 
-                    // DELETE BUTTON
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
@@ -358,16 +310,14 @@ class _EditKendaraanPageState extends State<EditKendaraanPage> {
                         child: const Text(
                           "Hapus Kendaraan",
                           style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w600,
-                          ),
+                              color: Colors.white,
+                              fontWeight: FontWeight.w600),
                         ),
                       ),
                     ),
 
                     const SizedBox(height: 15),
 
-                    // SAVE BUTTON
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
@@ -382,9 +332,8 @@ class _EditKendaraanPageState extends State<EditKendaraanPage> {
                         child: const Text(
                           "Simpan",
                           style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w600,
-                          ),
+                              color: Colors.white,
+                              fontWeight: FontWeight.w600),
                         ),
                       ),
                     ),
@@ -403,10 +352,7 @@ class _EditKendaraanPageState extends State<EditKendaraanPage> {
   Widget _label(String text) {
     return Text(
       text,
-      style: const TextStyle(
-        fontSize: 15,
-        fontWeight: FontWeight.w600,
-      ),
+      style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
     );
   }
 
@@ -423,10 +369,6 @@ class _EditKendaraanPageState extends State<EditKendaraanPage> {
         decoration: InputDecoration(
           hintText: hint,
           border: InputBorder.none,
-          hintStyle: TextStyle(
-            color: Colors.grey.shade500,
-            fontSize: 14,
-          ),
         ),
       ),
     );
