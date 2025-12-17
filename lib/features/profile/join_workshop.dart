@@ -44,9 +44,6 @@ class _GabungMitraPageState extends State<GabungMitraPage> {
   bool agree = false;
   bool isSaving = false;
 
-  // ------------------------
-  // Pick Image
-  // ------------------------
   Future<void> pickImage() async {
     final picker = ImagePicker();
     final file = await picker.pickImage(source: ImageSource.gallery);
@@ -63,9 +60,6 @@ class _GabungMitraPageState extends State<GabungMitraPage> {
     }
   }
 
-  // ------------------------
-  // Input Time (keyboard mode)
-  // ------------------------
   Future<void> pickTime(bool isOpen) async {
     final result = await showTimePicker(
       context: context,
@@ -92,9 +86,6 @@ class _GabungMitraPageState extends State<GabungMitraPage> {
     }
   }
 
-  // ------------------------
-  // Convert weekday → "Sen", "Sel", dst.
-  // ------------------------
   String _dayFromWeekday(int weekday) {
     switch (weekday) {
       case 1:
@@ -116,9 +107,6 @@ class _GabungMitraPageState extends State<GabungMitraPage> {
     }
   }
 
-  // ------------------------
-  // Hitung apakah bengkel open sekarang
-  // ------------------------
   bool calculateIsOpen() {
     if (openTime == null || closeTime == null) return false;
 
@@ -134,9 +122,6 @@ class _GabungMitraPageState extends State<GabungMitraPage> {
     return nowMinutes >= openMinutes && nowMinutes <= closeMinutes;
   }
 
-  // ------------------------
-  // INPUT DECORATION
-  // ------------------------
   InputDecoration _inputDecoration(String hint) {
     return InputDecoration(
       hintText: hint,
@@ -158,9 +143,6 @@ class _GabungMitraPageState extends State<GabungMitraPage> {
     );
   }
 
-  // ------------------------
-  // DAY CHIP
-  // ------------------------
   Widget _dayChip(String day) {
     final selected = selectedDays.contains(day);
 
@@ -196,9 +178,6 @@ class _GabungMitraPageState extends State<GabungMitraPage> {
     );
   }
 
-  // ------------------------
-  // Checkbox layanan
-  // ------------------------
   Widget _serviceItem(String name, bool val, Function(bool) onChanged) {
     return GestureDetector(
       onTap: () => onChanged(!val),
@@ -255,9 +234,6 @@ class _GabungMitraPageState extends State<GabungMitraPage> {
     );
   }
 
-  // ------------------------
-  // SAVE
-  // ------------------------
   Future<void> saveWorkshop() async {
     if (isSaving) return;
 
@@ -292,23 +268,24 @@ class _GabungMitraPageState extends State<GabungMitraPage> {
         final fileName =
             "${DateTime.now().millisecondsSinceEpoch}_${p.basename(workshopImage!.path)}";
 
-        final storagePath = "workshops/$fileName";
+        final pathInBucket = "workshops/$fileName";
 
         // 1. Upload file ke Supabase
         final result = await supabase.storage
             .from("images")
             .upload(
-              storagePath,
-              workshopImage!,
-              fileOptions: const FileOptions(upsert: false),
-            );
+          pathInBucket,  // <-- Hanya path relatif, bukan bucket + path
+          workshopImage!,
+          fileOptions: const FileOptions(upsert: false),
+        );
 
         if (result == null) {
           throw Exception("Upload gagal! File tidak masuk ke storage.");
         }
 
         // 2. Ambil URL
-        final publicUrl = supabase.storage.from("images").getPublicUrl(result);
+        final publicUrl = supabase.storage.from("images").getPublicUrl(pathInBucket);
+        // <-- Hanya path relatif di bucket
 
         if (publicUrl.isEmpty) {
           throw Exception("Public URL gagal dibuat. Cek bucket.");
@@ -349,7 +326,8 @@ class _GabungMitraPageState extends State<GabungMitraPage> {
         longitude = null;
       }
 
-      final isOpen = calculateIsOpen();
+      final openTimeStr = openTime != null ? formatTimeOfDay(openTime!) : null;
+      final closeTimeStr = closeTime != null ? formatTimeOfDay(closeTime!) : null;
       final user = Supabase.instance.client.auth.currentUser;
 
       final inserted = await supabase
@@ -363,11 +341,11 @@ class _GabungMitraPageState extends State<GabungMitraPage> {
             "price":
                 int.tryParse(priceC.text.replaceAll(RegExp(r'[^0-9]'), '')) ??
                 0,
-            "is_open": isOpen,
+            "open_time": openTimeStr,
+            "close_time": closeTimeStr,
             "latitude": latitude,
             "longitude": longitude,
             "save": false,
-
             "bank": bankC.text.trim(),
             "nomor_rekening": int.tryParse(rekC.text.trim()) ?? 0,
             "userid": user?.id,
@@ -397,8 +375,8 @@ class _GabungMitraPageState extends State<GabungMitraPage> {
       if (mounted) {
         Navigator.pushNamedAndRemoveUntil(
           context,
-          '/dashboard-workshop', 
-          (route) => false, 
+          '/dashboard-workshop',
+          (route) => false,
         );
       }
     } catch (e) {
@@ -410,9 +388,12 @@ class _GabungMitraPageState extends State<GabungMitraPage> {
     }
   }
 
-  // ------------------------
-  // BUILD UI
-  // ------------------------
+  String formatTimeOfDay(TimeOfDay t) {
+    final hour = t.hour.toString().padLeft(2, '0');
+    final minute = t.minute.toString().padLeft(2, '0');
+    return '$hour:$minute';
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(

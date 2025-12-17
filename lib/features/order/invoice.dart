@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:uride/screen/workshop.dart';
+import 'package:uride/features/workshops/workshop.dart';
 
 class InvoiceScreen extends StatefulWidget {
   final int orderId;

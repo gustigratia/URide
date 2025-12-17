@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uride/routes/app_routes.dart';
-import 'package:uride/widgets/bottom_nav.dart';
+import 'package:uride/core/widgets/bottom_nav.dart';
 
 class VehicleDetailPage extends StatefulWidget {
   const VehicleDetailPage({super.key});
@@ -20,9 +20,7 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-
     final args = ModalRoute.of(context)!.settings.arguments as Map?;
-
     if (args != null && args.containsKey("type")) {
       selectedType = args["type"];
     }
@@ -37,7 +35,6 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
   Future<void> fetchVehicles() async {
     final supabase = Supabase.instance.client;
     final user = supabase.auth.currentUser;
-
     if (user == null) return;
 
     final motorData = await supabase
@@ -75,7 +72,7 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
 
     return Scaffold(
       backgroundColor: Colors.white,
-      bottomNavigationBar: CustomBottomNav(currentIndex: 1),
+      bottomNavigationBar: const CustomBottomNav(currentIndex: 1),
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
@@ -91,7 +88,6 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
           ),
         ),
       ),
-
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -99,9 +95,7 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
             children: [
               const SizedBox(height: 10),
 
-              // ============================
               // TAB MOTOR / MOBIL
-              // ============================
               Container(
                 padding: const EdgeInsets.all(4),
                 child: Row(
@@ -109,14 +103,14 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
                   children: [
                     _tabButton(
                       "motor",
-                      "images/motor(active).png",
-                      "images/motor(inactive).png",
+                      "assets/images/motor(active).png",
+                      "assets/images/motor(inactive).png",
                     ),
                     const SizedBox(width: 20),
                     _tabButton(
                       "mobil",
-                      "images/mobil(active).png",
-                      "images/mobil(inactive).jpg",
+                      "assets/images/mobil(active).png",
+                      "assets/images/mobil(inactive).jpg",
                     ),
                   ],
                 ),
@@ -124,9 +118,6 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
 
               const SizedBox(height: 25),
 
-              // ============================
-              // TIDAK ADA KENDARAAN
-              // ============================
               if (!hasVehicle) ...[
                 const SizedBox(height: 40),
                 const Text(
@@ -153,14 +144,12 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
                 const SizedBox(height: 40),
               ],
 
-              // ============================
-              // ADA KENDARAAN
-              // ============================
               if (hasVehicle) ...[
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    _navArrow(() => setState(() => selectedIndex--), Icons.chevron_left),
+                    _navArrow(() => setState(() => selectedIndex--),
+                        Icons.chevron_left),
                     Expanded(
                       child: Text(
                         v?['vehiclename'] ?? "-",
@@ -172,47 +161,31 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
                         ),
                       ),
                     ),
-                    _navArrow(() => setState(() => selectedIndex++), Icons.chevron_right),
+                    _navArrow(() => setState(() => selectedIndex++),
+                        Icons.chevron_right),
                   ],
                 ),
 
                 const SizedBox(height: 15),
 
-                // ============================
-                // FOTO KENDARAAN DARI SUPABASE
-                // ============================
                 SizedBox(
                   height: 200,
                   width: width * 0.75,
                   child: AnimatedSwitcher(
                     duration: const Duration(milliseconds: 300),
-                    transitionBuilder: (child, animation) {
-                      final slide = Tween<Offset>(
-                        begin: const Offset(0.1, 0),
-                        end: Offset.zero,
-                      ).animate(animation);
-
-                      return SlideTransition(
-                        position: slide,
-                        child: FadeTransition(opacity: animation, child: child),
-                      );
-                    },
                     child: v != null &&
-                            v['img'] != null &&
-                            v['img'].toString().isNotEmpty
+                        v['img'] != null &&
+                        v['img'].toString().isNotEmpty
                         ? Image.network(
-                            v['img'],
-                            key: ValueKey("img-${v['id']}"),
-                            fit: BoxFit.cover,
-                            errorBuilder: (ctx, err, stack) => const Center(
-                              child: Icon(Icons.broken_image, size: 40, color: Colors.grey),
-                            ),
-                          )
+                      v['img'],
+                      key: ValueKey("img-${v['id']}"),
+                      fit: BoxFit.cover,
+                    )
                         : Image.asset(
-                            "images/nmax.jpg",
-                            key: ValueKey("asset-${v?['id']}"),
-                            fit: BoxFit.cover,
-                          ),
+                      "assets/images/nmax.jpg",
+                      key: ValueKey("asset-${v?['id']}"),
+                      fit: BoxFit.cover,
+                    ),
                   ),
                 ),
 
@@ -229,9 +202,7 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
 
                 const SizedBox(height: 15),
 
-                // ============================
                 // TOTAL PERJALANAN
-                // ============================
                 Container(
                   padding: const EdgeInsets.all(20),
                   margin: const EdgeInsets.only(bottom: 15),
@@ -254,7 +225,8 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
                           color: const Color(0xFFFFD233).withOpacity(0.25),
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        child: Image.asset("images/routing.jpg", width: 22, height: 22),
+                        child: Image.asset("assets/images/routing.jpg",
+                            width: 22, height: 22),
                       ),
                       const SizedBox(width: 20),
                       Column(
@@ -282,9 +254,6 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
                   ),
                 ),
 
-                // ============================
-                // BUTTON EDIT
-                // ============================
                 _fullButton(
                   icon: "assets/images/edit.jpg",
                   title: "Edit Informasi Kendaraan",
@@ -296,7 +265,8 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
                     );
 
                     if (result is Map) {
-                      if (result["updated"] == true || result["deleted"] == true) {
+                      if (result["updated"] == true ||
+                          result["deleted"] == true) {
                         await fetchVehicles();
                         setState(() => selectedIndex = 0);
                       }
@@ -319,6 +289,33 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
                 ),
 
                 const SizedBox(height: 20),
+
+                // ============================
+                // GANTI OLI & SERVIS RUTIN
+                // ============================
+                Row(
+                  children: [
+                    Expanded(
+                      child: _statusBox(
+                        icon: "assets/images/oli.jpg",
+                        title: "${(v?['kilometer'] ?? 0) % 5000} Km",
+                        subtitle: "Ganti Oli",
+                        value: ((v?['kilometer'] ?? 0) % 5000) / 5000,
+                      ),
+                    ),
+                    const SizedBox(width: 15),
+                    Expanded(
+                      child: _statusBox(
+                        icon: "assets/images/wrench.jpg",
+                        title: _nextServiceDate(v),
+                        subtitle: "Servis Rutin",
+                        value: _serviceProgress(v),
+                      ),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 50),
               ],
             ],
           ),
@@ -327,12 +324,11 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
     );
   }
 
-  // ============================================================
+  // ============================
   // COMPONENTS
-  // ============================================================
+  // ============================
   Widget _tabButton(String type, String activeIcon, String inactiveIcon) {
-    final bool active = selectedType == type;
-
+    final active = selectedType == type;
     return SizedBox(
       width: 150,
       child: GestureDetector(
@@ -348,10 +344,8 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
             borderRadius: BorderRadius.circular(30),
             gradient: active
                 ? const LinearGradient(
-                    colors: [Color(0xFFFED46A), Color(0xFFFFB000)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  )
+              colors: [Color(0xFFFED46A), Color(0xFFFFB000)],
+            )
                 : null,
             color: active ? null : const Color(0xffE3E3E3),
           ),
@@ -421,5 +415,106 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
         ),
       ),
     );
+  }
+
+  Widget _statusBox({
+    required String icon,
+    required String title,
+    required String subtitle,
+    required double value,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(15),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.15),
+            blurRadius: 22,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Image.asset(icon, width: 32, height: 32),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(title,
+                        style: const TextStyle(
+                            fontFamily: 'Euclid',
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold)),
+                    Text(subtitle,
+                        style: const TextStyle(
+                            fontFamily: 'Euclid',
+                            fontSize: 12,
+                            color: Colors.grey)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(10),
+            child: LinearProgressIndicator(
+              minHeight: 7,
+              value: value,
+              backgroundColor: Colors.grey.shade200,
+              valueColor: AlwaysStoppedAnimation(
+                value < 0.33
+                    ? Colors.green
+                    : value < 0.66
+                    ? Colors.orange
+                    : Colors.red,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _nextServiceDate(dynamic v) {
+    if (v == null || v['lastservicedate'] == null) return "-";
+    final raw = DateTime.tryParse(v['lastservicedate'].toString());
+    if (raw == null) return "-";
+    final next = raw.add(const Duration(days: 90));
+    return "${next.day} ${_monthName(next.month)} ${next.year}";
+  }
+
+  double _serviceProgress(dynamic v) {
+    if (v == null || v['lastservicedate'] == null) return 0;
+    final raw = DateTime.tryParse(v['lastservicedate'].toString());
+    if (raw == null) return 0;
+    final elapsed = DateTime.now().difference(raw).inDays;
+    return (elapsed / 90).clamp(0.0, 1.0);
+  }
+
+  String _monthName(int m) {
+    const arr = [
+      "",
+      "Jan",
+      "Feb",
+      "Mar",
+      "Apr",
+      "Mei",
+      "Jun",
+      "Jul",
+      "Agu",
+      "Sep",
+      "Okt",
+      "Nov",
+      "Des",
+    ];
+    return arr[m];
   }
 }

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:uride/widgets/bottom_nav.dart';
+import 'package:uride/core/widgets/bottom_nav.dart';
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:geolocator/geolocator.dart';
@@ -43,10 +43,8 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _initAll() async {
-    // 1. Ambil API Key dari .env sebelum digunakan
     mapsApiKey = dotenv.env['MAPS_API_KEY'] ?? '';
 
-    // Peringatan jika kunci tidak ditemukan
     if (mapsApiKey.isEmpty) {
       debugPrint("ERROR: MAPS_API_KEY not found in environment variables.");
     }
@@ -149,7 +147,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
       final json = jsonDecode(res.body);
 
-      // GOOGLE WEATHER API return langsung OBJECT, bukan list
       setState(() {
         _weather = Map<String, dynamic>.from(json);
         _isLoadingWeather = false;
@@ -689,7 +686,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 myLocationEnabled: true,
                 myLocationButtonEnabled: false,
                 zoomControlsEnabled: false,
-                scrollGesturesEnabled: false, // Nonaktifkan interaksi agar map terlihat statis di card
+                scrollGesturesEnabled: false,
                 zoomGesturesEnabled: false,
                 tiltGesturesEnabled: false,
                 rotateGesturesEnabled: false,

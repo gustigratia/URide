@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:uride/services/gemini_service.dart';
+import 'package:uride/core/services/gemini_service.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 
 class ChatbotPage extends StatefulWidget {

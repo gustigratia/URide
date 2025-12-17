@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:uride/widgets/bottom_nav.dart';
-import 'package:uride/main.dart'; // supabase
+import 'package:uride/core/widgets/bottom_nav.dart';
+import 'package:uride/main.dart';
 import 'package:uride/routes/app_routes.dart';
 import 'package:geolocator/geolocator.dart';
 

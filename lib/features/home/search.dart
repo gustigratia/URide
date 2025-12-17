@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:uride/widgets/bottom_nav.dart';
+import 'package:uride/core/widgets/bottom_nav.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 

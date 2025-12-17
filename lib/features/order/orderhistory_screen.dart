@@ -2,10 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'orderdetail_screen.dart';
-import 'package:uride/widgets/bottom_nav.dart';
+import 'package:uride/core/widgets/bottom_nav.dart';
 
 class OrderHistoryScreen extends StatefulWidget {
-  // FINAL REVISI: newOrderId harus menjadi nullable di sini
   final int? newOrderId; 
 
   const OrderHistoryScreen({super.key, this.newOrderId});
@@ -181,6 +180,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
             fullAddress: cleanText(o?['addressdetail'] ?? "-"),
             typeCase: cleanText(o['ordertype'] ?? "-"),
             typeVehicle: cleanText(o?['vehicletype'] ?? "-"),
+            img: workshop['image'],
             onTap: () {
               Navigator.push(
                 context,
@@ -272,6 +272,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
     required String typeCase,
     required String typeVehicle,
     required VoidCallback onTap,
+    required String img,
   }) {
     return GestureDetector(
       onTap: onTap,
@@ -354,8 +355,8 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
                 children: [
                   ClipRRect(
                     borderRadius: BorderRadius.circular(10),
-                    child: Image.asset(
-                      "images/bengkel.png",
+                    child: Image.network(
+                      img,
                       width: 48,
                       height: 48,
                       fit: BoxFit.cover,
@@ -487,20 +488,10 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
 
     switch (t) {
       case "motor":
-        return Image.asset(
-          "images/motor-default.png",
-          width: 15,
-          height: 15,
-          fit: BoxFit.contain,
-        );
+        return Image.asset( "assets/images/motor-default.png", width: 15, height: 15, fit: BoxFit.contain, );
 
       case "mobil":
-        return Image.asset(
-          "images/mobil-default.png",
-          width: 15,
-          height: 15,
-          fit: BoxFit.contain,
-        );
+        return Image.asset( "assets/images/mobil-default.png", width: 15, height: 15, fit: BoxFit.contain, );
 
       case "santai":
         return Icon(
@@ -523,9 +514,8 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
           color: const Color(0xFFFF3B30), // merah
         );
 
-      // ===== DEFAULT =====
       default:
-        return Image.asset("images/arrow.png", width: 15, height: 15);
+        return Image.asset("assets/images/arrow.png", width: 15, height: 15);
     }
   }
 

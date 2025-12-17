@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:uride/midtrans_service.dart';
-import 'package:uride/screen/invoice.dart';
+import 'package:uride/core/services/midtrans_service.dart';
+import 'package:uride/features/order/invoice.dart';
 
 class KonfirmasiAjuanScreen extends StatefulWidget {
   final int workshopId;

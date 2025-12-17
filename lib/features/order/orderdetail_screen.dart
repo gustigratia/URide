@@ -46,6 +46,11 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   double lng = 0;
   String? date = "";
   int selectedRating = 0;
+  String? workshopImageUrl;
+  double? workshopLat;
+  double? workshopLng;
+  bool isLoadingMap = true;
+  bool isLoadingImage = true;
 
   // status : "ongoing" | "completed" | "cancelled"
   String orderStatus = "ongoing";
@@ -66,11 +71,15 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     date = widget.date;
 
     orderStatus = widget.statusOngoing ? "ongoing" : "completed";
+    _fetchWorkshopImage();
+    _fetchWorkshopLocation();
   }
 
   bool get isOngoing => orderStatus == "ongoing";
   bool get isCompleted => orderStatus == "completed";
   bool get isCancelled => orderStatus == "cancelled";
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -178,11 +187,31 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                         children: [
                           ClipRRect(
                             borderRadius: BorderRadius.circular(12),
-                            child: Image.asset(
-                              "images/bengkel.png",
+                            child: isLoadingImage
+                                ? Container(
+                              width: 55,
+                              height: 55,
+                              alignment: Alignment.center,
+                              child: const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(strokeWidth: 2),
+                              ),
+                            )
+                                : Image.network(
+                              workshopImageUrl ??
+                                  "https://via.placeholder.com/150", // fallback
                               width: 55,
                               height: 55,
                               fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                return Image.asset(
+                                  "assets/images/workshop.png",
+                                  width: 55,
+                                  height: 55,
+                                  fit: BoxFit.cover,
+                                );
+                              },
                             ),
                           ),
                           const SizedBox(width: 12),
@@ -290,15 +319,19 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                       borderRadius: BorderRadius.circular(16),
                       child: SizedBox(
                         height: 230,
-                        child: GoogleMap(
+                        child: isLoadingMap || workshopLat == null || workshopLng == null
+                            ? const Center(
+                          child: CircularProgressIndicator(),
+                        )
+                            : GoogleMap(
                           initialCameraPosition: CameraPosition(
-                            target: LatLng(lat, lng),
+                            target: LatLng(workshopLat!, workshopLng!),
                             zoom: 16,
                           ),
                           markers: {
                             Marker(
                               markerId: const MarkerId("workshop_loc"),
-                              position: LatLng(lat, lng),
+                              position: LatLng(workshopLat!, workshopLng!),
                               icon: BitmapDescriptor.defaultMarkerWithHue(
                                 BitmapDescriptor.hueRed,
                               ),
@@ -372,6 +405,28 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     );
   }
 
+  Future<void> _fetchWorkshopImage() async {
+    try {
+      final supabase = Supabase.instance.client;
+
+      final data = await supabase
+          .from('orders')
+          .select('workshops(image)')
+          .eq('id', orderId)
+          .single();
+
+      setState(() {
+        workshopImageUrl = data['workshops']?['image'];
+        isLoadingImage = false;
+      });
+    } catch (e) {
+      debugPrint("Error fetch workshop image: $e");
+      setState(() {
+        isLoadingImage = false;
+      });
+    }
+  }
+
   Widget _chip(String text) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
@@ -404,7 +459,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     switch (t) {
       case "motor":
         return Image.asset(
-          "images/motor-default.png",
+          "assets/images/motor-default.png",
           width: 15,
           height: 15,
           fit: BoxFit.contain,
@@ -412,7 +467,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
 
       case "mobil":
         return Image.asset(
-          "images/mobil-default.png",
+          "assets/images/mobil-default.png",
           width: 15,
           height: 15,
           fit: BoxFit.contain,
@@ -441,7 +496,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
 
       // ===== DEFAULT =====
       default:
-        return Image.asset("images/arrow.png", width: 15, height: 15);
+        return Image.asset("assets/images/arrow.png", width: 15, height: 15);
     }
   }
   void _showCompleteModal(BuildContext context) {
@@ -699,6 +754,27 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
         );
       },
     );
+  }
+
+  Future<void> _fetchWorkshopLocation() async {
+    try {
+      final supabase = Supabase.instance.client;
+
+      final data = await supabase
+          .from('orders')
+          .select('workshops(latitude, longitude)')
+          .eq('id', orderId)
+          .single();
+
+      setState(() {
+        workshopLat = data['workshops']?['latitude']?.toDouble();
+        workshopLng = data['workshops']?['longitude']?.toDouble();
+        isLoadingMap = false;
+      });
+    } catch (e) {
+      debugPrint("Error fetch workshop location: $e");
+      isLoadingMap = false;
+    }
   }
 
   void _showRatingModal() {

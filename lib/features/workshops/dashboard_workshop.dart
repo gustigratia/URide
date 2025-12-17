@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:uride/screen/profile_page.dart';
+import 'package:uride/features/profile/profile_page.dart';
 
 class DashboardWorkshop extends StatefulWidget {
   const DashboardWorkshop({super.key});
@@ -139,7 +139,7 @@ class _DashboardWorkshopState extends State<DashboardWorkshop> {
 
   Widget _buildAppBar() {
     return Container(
-      padding: const EdgeInsets.only(top: 20, bottom: 20),
+      padding: const EdgeInsets.only(top: 50, bottom: 20),
       decoration: const BoxDecoration(
         gradient: LinearGradient(
           colors: [Color(0xFFFFD93D), Color(0xFFFF8400)],
@@ -153,7 +153,7 @@ class _DashboardWorkshopState extends State<DashboardWorkshop> {
           const SizedBox(width: 15),
           GestureDetector(
             onTap: () {
-              Navigator.pop(context);
+              Navigator.pushNamed(context, '/home');
             },
             child: const Icon(Icons.arrow_back, size: 26, color: Colors.white),
           ),
