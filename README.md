@@ -33,22 +33,40 @@ This project is developed collaboratively by a dedicated team of developers:
 ```text
 lib/
 ├── core/                  # Global Component (Shared)
-│   ├── constants/         # Colors, Strings, API Urls
-│   ├── theme/             # AppTheme 
-│   ├── providers/         # State Management (Theme, etc)
+│   ├── services/          # External Service call (Midtrans etc.)
 │   └── widgets/           # Widget (Button, NavBar, Cards)
 ├── features/              # FEATURES MODULE (Main Workspace)
 │   ├── auth/              # Splash Screen, SignIn/SignUp
 │   ├── home/              # Homepage, Search
-│   ├── workshops/         # Bengkel Page
-│   ├── vehicles/          # Vehicle Page, Add Vehicle
-│   ├── spbu/              # SPBU Page
 │   ├── order/             # Service Order Page
 │   ├── profile/           # User Profile Page, Edit Profile
-│   └── settings/          # Fitur 16 (Pengaturan Tema)
+│   ├── spbu/              # SPBU Page
+│   ├── vehicles/          # Vehicle Page, Add Vehicle
+│   └── workshops/         # Bengkel Page
 ├── routes/                # Routing 
 │   └── app_routes.dart
 └── main.dart
+```
+---
+
+## Environment Variables
+
+This project uses environment variables for configuration. The actual `.env` file is **not included** in the repository for security reasons.
+
+#### 1. Create `.env` file
+
+Copy the provided example file:
+
+```bash
+cp .env.example .env
+```
+
+#### 2. Fill in the required values
+
+```env
+SUPABASE_URL=https://your-project-id.supabase.co
+SUPABASE_ANON_KEY=your_supabase_anon_key
+MAPS_API_KEY=your_google_maps_api_key
 ```
 
 ---
@@ -76,13 +94,14 @@ flutter pub get
 flutter analyze
 ```
 
-### Run the program baby...
+### Run the program 
 
 ```bash
 flutter run
 ```
 
 ---
+
 
 ## Contribution Guidelines
 
@@ -169,10 +188,17 @@ by the development team to fit the implementation requirements.
 
 ---
 
-## Technologies Used
+## Tech Stack
 
-- **Frontend + Backend:** Flutter + Supabase  
-- **Database:** Supabase
+- **Frontend:** Flutter  
+- **Backend (BaaS):** Supabase  
+  - PostgreSQL Database  
+  - Authentication (Supabase Auth)  
+  - File Storage (Supabase Storage)  
+  - Serverless Backend Logic (Supabase Edge Functions)  
+- **Maps & Location Services:** Google Maps API  
+- **AI Integration:** Gemini API (via Supabase Edge Functions)  
+- **Payment Gateway:** Midtrans  
 - **Version Control:** Git & GitHub  
 
 ---
