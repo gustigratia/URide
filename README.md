@@ -71,6 +71,27 @@ MAPS_API_KEY=your_google_maps_api_key
 
 ---
 
+## Database Schema
+
+The database design for **URide** follows a relational PostgreSQL schema optimized for integration with **Supabase Authentication** and mobile application workflows. An overview of the database structure, including table relationships and key entities (users, vehicles, workshops, orders, parking, and SPBU), can be seen in the following schema diagram:
+
+![Database Schema](https://drive.google.com/uc?export=view&id=1VFkmc2HGX2xmdiWEhJwzEJ2r-T4sB7_b)
+
+The complete **Data Definition Language (DDL)** script used to create the database schema is provided in the repository for reference and reproducibility. 
+📁 **Location:**
+```text
+Script/db.sql
+```
+This file contains:
+- Table definitions
+- Primary and foreign key constraints
+- Enum type definitions
+- Referential integrity rules compatible with PostgreSQL & Supabase
+
+> ⚠️ **Note:**  
+> The DDL script is intended to be executed in a PostgreSQL environment (Supabase).  
+> Any changes to the database structure should be reflected both in the schema diagram and the `db.sql` file to maintain consistency.
+---
 ## Setup & Installation
 
 Follow these steps to ensure that the local environment is suitable for development needs:
